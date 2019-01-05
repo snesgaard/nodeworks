@@ -6,15 +6,17 @@ require(... .. ".functional")
 List = require(... .. ".list")
 Dictionary = require(... ..  ".dictionary")
 Event = require(... .. ".event")
+Spatial = require(... .. ".spatial")
 
 list = List.create
 dict = Dictionary.create
 event = Event.create
+spatial = Spatial.create
 
-Spatial = require(... .. ".spatial")
 Atlas = require(... .. ".atlas")
 vec2 = require(... .. ".vec2")
 Node = require(... .. ".node")
+Sprite = require(... .. ".sprite")
 
 moon = require (... .. ".third.moonshine")
 local knife_path = ... .. ".third.knife.knife"
@@ -26,6 +28,7 @@ require (... .. ".third.patch")
 
 gfx = love.graphics
 rng = love.math.random
+
 
 function gfx.prerender(w, h, f, ...)
     local args = {...}
@@ -111,3 +114,5 @@ function string.split(inputstr, sep)
     end
     return t
 end
+
+gfx.setDefaultFilter("nearest", "nearest")

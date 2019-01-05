@@ -2,22 +2,22 @@ local rng = love.math.random
 
 local Sprite = {}
 
-function Sprite.create(atlas, animes)
-    local this = {
-        time = 0,
-        atlas = atlas,
-        __states = {},
-        active = nil,
-        origin = 'origin',
-        __mirror = 1,
-        color = {1, 1, 1, 1},
-        on_user = event(),
-        on_loop = event(),
-        on_hitbox = event(),
-        shake_data = {amp = 0, phase = 0},
-        __hitbox_cache = {}
-    }
-    self.__transform.scale = vec2(2, 2)
+function Sprite.create(this, atlas, animes)
+    this.time = 0
+    this.atlas = atlas
+    this.__states = {}
+    this.active = nil
+    this.origin = 'origin'
+    this.__mirror = 1
+    this.color = {1, 1, 1, 1}
+    this.on_user = event()
+    this.on_loop = event()
+    this.on_hitbox = event()
+    this.shake_amp = 0
+    this.shake_phase = 0
+    this.__hitbox_cache = {}
+
+    this.__transform.scale = vec2(2, 2)
 
     for k, v in pairs(animes or {}) do
         this:register(k, v)
@@ -38,8 +38,8 @@ function Sprite:__draw(x, y)
     self.atlas:draw(self.__draw_frame, self.origin, x, y, 0, sx, 1)
 end
 
-function Sprite:__on_frame_progress() end
-function Sprite:__on_frame_motion() end
+function Sprite:on_frame_progress() end
+function Sprite:on_frame_motion() end
 
 function Sprite:__get_motion(frames, frame_index, origin, mirror, scale)
     origin = origin or self.origin
@@ -78,13 +78,14 @@ function Sprite:play(dt, frame_key, init_frame)
         self.time = self.time + f.time
 
         local hitboxes = self:get_hitboxes()
+        self.hitboxes = hitboxes
         self.on_hitbox(hitboxes)
-        self.__on_frame_progress(self, i, f, hitboxes)
+        self.on_frame_progress(self, i, f, hitboxes)
 
         local motion = self:__get_motion(
             frames, i, self.origin, self.__mirror
         )
-        self.__on_frame_motion(self, motion)
+        self.on_frame_motion(self, motion)
 
         while self.time > 0 do
             _, dt = coroutine.yield()
@@ -134,7 +135,7 @@ function Sprite:get_hitboxes(x, y)
 
     local cx, cy = get_center()
 
-    local ret = dict.create()
+    local ret = dict()
 
     for key, box in pairs(frame.hitbox) do
         ret[key] = spatial(box.x, box.y, box.w, box.h)
@@ -154,13 +155,13 @@ function Sprite:get_hitboxes(x, y)
 end
 
 function Sprite:shake(strong)
-    if self.shake_data.tween then
-        self.shake_data.tween:remove()
+    if self.shake_tween then
+        self.shake_tween:remove()
     end
     local s = rng() > 0.5 and 1 or -1
-    self.shake_data.amp = strong and 15 or 5
-    self.shake_data.phase = s * math.pi * 8
-    self.shake_data.tween = timer.tween(
+    self.shake_amp = strong and 15 or 5
+    self.shake_phase = s * math.pi * 8
+    self.shake_tween = timer.tween(
         0.4,
         {
             [self.shake_data] = {amp = 0, phase = 0},
