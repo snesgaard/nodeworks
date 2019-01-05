@@ -1,0 +1,9 @@
+[submodule "third/knife"]
+	path = third/knife
+	url = https://github.com/airstruck/knife
+[submodule "third/moonshine"]
+	path = third/moonshine
+	url = https://github.com/vrld/moonshine
+[submodule "third/Simple-Tiled-Implementation"]
+	path = third/Simple-Tiled-Implementation
+	url = https://github.com/karai17/Simple-Tiled-Implementation
