@@ -1,9 +1,3 @@
-local List       = require "list"
-local Dictionary = require "dictionary"
-local Event      = require "event"
-local Spatial    = require "spatial"
-local json       = require "modules/json"
-
 local Frame = {}
 Frame.__index = Frame
 

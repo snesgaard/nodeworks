@@ -67,7 +67,7 @@ function Node:set_order(order_func)
 end
 
 function Node:update(dt)
-    Timer.update(dt, self.__group.tween)
+    timer.update(dt, self.__group.tween)
     local f, b = self.__threads2update.front, self.__threads2update.back
     self.__threads2update.front = b
     self.__threads2update.back = f
@@ -227,7 +227,7 @@ function Node:wait(...)
             local function timeout()
                 continuation("timeout")
             end
-            listeners[e] = Timer.after(e, timeout)
+            listeners[e] = timer.after(e, timeout)
                 :remove()
                 :group(self.__group.tween)
         -- Determine whether is a an event

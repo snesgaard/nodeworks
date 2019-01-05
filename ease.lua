@@ -1,4 +1,4 @@
-local ease = require "modules/easing"
+local ease = require(... .. ".third.easing")
 
 function ease.sigmoid(t, b, c, d)
     local low, high = -3, 4

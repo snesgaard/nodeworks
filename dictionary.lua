@@ -1,5 +1,4 @@
 require "math"
-local list = require "list"
 
 local dictionary = {}
 dictionary.__index = dictionary
@@ -33,7 +32,7 @@ end
 
 function dictionary.from_keyvalue(keys, values)
     local data = {}
-    for _, keyval in pairs(list.zip(keys, values)) do
+    for _, keyval in pairs(List.zip(keys, values)) do
         local k, v = unpack(keyval)
         data[k] = v
     end
@@ -41,7 +40,7 @@ function dictionary.from_keyvalue(keys, values)
 end
 
 function dictionary:to_keyvalue()
-    local keys, values = list.create(), list.create()
+    local keys, values = List.create(), List.create()
     for k, v in pairs(self) do
         keys[#keys + 1] = k
         values[#values + 1] = v
@@ -86,7 +85,7 @@ function dictionary:erase(key)
 end
 
 function dictionary:tolist()
-  local ret = list.create()
+  local ret = List.create()
   for _, val in pairs(self) do
     ret[#ret + 1] = val
   end

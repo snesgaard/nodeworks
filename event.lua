@@ -1,5 +1,4 @@
 local math = require "math"
-local List = require "list"
 
 local Listener = {}
 Listener.__index = Listener

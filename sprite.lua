@@ -98,7 +98,7 @@ function Sprite:play(dt, frame_key, init_frame)
 end
 
 function Sprite:hide()
-    Timer.tween(
+    timer.tween(
         0.4,
         {
             [self.color] = {[4] = 0}
@@ -107,7 +107,7 @@ function Sprite:hide()
 end
 
 function Sprite:show()
-    Timer.tween(
+    timer.tween(
         0.4,
         {
             [self.color] = {[4] = 1}
@@ -160,7 +160,7 @@ function Sprite:shake(strong)
     local s = rng() > 0.5 and 1 or -1
     self.shake_data.amp = strong and 15 or 5
     self.shake_data.phase = s * math.pi * 8
-    self.shake_data.tween = Timer.tween(
+    self.shake_data.tween = timer.tween(
         0.4,
         {
             [self.shake_data] = {amp = 0, phase = 0},

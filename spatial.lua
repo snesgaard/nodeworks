@@ -1,5 +1,4 @@
-local Vec2 = require "vec2"
-local List = require "list"
+Vec2 = vec2
 
 local Spatial = {}
 Spatial.__index = Spatial
