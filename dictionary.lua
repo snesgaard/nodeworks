@@ -100,4 +100,15 @@ function dictionary:reduce(f, init)
     return init
 end
 
+function dictionary:fuse(d)
+    local ret = dictionary.create()
+    for k, v in pairs(d) do
+        ret[k] = v
+    end
+    for k, v in pairs(self) do
+        ret[k] = v
+    end
+    return ret
+end
+
 return dictionary

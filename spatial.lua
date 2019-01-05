@@ -16,10 +16,6 @@ function Spatial.create(x, y, w, h)
     )
 end
 
-function Spatial.from_ui(ui)
-    return Spatial.create(0, 0, ui:get_size())
-end
-
 function Spatial:copy()
     return Spatial.create(self.x, self.y, self.w, self.h)
 end
@@ -43,7 +39,6 @@ function Spatial:move(x, y, align, valign)
     elseif align == "center" then
         x = x + self.w / 2
     end
-    --x = align == "right" and x + self.w or x
     if valign == "bottom" then
         y = y + self.h
     elseif valign == "center" then
@@ -59,12 +54,6 @@ end
 
 function Spatial:unpack()
     return self.x, self.y, self.w, self.h
-end
-
-function Spatial:hmirror(ox, oy)
-    local dx = self.x - ox
-    local x = ox - dx
-    return Spatial.create(x - self.w, self.y, self.w, self.h)
 end
 
 function Spatial:expand(w, h, align, valign)
