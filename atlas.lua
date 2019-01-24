@@ -1,116 +1,3 @@
-local Frame = {}
-Frame.__index = Frame
-
-function Frame.create(quad, ox, oy, t)
-    local this = {quad = quad, ox = ox, oy = oy, time = t, hitbox = {}}
-    return setmetatable(this, Frame)
-end
-
-local Sprite = {}
-Sprite.__index = Sprite
-
-function Sprite:__tostring()
-    return string.format("Sprite <%s>", self.atlas.path)
-end
-
-function Sprite.create(atlas, aliases)
-    local this = {
-        aliases = aliases,
-        atlas = atlas,
-        animation = "none",
-        frames = nil,
-        time = 0,
-        f = 1,
-        color = {255, 255, 255, 255},
-        loop = "repeat",
-        spatial = Spatial.create(),
-        on_completed = Event.create(),
-        on_frame_changed = Event.create(),
-        on_animation_changed = Event.create()
-    }
-    return setmetatable(this, Sprite)
-end
-
-function Sprite:set_animation(name)
-    if self.aliases then
-        name = self.aliases[name]
-    end
-    local frames = self.atlas:get_animation(name)
-    if not frames then
-        log.warn("Animation <%s> is not defined", name)
-    end
-    self.animation = name
-    self.frames = frames
-    self.time = frames:head().time
-    self.f = 1
-    self.on_animation_changed(name)
-    return self
-end
-
-function Sprite:set_loop(loop)
-    self.loop = loop
-    return self
-end
-
-function Sprite.set_color(r, g, b, a)
-    self.color = {r, g, b, a}
-    return self
-end
-
-function Sprite:set_frame(f)
-    self.f = f
-    if self.frames:size() < self.f then
-        -- Throw end of animation event
-        self.on_completed()
-        if self.loop == "once" then
-            return
-        elseif self.loop == "repeat" then
-            self.f = 1
-        end
-    else
-        self.on_frame_changed(self.f)
-        -- Throw end of frame
-    end
-    -- Throw animation hitbox info here
-    return self
-end
-
-function Sprite:next_frame()
-    return self:set_frame(self.f + 1)
-end
-
-function Sprite:set_time(time)
-    self.time = time
-    return self
-end
-
-function Sprite:set_origin(origin)
-    self.origin = origin
-    return self
-end
-
-function Sprite:refresh_time()
-    local frame = self.frames[self.f]
-    return self:set_time(self.time + frame.time)
-end
-
-function Sprite:update(dt)
-    self.time = self.time - dt
-    if self.time < 0 then
-        self:next_frame()
-            :refresh_time()
-        return self:update(0)
-    end
-    return self
-end
-
-function Sprite:draw(x, y, r, sx, sy)
-    gfx.setColor(unpack(self.color))
-    x = x + self.spatial.x
-    y = y + self.spatial.y
-    self.atlas:draw(self.frames[self.f], self.origin, x, y, r, sx, sy)
-end
-
 local Atlas = {}
 Atlas.__index = Atlas
 
@@ -171,16 +58,17 @@ function Atlas.create(path)
             local quad = gfx.newQuad(x, y, w, h, unpack(dim))
             local dt = f.duration / 1000.0
             local ox, oy = f.spriteSourceSize.x, f.spriteSourceSize.y
-            frames[#frames + 1] = Frame.create(quad, ox, oy, dt)
+            frames[#frames + 1] = Frame.create(sheet, {}, quad, vec2(ox, oy))
+            frames[#frames]:set_dt(dt)
         end
         -- Update slices with a central bound
 
         for _, slice in pairs(data.meta.slices) do
             local hitboxes = List.create()
             for _, k in ipairs(slice.keys) do
-                k.bounds.cx = k.bounds.x + k.bounds.w * 0.5 - 0.5
-                k.bounds.cy = k.bounds.y + k.bounds.h - 0.5
-                hitboxes[k.frame + 1] = k.bounds
+                hitboxes[k.frame + 1] = spatial(
+                    k.bounds.x, k.bounds.y, k.bounds.w, k.bounds.h
+                )
             end
             -- If data is set to once, dont interpolate
             if slice.data ~= "once" then
@@ -211,9 +99,8 @@ function Atlas.create(path)
             end
             -- Fill pass
             for i, f in ipairs(frames) do
-                frames[i].hitbox[slice.name] = hitboxes[i]
+                frames[i].slices[slice.name] = hitboxes[i]
             end
-
         end
         -- Fill in tags
         local tags = Dictionary.create()
@@ -226,17 +113,30 @@ function Atlas.create(path)
     return setmetatable(this, Atlas)
 end
 
-function Atlas:get_animation(name)
-    local name, tag_name = unpack(string.split(name, '/'))
-    local frames = self.frames[name]
-    if not tag_name then return frames end
-    local tag = self.tags[name][tag_name]
-    if not tag then return frames end
-    return frames:sub(tag.from + 1, tag.to + 1)
+local function get_tag_limit(self, frames, name, tag_name)
+    local default = {from = 0, to = #frames - 1}
+    if not tag_name or not self.tags[name][tag_name]  then
+        return default
+    else
+        return self.tags[name][tag_name]
+    end
 end
 
-function Atlas:sprite(aliases)
-    return Sprite.create(self, aliases)
+function Atlas:get_animation(name)
+    local name, tag_name = unpack(string.split(name, '/'))
+
+    local frames = self.frames[name]
+    local tag = get_tag_limit(self, frames, name, tag_name)
+
+    local frames_sub = frames:sub(tag.from + 1, tag.to + 1)
+
+    if #frames_sub <= 0 then
+        return
+    elseif #frames_sub == 1 then
+        return frames_sub:head()
+    else
+        return frames_sub
+    end
 end
 
 function Atlas:get_quads(name)
@@ -255,7 +155,7 @@ function Atlas:draw(frame, origin, x, y, r, sx, sy)
         return self:draw(f:head(), nil, origin, x, y, r, sx, sy)
     end
     local cx, cy = 0, 0
-    if origin and frame.hitbox[origin] then
+    if frame.hitbox[origin] then
         local center = frame.hitbox[origin]
         cx, cy = center.cx, center.cy
     end

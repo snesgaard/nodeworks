@@ -12,9 +12,19 @@ function identity(...)
     return ...
 end
 
+function constant(...)
+    local args = {...}
+    return function()
+        return unpack(args)
+    end
+end
+
 function curry(f, ...)
     local args = {...}
     local n_args = #args
+
+    if n_args < 2 then return f end
+
     return function(...)
         local a = {}
         for i, v in ipairs(args) do

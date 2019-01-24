@@ -20,7 +20,11 @@ function Spatial:copy()
 end
 
 function Spatial:pos()
-    return self.x, self.y
+    return vec2(self.x, self.y)
+end
+
+function Spatial:size()
+    return vec2(self.w, self.h)
 end
 
 function Spatial:scale(sx, sy)
@@ -46,8 +50,43 @@ function Spatial:move(x, y, align, valign)
     return Spatial.create(self.x + x, self.y + y, self.w, self.h)
 end
 
+function Spatial:right(x, y, w, h)
+    local prev = self
+    x = x or 0
+    y = y or 0
+    w = w or self.w
+    h = h or self.h
+    return Spatial.create(self.x + self.w + x, self.y + y, w, h)
+end
+
+function Spatial:left(x, y, w, h)
+    local prev = self
+    x = x or 0
+    y = y or 0
+    w = w or self.w
+    h = h or self.h
+    return Spatial.create(self.x - w - x, self.y + y, w, h)
+end
+
+function Spatial:down(x, y, w, h)
+    local prev = self
+    x = x or 0
+    y = y or 0
+    w = w or self.w
+    h = h or self.h
+    return Spatial.create(self.x + x, self.y + self.h + y, w, h)
+end
+
+function Spatial:up(x, y, w, h)
+    local prev = self
+    x = x or 0
+    y = y or 0
+    w = w or self.w
+    h = h or self.h
+    return Spatial.create(self.x + x, self.y - h - y, w, h)
+end
+
 function Spatial:set_position(x, y)
-    local pos = Vec2(x or self.pos[1], y or self.pos[2])
     return Spatial.create(x or self.x, y or self.y, self.w, self.h)
 end
 
@@ -90,7 +129,7 @@ function Spatial:map(f)
 end
 
 function Spatial:center()
-    return Vec2(self.x + self.w * 0.5, self.y + self.h * 0.5)
+    return vec2(self.x + self.w * 0.5, self.y + self.h * 0.5)
 end
 
 function Spatial:xalign(src, dst_side, src_side, margin)
@@ -197,7 +236,7 @@ end
 
 function SpatialCollection.create(border, items)
     return setmetatable(
-        {border = border, items = items},
+        {border = border, items = items, x = border.x, y = border.y},
         SpatialCollection
     )
 end
@@ -226,7 +265,11 @@ function SpatialCollection:compile()
 end
 
 function SpatialCollection:pos()
-    return self.border:pos()
+    return self.border:pos() - vec2(self.x, self.y)
+end
+
+function SpatialCollection:size()
+    return self.border:size()
 end
 
 function SpatialCollection:__tostring()

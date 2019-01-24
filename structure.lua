@@ -1,20 +1,20 @@
-function structure.create(creator)
+local structure = {}
+structure.__index = structure
+
+function structure.create(master)
     local this = {
         -- Relastions
-        creator = creator,
+        master = master,
     }
     return setmetatable(this, structure)
 end
 
-function structure:set_creator(c)
-    self.creator = c
-    self:clear()
-    return self
-end
-
-function structure:get(...)
+function structure:__call(...)
     if not self.frames then
-        self.frames = self.creator(...)
+        self.frames = self.master.build_structure(...)
+        if self.master.commiter then
+            self.commiter(self.frames, ...)
+        end
     end
 
     return self.frames
@@ -25,6 +25,6 @@ function structure:clear()
     return self
 end
 
-return function()
-    return structure.create()
+return function(...)
+    return structure.create(...)
 end

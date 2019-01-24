@@ -1,12 +1,16 @@
 math = require "math"
 
-json = require(... .. ".third/json")
+json = require(... .. ".third.json")
 
 require(... .. ".functional")
 List = require(... .. ".list")
 Dictionary = require(... ..  ".dictionary")
 Event = require(... .. ".event")
 Spatial = require(... .. ".spatial")
+
+echo = require(... .. ".echo")
+
+id_gen = require(... .. ".id_gen")
 
 list = List.create
 dict = Dictionary.create
@@ -16,14 +20,25 @@ spatial = Spatial.create
 Atlas = require(... .. ".atlas")
 vec2 = require(... .. ".vec2")
 Node = require(... .. ".node")
+NodeUI = require(... .. ".nodeui")
 Sprite = require(... .. ".sprite")
+Structure = require(... .. ".structure")
+Frame = require(... .. ".frame")
+DrawStack = require(... .. ".drawstack")
 
 moon = require (... .. ".third.moonshine")
 local knife_path = ... .. ".third.knife.knife"
 timer = require (knife_path .. ".timer")
 sti = require(... .. ".third.Simple-Tiled-Implementation.sti")
 ease = require(... .. ".third.easing")
+require(... .. ".ease")
+log = require(... .. ".third.log")
 
+lume = require(... .. ".third.lume")
+lurker = require(... .. ".third.lurker")
+
+suit = require (... .. ".third.SUIT")
+require (... .. '.ui')
 require (... .. ".third.patch")
 
 gfx = love.graphics
@@ -113,6 +128,33 @@ function string.split(inputstr, sep)
         i = i + 1
     end
     return t
+end
+
+atlas_cache = {}
+function get_atlas(path)
+    if not atlas_cache[path] then
+        atlas_cache[path] = Atlas.create(path)
+    end
+    return atlas_cache[path]
+end
+
+function clear_atlas(path)
+    atlas_cache[path] = nil
+end
+
+function get_icon(name, atlas)
+    atlas = get_atlas(atlas or "art/icons")
+    local q = atlas:get_animation(name):head()
+    return q, atlas
+end
+
+local font_cache = {}
+
+function font(size)
+    if not font_cache[size] then
+        font_cache[size] = gfx.newFont(size)
+    end
+    return font_cache[size]
 end
 
 gfx.setDefaultFilter("nearest", "nearest")

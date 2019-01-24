@@ -20,7 +20,8 @@ function Node.create(f, ...)
             pos = vec2(0, 0),
             angle = 0,
             scale = vec2(1, 1)
-        }
+        },
+        on_destroyed = event()
     }
     if type(f) == "table" then
         f.create = f.create or function() end

@@ -34,8 +34,7 @@ function Sprite:__draw(x, y)
     x = (x or 0) + math.sin(phase) * amp
     y = (y or 0)
     sx = self.mirror
-
-    self.atlas:draw(self.__draw_frame, self.origin, x, y, 0, sx, 1)
+    self.__draw_frame:draw(self.origin or "", x, y, 0, sx, 1)
 end
 
 function Sprite:on_frame_progress() end
@@ -53,8 +52,8 @@ function Sprite:__get_motion(frames, frame_index, origin, mirror, scale)
         return vec2(0, 0)
     end
 
-    local prev_pos = prev_frame.hitbox[origin]
-    local next_pos = next_frame.hitbox[origin]
+    local prev_pos = prev_frame.slices[origin]
+    local next_pos = next_frame.slices[origin]
 
     local function get_center(pos)
         if not pos then
@@ -75,7 +74,7 @@ function Sprite:play(dt, frame_key, init_frame)
     for i = init_frame, frames:size() do
         local f = frames[i]
         self.__draw_frame = f
-        self.time = self.time + f.time
+        self.time = self.time + f:get_dt()
 
         local hitboxes = self:get_hitboxes()
         self.hitboxes = hitboxes
@@ -125,9 +124,9 @@ function Sprite:get_hitboxes(x, y)
     local frame = self.__draw_frame
 
     local function get_center()
-        local origin = frame.hitbox[self.origin]
+        local origin = frame.slices[self.origin]
         if origin then
-            return origin.cx, origin.cy
+            return origin:center():unpack()
         else
             return 0, 0
         end
@@ -137,7 +136,7 @@ function Sprite:get_hitboxes(x, y)
 
     local ret = dict()
 
-    for key, box in pairs(frame.hitbox) do
+    for key, box in pairs(frame.slices) do
         ret[key] = spatial(box.x, box.y, box.w, box.h)
             :move(-cx, -cy)
             :scale(self.scale, self.scale)

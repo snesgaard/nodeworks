@@ -7,3 +7,6 @@
 [submodule "third/Simple-Tiled-Implementation"]
 	path = third/Simple-Tiled-Implementation
 	url = https://github.com/karai17/Simple-Tiled-Implementation
+[submodule "third/SUIT"]
+	path = third/SUIT
+	url = https://github.com/vrld/SUIT
