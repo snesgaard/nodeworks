@@ -27,6 +27,8 @@ function Sprite.create(this, atlas, animes)
 end
 
 function Sprite:__draw(x, y)
+    if not self.__draw_frame then return end
+    
     gfx.setColor(unpack(self.color or {1, 1, 1}))
     local amp = self.shake_amp
     local phase = self.shake_phase
