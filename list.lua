@@ -31,6 +31,10 @@ function list.range(start, stop)
     return ret
 end
 
+function list:__add(l2)
+    return self:concat(l2)
+end
+
 function list:head() return self[1] end
 
 function list:tail() return self[#self] end

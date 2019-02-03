@@ -35,3 +35,8 @@ function ease.jump(subease)
         return vec2(curve:evaluate(s))
     end
 end
+
+function ease.cubicbezier(x1, y1, x2, y2)
+  local curve = love.math.newBezierCurve(0, 0, x1, y1, x2, y2, 1, 1)
+  return function (t, b, c, d) return c * curve:evaluate(t/d) + b end
+end
