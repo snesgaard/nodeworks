@@ -25,6 +25,8 @@ Sprite = require(... .. ".sprite")
 Structure = require(... .. ".structure")
 Frame = require(... .. ".frame")
 DrawStack = require(... .. ".drawstack")
+Stack = require(... .. ".stack")
+particles = require(... .. ".particles")
 
 moon = require (... .. ".third.moonshine")
 local knife_path = ... .. ".third.knife.knife"

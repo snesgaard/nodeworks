@@ -23,7 +23,7 @@ function curry(f, ...)
     local args = {...}
     local n_args = #args
 
-    if n_args < 2 then return f end
+    if n_args < 1 then return f end
 
     return function(...)
         local a = {}
@@ -33,6 +33,6 @@ function curry(f, ...)
         for i, v in ipairs({...}) do
             a[#a + 1] = v
         end
-        return f(unpack(v))
+        return f(unpack(a))
     end
 end

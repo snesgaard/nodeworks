@@ -188,6 +188,14 @@ function Spatial:yalign(src, dst_side, src_side, margin)
     return dst:move(0, dy)
 end
 
+function Spatial:align(other, xalign, yalign)
+    local xself = string.split(xalign, "/")
+    local yself = string.split(yalign, "/")
+    return self
+        :xalign(other, xself:unpack())
+        :yalign(other, yself:unpack())
+end
+
 function Spatial:commit(obj)
     obj:set_spatial(self)
     return self

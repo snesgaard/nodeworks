@@ -2,7 +2,7 @@ local rng = love.math.random
 
 local Sprite = {}
 
-function Sprite.create(this, atlas, animes)
+function Sprite.create(this, atlas, animes, offset)
     this.time = 0
     this.atlas = atlas
     this.__states = {}
@@ -16,6 +16,7 @@ function Sprite.create(this, atlas, animes)
     this.shake_amp = 0
     this.shake_phase = 0
     this.__hitbox_cache = {}
+    this.__offset = offset or {}
 
     this.__transform.scale = vec2(2, 2)
 
@@ -28,12 +29,12 @@ end
 
 function Sprite:__draw(x, y)
     if not self.__draw_frame then return end
-    
+
     gfx.setColor(unpack(self.color or {1, 1, 1}))
     local amp = self.shake_amp
     local phase = self.shake_phase
 
-    x = (x or 0) + math.sin(phase) * amp
+    x = (x or 0) + (amp > 0 and (math.sin(phase) * amp) or 0)
     y = (y or 0)
     sx = self.mirror
     self.__draw_frame:draw(self.origin or "", x, y, 0, sx, 1)
@@ -155,6 +156,22 @@ function Sprite:get_hitboxes(x, y)
     return ret
 end
 
+function Sprite:offset(animation, name)
+    local key = self.__offset[animation]
+    if type(key) == "function" then
+        return key(self)
+    elseif not key then
+        return 0
+    end
+
+    name = name or "attack"
+    local frames = self.atlas:get_animation(key)
+    local f = frames:find(function(f) return f.slices[name] end)
+    local dst = f.slices[name] or spatial()
+    local src = f.slices.origin or spatial()
+    return math.ceil(dst:center().x - src:center().x) * self.__transform.scale.x
+end
+
 function Sprite:shake(strong)
     if self.shake_tween then
         self.shake_tween:remove()
@@ -165,7 +182,7 @@ function Sprite:shake(strong)
     self.shake_tween = timer.tween(
         0.4,
         {
-            [self.shake_data] = {amp = 0, phase = 0},
+            [self] = {shake_amp = 0, shake_phase = 0},
         }
     )
 end

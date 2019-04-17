@@ -89,7 +89,8 @@ function draw_stack:pop()
     return self
 end
 
-function draw_stack:with(frame, link, align, valign)
+function draw_stack:with(frame, link, other_link, align, valign)
+    other_link = other_link or link
     align = align or "left"
     valign = valign or "top"
 
@@ -102,7 +103,7 @@ function draw_stack:with(frame, link, align, valign)
     end
 
     local pre_link = get_link(self._last_frame, link)
-    local cur_link = get_link(frame, link)
+    local cur_link = get_link(frame, other_link)
 
     pre_link = pre_link:move(self._x, self._y)
     cur_link = cur_link:move(self._x, self._y)

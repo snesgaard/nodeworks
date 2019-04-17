@@ -288,6 +288,10 @@ function list:cycle(offset)
     return ret
 end
 
+function list:__add(...)
+    return self:concat(...)
+end
+
 function list:print()
     print(self)
     return self
