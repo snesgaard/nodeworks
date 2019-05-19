@@ -59,6 +59,46 @@ function Node:destroy()
     end
 end
 
+function Node:invoke(key, ...)
+    local f = self[key]
+    if f then f(...) end
+
+    for _, node in ipairs(self.__node_order) do
+        node:invoke(key, ...)
+    end
+
+    return self
+end
+
+function Node:__call(...)
+    return self:invoke(...)
+end
+
+function Node:search(...)
+    local keys = {...}
+    local function check_key(node)
+        for _, k in ipairs(keys) do
+            if parent.__tags[k] then return true end
+        end
+    end
+
+    local function recurse(found, parent)
+        if check_key(parent) then found[#found + 1] = parent end
+        for _, node in ipairs(self.__node_order) do
+            recurse(found, node)
+        end
+        return found
+    end
+
+    return recurse(list(), self)
+end
+
+function Node:tag(...)
+    self.__tags = {...}
+    for i, t in ipairs(self.__tags) do self.__tags[t] = i end
+    return self
+end
+
 function Node:set_order(order_func)
     local function temporal_order(a, b)
         return self.__children[a] < self.__children[b]
