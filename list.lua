@@ -131,12 +131,13 @@ function list:tap(f)
 end
 
 function list:reduce(f, seed)
-  local init = seed and 1 or 2
-  seed = seed or self[1]
-  for i = init, #self do
+    local f = f or function(a, b) return a + b end
+    local init = seed and 1 or 2
+    seed = seed or self[1]
+    for i = init, #self do
     seed = f(seed, self[i])
-  end
-  return seed
+    end
+    return seed
 end
 
 function list:find(val)

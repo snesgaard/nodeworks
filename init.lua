@@ -91,6 +91,9 @@ function gfx.read_shader(...)
 end
 
 function math.cycle(value, min, max)
+    if min >= max then
+        return value
+    end
     if value < min then
         return math.cycle(value + max - min + 1, min, max)
     elseif value > max then
@@ -146,8 +149,16 @@ end
 
 function get_icon(name, atlas)
     atlas = get_atlas(atlas or "art/icons")
-    local q = atlas:get_animation(name):head()
-    return q, atlas
+    local q = atlas:get_animation(name)
+    if q.head then
+        return q:head(), atlas
+    else
+        return q, atlas
+    end
+end
+
+function frame_offset(frame)
+    return (spatial(frame.quad:getViewport()):size() * 0.5):tolist()
 end
 
 local font_cache = {}

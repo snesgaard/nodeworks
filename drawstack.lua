@@ -123,14 +123,14 @@ function draw_stack:within(func, link, opt)
     opt = opt or {}
     if not self._last_frame then
         log.warn("No frame pushed")
-        return
+        return self
     end
 
     local link_spatial = self._last_frame.slices[link]
 
     if not link_spatial then
         log.warn("Link <%s> not found", link)
-        return
+        return self
     end
 
     link_spatial = link_spatial

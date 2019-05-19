@@ -114,4 +114,8 @@ function vec2.min(v1, v2)
     end
 end
 
+function vec2.tolist(v1)
+    return {v1.x, v1.y}
+end
+
 return create

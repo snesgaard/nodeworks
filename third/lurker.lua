@@ -16,8 +16,16 @@ local lurker = { _version = "1.0.1" }
 
 local dir = love.filesystem.enumerate or love.filesystem.getDirectoryItems
 local isdir = love.filesystem.isDirectory
+local function isdir(path)
+    local info = love.filesystem.getInfo(path)
+    return info.type == "directory"
+end
 local time = love.timer.getTime or os.time
-local lastmodified = love.filesystem.getLastModified
+--local lastmodified = love.filesystem.getLastModified
+local function lastmodified(path)
+    local info = love.filesystem.getInfo(path)
+    return info.modtime
+end
 
 local lovecallbacknames = {
   "update",

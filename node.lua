@@ -92,17 +92,47 @@ function Node:draw(x, y, r, sx, sy, ...)
     gfx.translate((x or 0) + t.pos.x, (y or 0) + t.pos.y)
     gfx.rotate((r or 0) + t.angle)
     gfx.scale((sx or 1) * t.scale.x, (sy or 1) * t.scale.y)
-    self:__draw(0, 0, ...)
 
-    self:__childdraw(0, 0)
+    self:__draworder(0, 0, ...)
 
     gfx.pop()
+end
+
+function Node:__draworder(x, y, ...)
+    self:__draw(0, 0, ...)
+    self:__childdraw(0, 0)
 end
 
 function Node:__childdraw(...)
     for _, node in ipairs(self.__node_order) do
         node:draw(0, 0)
     end
+end
+
+function Node:adopt(child)
+    local other = child.__parent
+    if other then
+        other.__children[child] = nil
+        other:__make_order()
+    end
+
+    child.__parent = self
+    self.__children[child] = love.timer.getTime()
+    self:__make_order()
+    return self
+end
+
+function Node:orphan(child)
+    if child then
+        self.__children[child] = nil
+        self:__make_order()
+    elseif self.__parent then
+        local p = self.__parent
+        p.__children[self] = nil
+        p:__make_order()
+        self.__parent = nil
+    end
+    return self
 end
 
 function Node:child(...)

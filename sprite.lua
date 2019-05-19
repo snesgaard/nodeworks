@@ -74,6 +74,8 @@ end
 function Sprite:play(dt, frame_key, init_frame)
     init_frame = init_frame or 1
     local frames = self.atlas:get_animation(frame_key)
+    -- HACK TO Cicumvent the single frame return without list
+    frames =  frames.size and frames or list(frames)
     for i = init_frame, frames:size() do
         local f = frames[i]
         self.__draw_frame = f
@@ -144,7 +146,8 @@ function Sprite:get_hitboxes(x, y)
             :move(-cx, -cy)
             :scale(self.scale, self.scale)
             :map(function(s)
-                if self.__mirror < 0 then
+                local m = self.mirror or 1
+                if m < 0 then
                     return s:hmirror(0, 0)
                 else
                     return s
@@ -251,6 +254,29 @@ function Sprite:set_mirror(val)
         local hitboxes = self:get_hitboxes()
         self.on_hitbox(hitboxes)
     end
+end
+
+local dummysprite = {}
+
+function dummysprite:play(...) coroutine.yield(...) end
+function dummysprite:loop(...) coroutine.yield(...) end
+
+function Sprite:height(animation)
+    animation = animation or "idle"
+    local s = self.__states[animation]
+    if not s then
+        log.warn("No animation named %s", animation)
+        return 0
+    end
+    local co = coroutine.create(s)
+    local state, dt, sprite = coroutine.resume(co, dummysprite, 0.016)
+    if not state then
+        log.error("Error occurred in playing sprite %s", tostring(dt))
+        return 0
+    end
+
+    local frames = self.atlas:get_animation(sprite)
+    return spatial(frames:head().quad:getViewport()).h
 end
 
 return Sprite

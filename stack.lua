@@ -109,4 +109,17 @@ function stack:swap(state, ...)
     end
 end
 
+function stack:invoke(name, ...)
+    local n = self._stack:tail()
+    local l = self._level_context:tail()
+
+    local f = n[name]
+
+    if f then
+        return f(self, self._context, l, ...)
+    else
+        log.warn("No invokation for <%s>", name)
+    end
+end
+
 return stack

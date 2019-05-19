@@ -132,6 +132,12 @@ function Spatial:center()
     return vec2(self.x + self.w * 0.5, self.y + self.h * 0.5)
 end
 
+function Spatial:hmirror(ox, oy)
+    local dx = self.x - ox
+    local x = ox - dx
+    return Spatial.create(x - self.w, self.y, self.w, self.h)
+end
+
 function Spatial:xalign(src, dst_side, src_side, margin)
     local default_map = "left"
     margin = margin or 0
