@@ -61,7 +61,7 @@ end
 
 function Node:invoke(key, ...)
     local f = self[key]
-    if f then f(...) end
+    if f then f(self, ...) end
 
     for _, node in ipairs(self.__node_order) do
         node:invoke(key, ...)

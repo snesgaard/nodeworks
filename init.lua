@@ -20,7 +20,7 @@ spatial = Spatial.create
 Atlas = require(... .. ".atlas")
 vec2 = require(... .. ".vec2")
 Node = require(... .. ".node")
-NodeUI = require(... .. ".nodeui")
+--NodeUI = require(... .. ".nodeui")
 Sprite = require(... .. ".sprite")
 Structure = require(... .. ".structure")
 Frame = require(... .. ".frame")
@@ -169,5 +169,21 @@ function font(size)
     end
     return font_cache[size]
 end
+
+function identity(...) return ... end
+
+function compose(...)
+    local funcs = {...}
+    local prev = identity
+    local next
+    for i = #funcs, 1, -1 do
+        local f = funcs[i]
+        prev = function(...)
+            return prev(f(...))
+        end
+    end
+    return prev
+end
+
 
 gfx.setDefaultFilter("nearest", "nearest")
