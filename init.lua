@@ -20,7 +20,6 @@ spatial = Spatial.create
 Atlas = require(... .. ".atlas")
 vec2 = require(... .. ".vec2")
 Node = require(... .. ".node")
-NodeUI = require(... .. ".nodeui")
 Sprite = require(... .. ".sprite")
 Structure = require(... .. ".structure")
 Frame = require(... .. ".frame")
