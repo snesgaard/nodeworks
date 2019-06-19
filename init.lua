@@ -20,7 +20,6 @@ spatial = Spatial.create
 Atlas = require(... .. ".atlas")
 vec2 = require(... .. ".vec2")
 Node = require(... .. ".node")
---NodeUI = require(... .. ".nodeui")
 Sprite = require(... .. ".sprite")
 Structure = require(... .. ".structure")
 Frame = require(... .. ".frame")
@@ -30,11 +29,12 @@ particles = require(... .. ".particles")
 
 moon = require (... .. ".third.moonshine")
 local knife_path = ... .. ".third.knife.knife"
-timer = require (knife_path .. ".timer")
+--timer = require (knife_path .. ".timer")
 sti = require(... .. ".third.Simple-Tiled-Implementation.sti")
 ease = require(... .. ".third.easing")
 require(... .. ".ease")
 log = require(... .. ".third.log")
+tween = require(... .. ".tween")
 
 lume = require(... .. ".third.lume")
 lurker = require(... .. ".third.lurker")
