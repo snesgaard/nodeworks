@@ -68,7 +68,8 @@ function Node:set_order(order_func)
 end
 
 function Node:update(dt)
-    timer.update(dt, self.__group.tween)
+    --timer.update(dt, self.__group.tween)
+    tween.update(dt, self.__group.tween)
     local f, b = self.__threads2update.front, self.__threads2update.back
     self.__threads2update.front = b
     self.__threads2update.back = f
@@ -224,7 +225,8 @@ function Node:wait(...)
                 l:remove()
             -- If it is a tween, simply remove the finish field
             else
-                e.finishField = nil
+                --e.finishField = nil
+                e:after()
                 -- If this is called by threadjion, we want to stop the tween
                 if kill_tweens then
                     e:remove()
@@ -258,21 +260,21 @@ function Node:wait(...)
             local function timeout()
                 continuation("timeout")
             end
-            listeners[e] = timer.after(e, timeout)
+            listeners[e] = tween(e)
+                :after(timeout)
                 :remove()
                 :group(self.__group.tween)
         -- Determine whether is a an event
         elseif e.listen then
             listeners[e] = e:listen(callback)
         -- or a tween
-        elseif e.finish then
-            e:remove():group(self.__group.tween)
-            listeners[e] = e:finish(callback)
+        elseif e.after then
+            e:group(self.__group.tween)
+            listeners[e] = e:after(callback)
         end
     end
 
     return coroutine.yield()
-
 end
 
 return Node

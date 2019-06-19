@@ -103,21 +103,11 @@ function Sprite:play(dt, frame_key, init_frame)
 end
 
 function Sprite:hide()
-    timer.tween(
-        0.4,
-        {
-            [self.color] = {[4] = 0}
-        }
-    )
+    tween(0.4, self.color, {[4] = 0})
 end
 
 function Sprite:show()
-    timer.tween(
-        0.4,
-        {
-            [self.color] = {[4] = 1}
-        }
-    )
+    tween(0.4, self.color, {[4] = 1})
 end
 
 function Sprite:get_hitboxes(x, y)
@@ -140,11 +130,10 @@ function Sprite:get_hitboxes(x, y)
     local cx, cy = get_center()
 
     local ret = dict()
-
     for key, box in pairs(frame.slices) do
         ret[key] = spatial(box.x, box.y, box.w, box.h)
             :move(-cx, -cy)
-            :scale(self.scale, self.scale)
+            :scale(self.__transform.scale.x, self.__transform.scale.y)
             :map(function(s)
                 local m = self.mirror or 1
                 if m < 0 then
@@ -182,12 +171,7 @@ function Sprite:shake(strong)
     local s = rng() > 0.5 and 1 or -1
     self.shake_amp = strong and 15 or 5
     self.shake_phase = s * math.pi * 8
-    self.shake_tween = timer.tween(
-        0.4,
-        {
-            [self] = {shake_amp = 0, shake_phase = 0},
-        }
-    )
+    self.shake_tween = tween(0.4, self, {shake_amp = 0, shake_phase = 0})
 end
 
 function Sprite:loop(dt, frame_key, init_frame)
@@ -277,6 +261,25 @@ function Sprite:height(animation)
 
     local frames = self.atlas:get_animation(sprite)
     return spatial(frames:head().quad:getViewport()).h
+end
+
+function Sprite:size(animation)
+    animation = animation or "idle"
+    local s = self.__states[animation]
+    if not s then
+        log.warn("No animation named %s", animation)
+        return 0
+    end
+    local co = coroutine.create(s)
+    local state, dt, sprite = coroutine.resume(co, dummysprite, 0.016)
+    if not state then
+        log.error("Error occurred in playing sprite %s", tostring(dt))
+        return 0
+    end
+
+    local frames = self.atlas:get_animation(sprite)
+    local s = spatial(frames:head().quad:getViewport())
+    return s.w, s.h
 end
 
 return Sprite

@@ -37,7 +37,6 @@ function server:spin()
         end
     end
 
-    print("here we go", #self._queue)
     while #self._queue > 0 do
         local queue = self._queue
         self._queue = {}
@@ -45,7 +44,6 @@ function server:spin()
             invoke_msg(unpack(msg))
         end
     end
-    print("again")
 end
 
 function server:wait(path, co)

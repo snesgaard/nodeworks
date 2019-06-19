@@ -37,9 +37,17 @@ local function apply_api(particle, key, value)
     end
 
     if type(value) == "table" then
-        f(particle, unpack(value))
+        local status, msg = pcall(f, particle, unpack(value))
+        if not status then
+            msg = string.format("Error while calling <%s>: %s", key, msg)
+            error(msg)
+        end
     else
-        f(particle, value)
+        local status, msg = pcall(f, particle, value)
+        if not status then
+            msg = string.format("Error while calling <%s>: %s", key, msg)
+            error(msg)
+        end
     end
 end
 
