@@ -160,6 +160,8 @@ function Node:adopt(child)
     child.__parent = self
     self.__children[child] = love.timer.getTime()
     self:__make_order()
+
+    if child.on_adopted then child:on_adopted(self) end
     return self
 end
 
@@ -167,12 +169,17 @@ function Node:orphan(child)
     if child then
         self.__children[child] = nil
         self:__make_order()
+        if child.on_orphaned then child:on_orphaned(self) end
     elseif self.__parent then
         local p = self.__parent
         p.__children[self] = nil
         p:__make_order()
         self.__parent = nil
+        if self.on_orphaned then self:on_orphaned(p) end
     end
+
+
+
     return self
 end
 

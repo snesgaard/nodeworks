@@ -1,47 +1,52 @@
+BASE = ...
+
+BASE = BASE == "init" and "" or BASE
+
 math = require "math"
 
-json = require(... .. ".third.json")
+json = require(BASE .. ".third.json")
 
-require(... .. ".functional")
-List = require(... .. ".list")
-Dictionary = require(... ..  ".dictionary")
-Event = require(... .. ".event")
-Spatial = require(... .. ".spatial")
+require(BASE .. ".functional")
+List = require(BASE .. ".list")
+Dictionary = require(BASE ..  ".dictionary")
+Event = require(BASE .. ".event")
+EventServer = require(BASE .. ".event_server")
+Spatial = require(BASE .. ".spatial")
 
-echo = require(... .. ".echo")
+echo = require(BASE .. ".echo")
 
-id_gen = require(... .. ".id_gen")
+id_gen = require(BASE .. ".id_gen")
 
 list = List.create
 dict = Dictionary.create
 event = Event.create
 spatial = Spatial.create
+event_server = EventServer
 
-Atlas = require(... .. ".atlas")
-vec2 = require(... .. ".vec2")
-Node = require(... .. ".node")
-Sprite = require(... .. ".sprite")
-Structure = require(... .. ".structure")
-Frame = require(... .. ".frame")
-DrawStack = require(... .. ".drawstack")
-Stack = require(... .. ".stack")
-particles = require(... .. ".particles")
+Atlas = require(BASE .. ".atlas")
+vec2 = require(BASE .. ".vec2")
+Node = require(BASE .. ".node")
+Sprite = require(BASE .. ".sprite")
+Structure = require(BASE .. ".structure")
+Frame = require(BASE .. ".frame")
+DrawStack = require(BASE .. ".drawstack")
+Stack = require(BASE .. ".stack")
+particles = require(BASE .. ".particles")
 
-moon = require (... .. ".third.moonshine")
-local knife_path = ... .. ".third.knife.knife"
+moon = require (BASE .. ".third.moonshine")
+local knife_path = BASE .. ".third.knife.knife"
 --timer = require (knife_path .. ".timer")
-sti = require(... .. ".third.Simple-Tiled-Implementation.sti")
-ease = require(... .. ".third.easing")
-require(... .. ".ease")
-log = require(... .. ".third.log")
-tween = require(... .. ".tween")
+sti = require(BASE .. ".third.Simple-Tiled-Implementation.sti")
+ease = require(BASE .. ".third.easing")
+require(BASE .. ".ease")
+log = require(BASE .. ".third.log")
+tween = require(BASE .. ".tween")
 
-lume = require(... .. ".third.lume")
-lurker = require(... .. ".third.lurker")
+lume = require(BASE .. ".third.lume")
+lurker = require(BASE .. ".third.lurker")
 
-suit = require (... .. ".third.SUIT")
-require (... .. '.ui')
-require (... .. ".third.patch")
+suit = require (BASE .. ".third.SUIT")
+require (BASE .. ".third.patch")
 
 gfx = love.graphics
 rng = love.math.random
@@ -133,6 +138,10 @@ function string.split(inputstr, sep)
         i = i + 1
     end
     return t
+end
+
+function string.pathsplit(path)
+    return string.split(path:gsub("/../", "/parent/"))
 end
 
 atlas_cache = {}
