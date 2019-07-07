@@ -20,8 +20,7 @@ function Node.create(f, ...)
             pos = vec2(0, 0),
             angle = 0,
             scale = vec2(1, 1)
-        },
-        on_destroyed = event()
+        }
     }
     if type(f) == "table" then
         f.create = f.create or function() end
@@ -47,10 +46,16 @@ function Node.create(f, ...)
 end
 
 function Node:destroy()
-    for co, cleanup in pairs(self.__cleaners) do
-        cleanup(true)
+    for co, _ in pairs(self.__group.thread) do
+        event:clear(co)
     end
-    if self.on_destroyed then self.on_destroyed(self) end
+
+    if self.on_destroyed then
+        self.on_destroyed(self)
+    end
+
+    event:invoke(self, "on_destroyed", self)
+
     self.alive = false
     if self.__parent then
         self.__parent.__children[self] = nil
@@ -150,7 +155,7 @@ function Node:__childdraw(...)
     end
 end
 
-function Node:adopt(child)
+function Node:adopt(child, name)
     local other = child.__parent
     if other then
         other.__children[child] = nil
@@ -161,7 +166,11 @@ function Node:adopt(child)
     self.__children[child] = love.timer.getTime()
     self:__make_order()
 
-    if child.on_adopted then child:on_adopted(self) end
+    if name then
+        self[name] = child
+    end
+
+    if child.on_adopted then child:on_adopted(self, name) end
     return self
 end
 
@@ -177,7 +186,6 @@ function Node:orphan(child)
         self.__parent = nil
         if self.on_orphaned then self:on_orphaned(p) end
     end
-
 
 
     return self
@@ -218,8 +226,8 @@ function Node:join(args)
     co = args[1]
     local kill_tweens = args.kill_tweens or true
     if not co then
-        for co, cleanup in pairs(self.__cleaners) do
-            cleanup(kill_tweens)
+        for co, _ in pairs(self.__group.thread) do
+            event:clear(co)
         end
         self.__group.thread = {}
         self.__cleaners = {}
@@ -252,76 +260,6 @@ function Node:wait_update(...)
     local co = coroutine.running()
     self.__threads2update.front[co] = true
     return coroutine.yield(...)
-end
-
-function Node:wait(...)
-    local events = {...}
-
-    if #events == 0 then
-        return
-    end
-
-    local co = coroutine.running()
-    local listeners = {}
-
-    -- Declare cleanup function, unsubs listeners and remove the cleanup
-    local function cleanup(kill_tweens)
-        self.__cleaners[co] = nil
-        for e, l in pairs(listeners) do
-            if istype(Event, e) or type(e) == "number" then
-                l:remove()
-            -- If it is a tween, simply remove the finish field
-            else
-                --e.finishField = nil
-                e:after()
-                -- If this is called by threadjion, we want to stop the tween
-                if kill_tweens then
-                    e:remove()
-                end
-            end
-        end
-    end
-    -- Cache cleanup in case we need to destory the node later
-    self.__cleaners[co] = cleanup
-    -- Declare continuation called
-    local function continuation(e, ...)
-        local args = {event = e, ...}
-        cleanup()
-        local status, msg
-        if #events > 1 then
-            status, msg = coroutine.resume(co, args)
-        else
-            status, msg = coroutine.resume(co, ...)
-        end
-        if not status then
-            log.error(msg)
-        end
-    end
-
-    for _, e in ipairs(events) do
-        local function callback(...)
-            continuation(e, ...)
-        end
-        -- If it is a number we assume a temporal wait in seconds
-        if type(e) == "number" then
-            local function timeout()
-                continuation("timeout")
-            end
-            listeners[e] = tween(e)
-                :after(timeout)
-                :remove()
-                :group(self.__group.tween)
-        -- Determine whether is a an event
-        elseif e.listen then
-            listeners[e] = e:listen(callback)
-        -- or a tween
-        elseif e.after then
-            e:group(self.__group.tween)
-            listeners[e] = e:after(callback)
-        end
-    end
-
-    return coroutine.yield()
 end
 
 return Node

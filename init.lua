@@ -11,6 +11,7 @@ List = require(BASE .. ".list")
 Dictionary = require(BASE ..  ".dictionary")
 Event = require(BASE .. ".event")
 EventServer = require(BASE .. ".event_server")
+AnimationPlayer = require(BASE .. ".animation_player")
 Spatial = require(BASE .. ".spatial")
 
 echo = require(BASE .. ".echo")
@@ -19,9 +20,12 @@ id_gen = require(BASE .. ".id_gen")
 
 list = List.create
 dict = Dictionary.create
-event = Event.create
+--event = Event.create
 spatial = Spatial.create
 event_server = EventServer
+animation_player = AnimationPlayer
+
+event = event_server()
 
 Atlas = require(BASE .. ".atlas")
 vec2 = require(BASE .. ".vec2")
@@ -141,7 +145,9 @@ function string.split(inputstr, sep)
 end
 
 function string.pathsplit(path)
-    return string.split(path:gsub("/../", "/parent/"))
+    return string.split(
+        path:gsub("/../", "/__parent/"):gsub("../", "__parent/"), '/'
+    )
 end
 
 atlas_cache = {}

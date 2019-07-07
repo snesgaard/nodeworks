@@ -7,20 +7,26 @@ end
 local track = {}
 track.__index = track
 
-function track.create(values, times, agg)
+function track.create(values, times, opt)
+    opt = opt or {}
     local this = {
         __values = values,
-        __times = times,
-        __agg = agg,
+        __times = list(unpack(times)),
+        __agg = opt.agg,
+        __ease = opt.ease,
         __size = math.min(#values, #times),
         __time = 0
     }
     return setmetatable(this, track)
 end
 
-function track:set_ease(ease)
-    self.__ease = ease
-    return self
+function track:ease(ease)
+    if ease then
+        self.__ease = ease
+        return self
+    else
+        return self.__ease
+    end
 end
 
 function track:set_time(time)
@@ -37,76 +43,45 @@ function track:get_frame(frame)
     return self.__values[frame], self.__times[frame]
 end
 
+function track:search_frame(time)
+    for i = 0, #self.__times do
+        local t1 = self.__times[i]
+        local t2 = self.__times[i + 1]
+        if (not t2 or time < t2) and (not t1 or t1 <= time) then
+            return math.max(i, 1)
+        end
+    end
+
+    return self.__size
+end
+
 function track:get_value(time)
     if self.__size <= 0 then return end
     time = time or self.__time
 
-    local frame = self.__times:argfind(search_time(time)) or self.__size
+    local frame = self:search_frame(time)
 
-    if frame == 1 or frame == self.__size or not self.__ease then
+    if not self.__ease then
         local v1 = self:get_frame(frame)
         return v1
-    elseif frame and self.__ease then
+    else
         local v1, t1 = self:get_frame(frame)
         local v2, t2 = self:get_frame(frame + 1)
+        if not v1 then
+            return v2
+        elseif not v2 then
+            return v1
+        end
         local d = t2 - t1
         local c = v2 - v1
+        local time = math.clamp(time, t1, t2)
         local t = time - t1
-        return self.__ease(t, f1.value, c, d)
+        return self.__ease(t, v1, c, d)
     end
 end
 
 function track:update(dt)
     self.__time = self.__time + dt
-end
-
-local calltrack = {}
-calltrack.__index = calltrack
-
-function calltrack.create(calls, args, times)
-    local this = {
-        __calls = calls,
-        __times = times
-        __args = args,
-        __size = math.min(#calls, #args, #times)
-        __time = 0,
-    }
-    return setmetatable(this, calltrack)
-end
-
-function callback:get_frame(frame)
-    return self.__calls[frame], self.__args[frame] or {}
-end
-
-function calltrack:invoke_call(t1, t2)
-    t1 = t1 or self.__prev_time
-    t2 = t2 or self.__time
-    local f1 = self.__times:argfind(search_time(t1)) or self.__size
-    local f2 = self.__times:argfind(search_time(t2)) or self.__size
-
-    local d = f1 <= f2 and 1 or -1
-
-    for i = f1 + 1, f2, d do
-        local c, a = self:get_frame(i)
-        c(unpack(a))
-    end
-end
-
-function calltrack:update(dt)
-    self.__prev_time = self.__time
-    self.__time = self.__time + dt
-end
-
-function calltrack:set_time(t1, t2)
-    if t1 and not t2 then
-        self.__prev_time = self.__time
-        self.__time = t1
-        self:invoke_call()
-    elseif t1 and t2 then
-        self.__prev_time = t1
-        self.__time = t2
-        self:invoke_call()
-    end
 end
 
 local animation = {}
@@ -115,6 +90,7 @@ animation.__index = animation
 function animation.create()
     local self = {}
     self.__tracks = {}
+    self.__paths = {}
     self.__nodes = {}
     self.__keys = {}
     self.__prev_value = {}
@@ -129,42 +105,54 @@ function animation:set_loop(loop)
     return self
 end
 
-function animation:set_duration(d)
-    self.__duration = 0
-    return self
+function animation:duration(d)
+    if d then
+        self.__duration = d
+        return self
+    else
+        return self.__duration
+    end
 end
 
 function animation:reset()
     self.__time = 0
 end
 
-function animation:track(node, key, ...)
+function animation:track(path, ...)
     self.__tracks[#self.__tracks + 1] = track.create(...)
-    self.__nodes[#self.__nodes + 1] = node
-    self.__keys[#self.__keys + 1] = key
-    return track
+    self.__paths[#self.__paths + 1] = string.pathsplit(path)
+    return self
 end
 
-function animation:update(dt)
-    self.__time = self.__time + dt
+function animation:bind(master)
+    local function bind_path(path)
+        local node = master
+        for i = 1, #path - 1 do
+            node = node[path[i]]
+            if not node then
+                log.warn("path undefined %s", tostring(path))
+                return
+            end
+        end
+        return node, path[#path]
+    end
 
-    if self.__duration < self.__time and self.__loop then
-        return self:update(-self.__duration)
+    for i, path in ipairs(self.__paths) do
+        self.__nodes[i], self.__keys[i] = bind_path(path)
     end
 end
 
-function animation:set_time(time)
-    return animation:update(time - self.__time)
-end
+function animation:invoke(time)
+    if self.__duration < time then return end
 
-function animation:invoke()
-    if self.__duration < self.__time then return end
-
-    for i, track in ipairs(self.__tracks) do
+    local function invoke_track(i, track)
         local n = self.__nodes[i]
         local k = self.__keys[i]
+        if not n or not k then
+            return
+        end
         local p = self.__prev_value[i]
-        local v = track:get_value(self.__time)
+        local v = track:get_value(time)
         local f = n[k]
         if type(f) == "function" then
             if p ~= v then
@@ -179,6 +167,10 @@ function animation:invoke()
             end
         end
     end
+
+    for i, track in ipairs(self.__tracks) do
+        invoke_track(i, track)
+    end
 end
 
 local player = {}
@@ -189,6 +181,11 @@ function player:create()
     self.__playing = nil
     self.__speed = 1
     self.__pause = 1
+    self.__time = 0
+end
+
+function player:on_adopted()
+    self:bind()
 end
 
 function player:animation(name, anime)
@@ -206,6 +203,8 @@ function player:play(name)
         end
         a:reset()
         self.__playing = a
+        self.__playing_name = name
+        self.__time = 0
     else
         self.__pause = 1
     end
@@ -220,14 +219,41 @@ function player:speed(s)
     end
 end
 
+function player:set_time(time)
+    return player:update(time - self.__time)
+end
+
 function player:pause()
     self.__pause = 0
     return self
 end
 
-function player:__update(dt)
-    if not self.__playing then return end
-    self.__playing:update(dt * self.__speed * self.__pause)
+function player:bind()
+    if self.__parent then
+        for key, anime in pairs(self.__animations) do
+            anime:bind(self)
+        end
+    end
 end
 
-return animation
+function player:__update(dt)
+    if not self.__playing then return end
+
+    dt = dt * self.__speed * self.__pause
+
+    self.__time = self.__time + dt
+
+    if self.__playing.__duration < self.__time and self.__playing.__loop then
+        event(self, "loop", self.__playing_name)
+        return self:update(-self.__duration)
+    elseif self.__playing.__duration < self.__time then
+        self.__playing:invoke(self.__playing.__duration)
+        event:invoke(self, "done", self.__playing_name)
+        self.__playing = nil
+        return
+    end
+
+    self.__playing:invoke(self.__time)
+end
+
+return player

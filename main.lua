@@ -23,7 +23,24 @@ function coroutine.resume(...)
     return unpack(states)
 end
 
+updater = {}
+
+drawer = {}
+
 function love.load()
     require "test.event_server"
-    love.event.quit()
+    require "test.animation_player"
+    --love.event.quit()
+end
+
+function love.update(dt)
+    for _, f in pairs(updater) do
+        f(dt)
+    end
+end
+
+function love.draw()
+    for _, f in pairs(drawer) do
+        f()
+    end
 end

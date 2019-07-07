@@ -147,6 +147,14 @@ function server:wait(...)
     return coroutine.yield()
 end
 
+function server:__call(a, ...)
+    if a == nil then
+        log.warn("Nill invocation, maybe old code")
+        return
+    end
+    return self:invoke(a, ...)
+end
+
 function server:invoke(...)
     self._queue[#self._queue + 1] = {...}
 end
