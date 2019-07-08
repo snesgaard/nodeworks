@@ -1,3 +1,18 @@
+function attribute(key)
+    return function(self, val)
+        if val then
+            self[key] = val
+            return self
+        else
+            return self[key]
+        end
+    end
+end
+
+function unpacked(f)
+    return function(table) f(unpack(table)) end
+end
+
 BASE = ...
 
 BASE = BASE == "init" and "" or BASE
@@ -24,6 +39,7 @@ dict = Dictionary.create
 spatial = Spatial.create
 event_server = EventServer
 animation_player = AnimationPlayer
+color = require(BASE .. ".color")
 
 event = event_server()
 
@@ -54,7 +70,6 @@ require (BASE .. ".third.patch")
 
 gfx = love.graphics
 rng = love.math.random
-
 
 function gfx.prerender(w, h, f, ...)
     local args = {...}
