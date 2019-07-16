@@ -17,7 +17,7 @@ function track.create(times, values, opt)
 end
 
 function track:__init_state()
-    return {time=-math.huge, frame=0}
+    return {time=-math.huge, frame=0, prev_value=nil}
 end
 
 function track:update(time, state, node, key)
@@ -65,7 +65,11 @@ function track:__update_as_value(time, state, node, key)
         if type(f) == "function" then
             f(node, value)
         else
-            node[key] = value
+            if self.__agg then
+                node[key] = self.__agg(node[key], value, state.prev_value)
+            else
+                node[key] = value
+            end
         end
     end
 
@@ -76,9 +80,13 @@ function track:__update_as_value(time, state, node, key)
             local b = time - t1
             local d = t2 - t1
             local c = v2 - v1
-            call_value(self.__ease(b, v1, c, d))
+            local v = self.__ease(b, v1, c, d)
+            call_value(v)
+            state.prev_value = v
         else
-            call_value(self:get_value(f))
+            local v = self:get_value(f)
+            call_value(v)
+            state.prev_value = v
         end
     end
 
@@ -142,6 +150,12 @@ function animation:read(path)
     local i = self.__paths:argfind(path)
     if i then
         return self.__tracks[i]
+    end
+end
+
+function animation.reset_loop(track_states)
+    for _, state in pairs(track_states) do
+        state.prev_value = nil
     end
 end
 
@@ -285,6 +299,7 @@ function player:__update(dt)
                 event(self, "finish")
             else
                 event(self, "loop")
+                animation.reset_loop(self.__animation_state)
                 return self:__update(dt - self.__current_animation:duration())
             end
         end

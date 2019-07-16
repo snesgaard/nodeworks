@@ -12,14 +12,20 @@ local value_f = {{"/animation/ready", 1}}
 player = Node.create(animation_player)
 local anime = player:animation("test")
 
+function add(c, a, b)
+    return c + a - (b or 0)
+end
+
 anime
-    :track("../pos", {0, 2}, {vec2(0, 0), vec2(200, 200)}, {ease=ease.linear})
+    :track(
+        "../pos", {0, 2}, {vec2(0, 0), vec2(200, 200)},
+        {ease=ease.linear, agg=add}
+    )
     :track("../color", time, value, {ease=ease.linear})
     :track(unpacked(event), time_f, value_f, {call=true})
     :duration(2.0)
-    :loop(true)
 
-player:play("test")
+player:play("test", true)
 
 rect:adopt(player)
 
