@@ -164,4 +164,38 @@ function Atlas:draw(frame, origin, x, y, r, sx, sy)
     )
 end
 
+
+local function anime2animation(name, frames, player)
+    if not frames then return end
+
+    local time_deltas = frames:map(function(f) return f.dt end)
+    local times = time_deltas:scan(function(a, b)
+        return a + b
+    end, 0)
+    local duration = times[#times]
+    times[#times] = nil
+    local images = frames:map(function(f) return f.image end)
+    local quads = frames:map(function(f) return f.quad end)
+    local offsets = frames:map(function(f) return f.offset end)
+    local center = frames
+        :map(function(f) return f.slices.origin:center() end)
+
+    player:animation(name)
+        :track("../offset", times, offsets)
+        :track("../image", times, images)
+        :track("../quad", times, quads)
+        :track("../center", times, center)
+        :duration(duration)
+end
+
+function Atlas:animation_player(animations, player)
+    player = player or Node.create(animation_player)
+
+    for name, anime_key in pairs(animations) do
+        anime2animation(name, self:get_animation(anime_key), player)
+    end
+
+    return player
+end
+
 return Atlas

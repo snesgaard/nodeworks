@@ -115,12 +115,11 @@ end
 function list:scan(f, seed)
     local ret = list.create()
 
-    --ret[1] = seed
     ret[1] = seed
     for i = 1, #self do
       ret[i + 1] = f(ret[i], self[i])
     end
-    ret[1] = nil
+    --ret[1] = nil
 
     return ret
 end

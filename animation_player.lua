@@ -123,14 +123,12 @@ function animation.create()
         __paths = {},
         __nodes = {},
         __keys = {},
-        __duration = 0,
-        __loop = false
+        __duration = 0
     }
     return setmetatable(this, animation)
 end
 
 animation.duration = attribute("__duration")
-animation.loop = attribute("__loop")
 
 function animation:track(path, ...)
     local track = track.create(...)
@@ -140,6 +138,13 @@ function animation:track(path, ...)
     return self
 end
 
+function animation:read(path)
+    local i = self.__paths:argfind(path)
+    if i then
+        return self.__tracks[i]
+    end
+end
+
 local FINISH = 1
 local LOOP = 2
 
@@ -147,22 +152,18 @@ function animation:update(time, track_states, exit_code)
     track_states = track_states or {}
 
     if time > self:duration() then
-        if self:loop() then
-            return self:update(time - self:duration(), track_states)
-        else
-            -- If finished do the final updates
-            for index, track in pairs(self.__tracks) do
-                local path = self.__paths[index]
-                local n, k = self.__nodes[index], self.__keys[index]
-                if n then
-                    track_states[index] = track:update(
-                        self:duration(), track_states[index], n, k
-                    )
-                end
+        -- If finished do the final updates
+        for index, track in pairs(self.__tracks) do
+            local path = self.__paths[index]
+            local n, k = self.__nodes[index], self.__keys[index]
+            if n then
+                track_states[index] = track:update(
+                    self:duration(), track_states[index], n, k
+                )
             end
-
-            return track_states, FINISH
         end
+
+        return track_states, FINISH
     end
 
     for index, track in pairs(self.__tracks) do
@@ -175,7 +176,7 @@ function animation:update(time, track_states, exit_code)
         end
     end
 
-    return track_states, LOOP
+    return track_states
 end
 
 function animation:link(master)
@@ -213,6 +214,12 @@ function player:create()
     self.__time = 0
 end
 
+function player:clone()
+    local other = Node.create(player)
+    other.__animations = self.__animations
+    return other
+end
+
 player.speed = attribute("__speed")
 
 function player:animation(name)
@@ -227,7 +234,7 @@ function player:clear(name)
     return self
 end
 
-function player:play(name)
+function player:play(name, loop)
     if not name then
         self.__play = true
         return
@@ -240,6 +247,7 @@ function player:play(name)
     end
     self.__current_animation = anime
     self.__time = 0
+    self.__loop = loop
 end
 
 function player:pause()
@@ -271,11 +279,14 @@ function player:__update(dt)
             self.__time, self.__animation_state
         )
 
-        if code == LOOP then
-            event(self, "loop")
-        elseif code == FINISH then
-            self.__play = false
-            event(self, "finish")
+        if code == FINISH then
+            if not self.__loop then
+                self.__play = false
+                event(self, "finish")
+            else
+                event(self, "loop")
+                return self:__update(dt - self.__current_animation:duration())
+            end
         end
     end
 end
