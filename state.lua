@@ -26,59 +26,11 @@ end
 function state.create(root)
     local this = {}
 
-    this.root = root or dict{
-        actor = dict{
-            health = dict{},
-            max_health = dict{},
-            stamina = dict{},
-            max_stamina = dict{},
-            agility = dict{},
-            type = dict{},
-            charge = dict{},
-            shield = dict{}
-        },
-        position = dict{
-            -- Convention : abs(1-3) is frontline. abs(3-) is reserve
-            -- Negative numbers are foes, positve are players
-        },
-        echo = dict{
-            on_attack = dict{},
-            on_damage = dict{},
-            on_heal = dict{},
-        },
-        event = dict{
-
-        },
-        ailment = dict{
-            poison = dict{}, burn=dict{}
-        },
-        card = dict{
-            master = dict{},
-            type = dict{},
-            ability = dict{},
-        },
-        deck = dict{
-            draw = dict(),
-            hand = dict(),
-            discard = dict(),
-        }
-    }
-
     if not root then
-        for _, d in pairs(this.root.echo) do
-            d.order = list()
-            d.func = dict()
-        end
-        for _, d in pairs(this.root.event) do
-            d.order = list()
-            d.func = dict()
-        end
-        for _, d in pairs(this.root.ailment) do
-            d.resistance = dict()
-            d.damage = dict()
-            d.duration = dict()
-        end
+        local init = self._init or function() return {} end
+        root = init()
     end
+
     return setmetatable(this, state)
 end
 
@@ -92,6 +44,61 @@ function state:map(path, m, ...)
     local v = self:read(path)
     if not v then return end
     return self:write(path, m(v, ...))
+end
+
+function state.epoch()
+    return dict{id = id, state = state, info = info}
+end
+
+function state.history(...)
+    return list(state.make_epoch(...))
+end
+
+function state:transform(...)
+    local function get_opts(tag, f, args, ...)
+        if type(tag) == "function" then
+            return nil, tag, f
+        else
+            return tag, f, args
+        end
+    end
+
+    local function get_recur(tag, f, args, ...)
+        if type(tag) == "function" then
+            return args, ...
+        else
+            return ...
+        end
+    end
+
+    local function inner_action(epic, state, ...)
+        local tag, f, args = get_opts(...)
+
+        if not f then
+            return epic
+        end
+
+        local history = f(state, args)
+        epic[#epic + 1] = history
+
+        if tag and type(tag) ~= "number" then
+            if not epic[tag] then
+                epic[tag] = history
+            else
+                log.warn("Tag <%s> was already taken", tostring(tag))
+            end
+        end
+
+        return inner_action(
+            epic, history:tail().state, get_recur(...)
+        )
+    end
+
+    local epic = inner_action(dict(), state, ...)
+    local history = epic[#epic]
+
+    return history:tail().state, epic
+
 end
 
 function state:write(path, value)

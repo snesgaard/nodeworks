@@ -39,6 +39,7 @@ dict = Dictionary.create
 spatial = Spatial.create
 event_server = EventServer
 animation_player = AnimationPlayer
+state = require(BASE .. ".state")
 color = require(BASE .. ".color")
 
 event = event_server()
