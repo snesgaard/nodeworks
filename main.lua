@@ -27,11 +27,17 @@ updater = {}
 
 drawer = {}
 
+loader = {}
+
 function love.load()
-    require "test.event_server"
-    require "test.node"
-    require "test.animation_player"
+    require "test.graph"
+    --require "test.event_server"
+    --require "test.node"
+    --require "test.animation_player"
     --love.event.quit()
+    for _, l in pairs(loader) do
+        l()
+    end
 end
 
 function love.update(dt)

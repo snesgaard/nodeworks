@@ -67,6 +67,7 @@ lume = require(BASE .. ".third.lume")
 lurker = require(BASE .. ".third.lurker")
 
 suit = require (BASE .. ".third.SUIT")
+graph = require (BASE .. ".graph")
 require (BASE .. ".third.patch")
 
 gfx = love.graphics
@@ -158,6 +159,11 @@ function string.split(inputstr, sep)
         i = i + 1
     end
     return t
+end
+
+function string.join(a, b, ...)
+    if not b then return a end
+    return string.join(a .. "/" .. b, ...)
 end
 
 function string.pathsplit(path)
