@@ -132,6 +132,10 @@ function Spatial:center()
     return vec2(self.x + self.w * 0.5, self.y + self.h * 0.5)
 end
 
+function Spatial:centerbottom()
+    return vec2(self.x + self.w * 0.5, self.y + self.h)
+end
+
 function Spatial:hmirror(ox, oy)
     local dx = self.x - ox
     local x = ox - dx

@@ -4,6 +4,7 @@ track.__index = track
 function track.create(times, values, opt)
     opt = opt or {}
 
+    print(times, values)
     local this = {
         __times = times,
         __values = values,
@@ -127,29 +128,46 @@ animation.__index = animation
 
 function animation.create()
     local this = {
-        __tracks = {},
-        __paths = {},
-        __nodes = {},
-        __keys = {},
-        __duration = 0
+        _tracks = {},
+        _paths = {},
+        _fullpaths = {},
+        _keys = {},
+        _ids = {},
+        _duration = 0
     }
     return setmetatable(this, animation)
 end
 
 animation.duration = attribute("__duration")
 
-function animation:track(path, ...)
+function animation:init(graph, subgraph)
+    local _paths = {}
+    for index, p in ipairs(self._paths) do
+        _paths[index] = string.join(subgraph, p)
+    end
+    return {paths = _paths, graph = graph}
+end
+
+function animation:track(full_path, ...)
     local track = track.create(...)
-    local index = #self.__tracks + 1
-    self.__tracks[index] = track
-    self.__paths[index] = path
+    local index = #self._tracks + 1
+    local parts = string.split(full_path, ":")
+
+    if #parts ~= 2 then
+        error(string.format("Invalid path %s", full_path))
+    end
+
+    self._tracks[index] = track
+    self._fullpaths[index] = full_path
+    self._paths[index] = parts[1]
+    self._keys[index] = parts[2]
     return self
 end
 
-function animation:read(path)
-    local i = self.__paths:argfind(path)
+function animation:read(fullpath)
+    local i = self._fullpaths:argfind(fullpath)
     if i then
-        return self.__tracks[i]
+        return self._tracks[i]
     end
 end
 
@@ -160,18 +178,22 @@ function animation.reset_loop(track_states)
 end
 
 local FINISH = 1
-local LOOP = 2
 
-function animation:update(time, track_states, exit_code)
-    track_states = track_states or {}
+function animation:_find_node(graph, paths, index)
+    local path = paths[index]
+    local key = self._keys[index]
+    return graph:find(path), key, self._tracks[index]
+end
 
+function animation:update(time, track_states)
     if time > self:duration() then
         -- If finished do the final updates
-        for index, track in pairs(self.__tracks) do
-            local path = self.__paths[index]
-            local n, k = self.__nodes[index], self.__keys[index]
+        for index = 1, #self._tracks do
+            local n, k, t = self:_find_node(
+                track_states.graph, track_states.paths, index
+            )
             if n then
-                track_states[index] = track:update(
+                track_states[index] = t:update(
                     self:duration(), track_states[index], n, k
                 )
             end
@@ -180,11 +202,12 @@ function animation:update(time, track_states, exit_code)
         return track_states, FINISH
     end
 
-    for index, track in pairs(self.__tracks) do
-        local path = self.__paths[index]
-        local n, k = self.__nodes[index], self.__keys[index]
+    for index = 1, #self._tracks do
+        local n, k, t = self:_find_node(
+            track_states.graph, track_states.paths, index
+        )
         if n then
-            track_states[index] = track:update(
+            track_states[index] = t:update(
                 time, track_states[index], n, k
             )
         end
@@ -193,117 +216,140 @@ function animation:update(time, track_states, exit_code)
     return track_states
 end
 
-function animation:link(master)
-    local function bind_track(path, track)
-        if type(path) ~= "string" then
-            return path
-        end
-        local parts = string.pathsplit(path)
-        local node = master
-        for i = 1, #parts - 1 do
-            node = node[parts[i]]
-            if not node then
-                log.warn("path %s could not be resolved", path)
-                return
-            end
-        end
-        local key = parts[#parts]
-        return node, key
-    end
-
-    for index, track in pairs(self.__tracks) do
-        local path = self.__paths[index]
-        self.__nodes[index], self.__keys[index] = bind_track(path, track)
-    end
-end
-
 local player = {}
 player.__index = player
 
 function player:create()
-    self.__animations = dict()
-    self.__animation_state = nil
-    self.__play = 1
-    self.__speed = 1
-    self.__time = 0
+    local this = {
+        _animations = dict(),
+        _animation_state = nil,
+        _play = 1,
+        _speed = 1,
+        _time = 0
+    }
+    return setmetatable(this, player)
 end
 
 function player:clone()
     local other = Node.create(player)
-    other.__animations = self.__animations
+    other._animations = self._animations
     return other
 end
 
-player.speed = attribute("__speed")
+player.speed = attribute("_speed")
 
 function player:animation(name)
-    if not self.__animations[name] then
-        self.__animations[name] = animation.create()
+    if not self._animations[name] then
+        self._animations[name] = animation.create()
     end
-    return self.__animations[name]
+    return self._animations[name]
+end
+
+local function get_offset(frames)
+    local function get_origin(f)
+        if not f.slices.origin then
+            return Vec2(0, 0)
+        else
+            return f.slices.origin:centerbottom()
+        end
+    end
+
+    return frames:map(function(f)
+        local o = get_origin(f)
+        return f.offset - o
+    end)
+end
+
+function player:from_atlas(atlas, key, alias)
+    local frames = atlas:get_animation(key)
+
+    if not frames then
+        error(string.format("Animation <%s> undefined", key))
+    end
+
+    local anime = self:animation(alias or key)
+
+    local offset = get_offset(frames)
+    local images = frames:map(function(f) return f.image end)
+    local quads = frames:map(function(f) return f.quad end)
+
+    local time_deltas = frames:map(function(f) return f.dt end)
+    local times = time_deltas:scan(function(a, b)
+        return a + b
+    end, 0)
+    local duration = times[#times]
+    times[#times] = nil
+
+    anime
+        :track("texture:texture", times, images)
+        :track("texture:quad", times, quads)
+        :track("texture:ox", times, offset:map(function(o) return -o.x end))
+        :track("texture:oy", times, offset:map(function(o) return -o.y end))
+        :duration(duration)
+
+    return anime
 end
 
 function player:clear(name)
-    self.__animations[name] = nil
+    self._animations[name] = nil
     return self
 end
 
-function player:play(name, loop)
+function player:play(name, graph, subgraph, loop)
+    subgraph = subgraph or ""
     if not name then
-        self.__play = true
+        self._play = true
         return
     end
 
-    local anime = self.__animations[name]
+    local anime = self._animations[name]
     if not anime then
-        log.warn("Animation %s does not exist", anime)
+        log.warn("Animation %s does not exist", name)
         return
     end
-    self.__current_animation = anime
-    self.__time = 0
-    self.__loop = loop
+    self._current_animation = anime
+    self._animation_state = anime:init(graph, subgraph)
+    self._time = 0
+    self._loop = loop
 end
 
 function player:pause()
-    self.__play = false
+    self._play = false
     return self
 end
 
 function player:reset()
-    self.__time = 0
+    self._time = 0
     return self
 end
 
-function player:on_adopted()
-    for _, anime in pairs(self.__animations) do
-        anime:link(self)
-    end
-end
 
-function player:__update(dt)
-    if not self.__play then
+function player:update(dt)
+    if not self._play then
         return
     end
 
-    self.__time = self.__time + (dt * self.__speed)
+    self._time = self._time + (dt * self._speed)
 
-    if self.__current_animation then
+    if self._current_animation then
         local code = nil
-        self.__animation_state, code = self.__current_animation:update(
-            self.__time, self.__animation_state
+        self._animation_state, code = self._current_animation:update(
+            self._time, self._animation_state
         )
 
         if code == FINISH then
-            if not self.__loop then
-                self.__play = false
+            if not self._loop then
+                self._play = false
                 event(self, "finish")
             else
                 event(self, "loop")
-                animation.reset_loop(self.__animation_state)
-                return self:__update(dt - self.__current_animation:duration())
+                animation.reset_loop(self._animation_state)
+                return self:update(dt - self._current_animation:duration())
             end
         end
     end
 end
 
-return player
+return function(...)
+    return player.create(...)
+end
