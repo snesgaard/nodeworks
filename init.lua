@@ -68,6 +68,7 @@ lurker = require(BASE .. ".third.lurker")
 
 suit = require (BASE .. ".third.SUIT")
 graph = require (BASE .. ".graph")
+nodes = require (BASE .. ".nodes")
 require (BASE .. ".third.patch")
 
 gfx = love.graphics

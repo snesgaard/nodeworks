@@ -10,6 +10,65 @@ local blur = {}
 local subgraph = {}
 local texture = {}
 local blur = {}
+local line = {}
+local text = {}
+
+
+function text:begin(txt, w, h, opt)
+    opt = opt or {}
+    self.text = tostring(txt)
+    self.font = opt.font
+    self.w  = w
+    self.h = h
+    self.align = opt.align or "center"
+    self.valign = opt.valign or "center"
+end
+
+function text:memory()
+    return love.graphics.getFont()
+end
+
+function text:get_font()
+    return self.font or gfx.getFont()
+end
+
+function text:get_dy()
+    local lh = self:get_font():getHeight()
+    if self.valign == "center" then
+        return (self.h - lh) * 0.5
+    elseif self.valign == "bottom" then
+        return self.h - lh
+    else
+        return 0
+    end
+end
+
+function text:enter()
+    local f = self:get_font()
+    gfx.setFont(f)
+    gfx.printf(self.text, 0, self:get_dy(), self.w, self.align)
+end
+
+function text:exit(prev_font)
+    gfx.setFont(prev_font)
+end
+
+function line:begin(w)
+    self.width = w
+end
+
+function line:memory()
+    return gfx.getLineWidth()
+end
+
+function line:enter()
+    gfx.setLineWidth(self.width)
+end
+
+function line:exit(l)
+    gfx.setLineWidth(l)
+end
+
 
 function transform:begin(x, y, r, sx, sy)
     self.x = x or 0
@@ -96,16 +155,17 @@ function color:exit(prev_color)
     gfx.setColor(unpack(prev_color))
 end
 
-function rectangle:begin(fill, x, y, w, h)
+function rectangle:begin(fill, x, y, w, h, round)
     self.x = x
     self.y = y
     self.w = w
     self.h = h
     self.fill = fill
+    self.round = round
 end
 
 function rectangle:enter()
-    gfx.rectangle(self.fill, self.x, self.y, self.w, self.h)
+    gfx.rectangle(self.fill, self.x, self.y, self.w, self.h, self.round)
 end
 
 function blend:enter()
@@ -184,5 +244,5 @@ return {
     translate = translate, rotate = rotate, scale = scale,
     color = color, rectangle = rectangle, blend = blend,
     canvas = canvas, transform = transform, texture = texture,
-    blur = blur
+    blur = blur, line = line, text = text
 }
