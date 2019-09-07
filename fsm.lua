@@ -1,26 +1,26 @@
 local function do_edge_traversal(self, from, edge, to, ...)
     local is_loop = from == to
 
+    local from_state = self:_get_state(from)
+    local to_state = self:_get_state(to)
+
     local function exit(...)
-        if not from or is_loop then return end
-        local f = self._exit[from]
-        if not f then return end
-        return f(self, ...)
+        if from_state.exit and not is_loop then
+            from_state.exit(self, self._data, ...)
+        end
      end
 
     local function enter(...)
-        if not to or is_loop then return end
-        local f = self._enter[to]
-        if not f then return end
-        return f(self, ...)
+        if to_state.enter and not is_loop then
+            to_state.enter(self, self._data, ...)
+        end
     end
 
     local function transit(...)
-        if not from or not edge then return end
-        local key = string.join(edge, name)
-        local f = self._transits[key]
-        if not f then return end
-        return f(self, ...)
+        local f = from_state[edge]
+        if f then
+            f(self, self._data, ...)
+        end
     end
 
     self._pending = true
@@ -34,9 +34,12 @@ local function do_edge_traversal(self, from, edge, to, ...)
         return
     end
 
+    if not is_loop then
+        log.debug("Entering state %s", tostring(to))
+    end
     self._pending = false
     self._state = to
-    enter(...)
+    return enter(...)
 end
 
 local fsm = {}
@@ -44,39 +47,50 @@ fsm.__index = fsm
 
 function fsm.create(args)
     local this = {
-        _data = args.data
-        _enters = dict(),
-        _exits = dict(),
+        _states = dict(args.states),
+        _data = dict(args.data),
         _edges = dict(),
-        _transits = dict(),
         _state = nil,
         _pending = nil
     }
 
-    for key, val in ipairs(args.data or {}) do
-        this[key] = this[key] or val
-    end
+    local function add_edge(from, name, to)
+        to = to or from
+        local key = string.join(name, from)
+        -- We dont want to override, edges takes priority
+        if this._edges[key] then
+            return
+        end
+        this._edges[key] = to
 
-    for name, state in pairs(args.states) do
-        this._enters[name] = state.enter
-        this._exits[name] = state.exit
-    end
-
-    for _, edge in ipairs(args.edges) do
-        local key = string.join(edge.name, edge.from)
-        this._edges[key] = edge.to or edge.from
-        this._transits[key] = edge.action or identity
-
-        fsm[edge.name] = fsm[edge.name] or function(self, ...)
-            return self:invoke(name, ...)
+        this[name] = function(self, ...)
+            self:invoke(name, ...)
         end
     end
 
-    return setmetatable(this, fsm)
+    for _, edge in pairs(args.edges) do
+        add_edge(edge.from, edge.name, edge.to)
+    end
+
+    local function add_state_method(state, name, method)
+        if type(method) ~= "function" then return end
+        if val == "enter" or val == "exit" then return end
+        add_edge(state, name)
+    end
+
+    for state_name, state in pairs(args.states) do
+        for name, method in pairs(state) do
+            add_state_method(state_name, name, method)
+        end
+    end
+
+    this = setmetatable(this, fsm)
+    this:force(args.init)
+    return this
 end
 
 function fsm:invoke(name, ...)
-    if not self._pending then
+    if self._pending then
         log.warn("Cannot transition while pending")
         return
     end
@@ -87,16 +101,22 @@ function fsm:invoke(name, ...)
 
     local from = self._state
     local edge = name
-    local to = this._edges[string.join(edge, from)]
+    local to = self._edges[string.join(edge, from)]
     if not to then
-        log.warn(string.format("Edge %s not defined fro %s", from, edge))
+        log.warn(string.format("Edge %s not defined for %s", from, edge))
+        return
     end
 
     self._transition_co = coroutine.create(do_edge_traversal)
-    coroutine.resume(self._transition_co, self, from, edge, to, ...)
+    local status, msg = coroutine.resume(
+        self._transition_co, self, from, edge, to, ...
+    )
+    if not status then
+        log.error(msg)
+    end
 end
 
-function fsm:goto(name, ...)
+function fsm:force(name, ...)
     if self._transition_co then
         event:clear(self._transition_co)
         self._pending = false
@@ -106,7 +126,16 @@ function fsm:goto(name, ...)
     local edge = nil
     local to = name
     self._transition_co = coroutine.create(do_edge_traversal)
-    coroutine.resume(self._transition_co, self, from, edge, to, ...)
+    local status, msg = coroutine.resume(
+        self._transition_co, self, from, edge, to, ...
+    )
+    if not status then
+        log.error(msg)
+    end
 end
 
-return fsm
+function fsm:_get_state(state)
+    return self._states[state] or {}
+end
+
+return fsm.create

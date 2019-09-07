@@ -12,6 +12,7 @@ local texture = {}
 local blur = {}
 local line = {}
 local text = {}
+local generic = {}
 
 
 function text:begin(txt, w, h, opt)

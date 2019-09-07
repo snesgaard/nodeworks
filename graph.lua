@@ -15,6 +15,9 @@ function node:inverse(...) end
 
 function node:clear() end
 
+function node:prechild() end
+function node:postchild() end
+
 local graph = {}
 graph.__index = graph
 
@@ -135,7 +138,9 @@ function graph:traverse(path)
         n:enter()
     end
     for _, c in ipairs(self._edges[path] or {}) do
+        n:prechild()
         self:traverse(c)
+        n:postchild()
     end
     if n then
         n:exit(unpack(m))
