@@ -181,10 +181,10 @@ local function anime2animation(name, frames, player)
         :map(function(f) return f.slices.origin:center() end)
 
     player:animation(name)
-        :track("../offset", times, offsets)
-        :track("../image", times, images)
-        :track("../quad", times, quads)
-        :track("../center", times, center)
+        :track("../sprite/offset", times, offsets)
+        :track("../sprite/image", times, images)
+        :track("../sprite/quad", times, quads)
+        :track("../sprite/center", times, center)
         :duration(duration)
 end
 

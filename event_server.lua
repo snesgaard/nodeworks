@@ -80,40 +80,85 @@ local function __invoke_listener(args, f, ...)
     f(args, ...)
 end
 
-function server:spin()
+function server:spin(state, history)
+    history = history or list()
     while #self._queue > 0 do
-        self:spin_once()
+        history, state = self:spin_once(state, history)
     end
+    -- Histories should be combined and returned after this
+    return history, state
 end
 
-function server:spin_once()
-    local waiter_table = self._waiters
+function server:update(dt)
+    return self:_invoke_msg(history, nil, "update", dt)
+end
 
-    local function invoke_msg(...)
-        local args = {get_args(...)}
-        local listeners = get_subtable(self._waiters, ...)
-        -- Clear waiter table
-        --waiter_table[path] = {}
-        local size = #listeners
-        for i = 1, size do
-            local co = listeners[i]
-            -- This can be made more efficient
+function server:_invoke_msg(history, state, ...)
+    local args = {get_args(state, ...)}
+    local listeners = get_subtable(self._waiters, ...)
+    history = history or list()
+    -- Clear waiter table
+    --waiter_table[path] = {}
+    local size = #listeners
+    for i = 1, size do
+        local co = listeners[i]
+        -- This can be made more efficient
+        local function invocation()
             if type(co) == "thread" then
                 listeners[i] = nil
                 listeners[co] = nil
                 self._co_registry[co] = nil
-                coroutine.resume(co, unpack(args))
+                -- TODO Add a state and info variable to this
+                -- Such that internal state is mutated after each callback
+                -- Potentially
+                -- Like the current epoch strcture in the state handling
+                -- This way, state can be changed in an ordered manner
+                -- E.g
+                -- id, next_state, info = coroutine.resume(co, unpack(args))
+                -- Then broadcast a /state/<id> event
+                -- Thus we can have async events in an ordered manner
+                --
+                -- Something similar for visuals ystem, would be cool,
+                -- but probably infesiable with nodes and coroutines
+                if state then
+                    return coroutine.resume(co, state, unpack(args))
+                else
+                    return coroutine.resume(co, unpack(args))
+                end
             elseif type(co) == "table" then
-                __invoke_listener(args, unpack(co))
+                if state then
+                    return true, __invoke_listener(state, args, unpack(co))
+                else
+                    return true, __invoke_listener(args, unpack(co))
+                end
             end
         end
+        local status, epoch = invocation()
+
+        history[#history + 1] = epoch
+
+        local function next_state()
+            if not epoch then return state end
+            return epoch.state or state
+        end
+
+        state = next_state()
     end
+    --Thus return an ordered history list of state transitions
+    return history, state
+end
+
+function server:spin_once(state, history)
+    local waiter_table = self._waiters
 
     local queue = self._queue
     self._queue = {}
+    history = history or list()
     for _, msg in ipairs(queue) do
-        invoke_msg(unpack(msg))
+        history, state = self:_invoke_msg(history, state, unpack(msg))
+
     end
+    return history, state
 end
 
 function server:listen(...)
@@ -147,6 +192,13 @@ function server:wait(...)
     return coroutine.yield()
 end
 
+function server:sleep(time)
+    while time > 0 do
+        local dt = self:wait("update")
+        time = time - dt
+    end
+end
+
 function server:__call(a, ...)
     if a == nil then
         log.warn("Nill invocation, maybe old code")
@@ -157,6 +209,10 @@ end
 
 function server:invoke(...)
     self._queue[#self._queue + 1] = {...}
+end
+
+function server:instant_invoke(...)
+    return self:_invoke_msg(...)
 end
 
 return function()

@@ -222,22 +222,9 @@ function Node:fork(f, ...)
     return co
 end
 
-function Node:join(args)
-    co = args[1]
-    local kill_tweens = args.kill_tweens or true
-    if not co then
-        for co, _ in pairs(self.__group.thread) do
-            event:clear(co)
-        end
-        self.__group.thread = {}
-        self.__cleaners = {}
-    else
-        self.__group.thread[co] = nil
-        cleanup = self.__cleaners[co]
-        if cleanup then
-            cleanup(kill_tweens)
-        end
-    end
+function Node:join(co)
+    self.__group.thread[co] = nil
+    event:clear(co)
 end
 
 function Node:set_state(state, ...)

@@ -27,9 +27,10 @@ function state.create(root)
     local this = {}
 
     if not root then
-        local init = self._init or function() return {} end
-        root = init()
+        local init = state._init or function() return {} end
+        root = dict(init())
     end
+    this.root = root
 
     return setmetatable(this, state)
 end
@@ -42,16 +43,7 @@ end
 
 function state:map(path, m, ...)
     local v = self:read(path)
-    if not v then return end
     return self:write(path, m(v, ...))
-end
-
-function state.epoch()
-    return dict{id = id, state = state, info = info}
-end
-
-function state.history(...)
-    return list(state.make_epoch(...))
 end
 
 function state:transform(...)
@@ -78,8 +70,9 @@ function state:transform(...)
             return epic
         end
 
-        local history = f(state, args)
-        epic[#epic + 1] = history
+        local history = {}
+        local next_history = f(state, args, history)
+        epic[#epic + 1] = next_history or history
 
         if tag and type(tag) ~= "number" then
             if not epic[tag] then
@@ -163,71 +156,10 @@ function state:set_echo(path, f)
     return state.create(echo)
 end
 
-function state:echo(path, data)
-    local parts = string.split("echo/" .. path, '/')
-    local dirs = traverse(self.root, parts:erase())
+-- Should remove echoes and such
 
-    if not dirs or not valid_echo(dirs:tail()) then
-        log.warn("Echo path <%s> not valid", path)
-        return
-    end
-
-    local echo = dirs:tail()
-
-    local state = self
-    local new_state
-
-    for _, id in ipairs(echo.order) do
-        local f = echo.func[id]
-        data, new_state = f(id, state, data)
-        state = new_state or state
-    end
-
-    return data, state
+function state:__call(...)
+    return self:read(...)
 end
 
-function state:event(path, data)
-    local parts = string.split("echo/" .. path, '/')
-    local dirs = traverse(self.root, parts:erase())
-
-    if not dirs or not valid_echo(dirs:tail()) then
-        log.warn("Echo path <%s> not valid", path)
-        return
-    end
-
-    local echo = dirs:tail()
-
-    local state = self
-    local new_state
-
-    for _, id in ipairs(echo.order) do
-        local f = echo.func[id]
-        new_state = f(id, state, data)
-        state = new_state or state
-    end
-
-    return state
-end
-
--- Utility functions
-function state:agility(id)
-    local a = self:read("actor/agility")
-    return id and a[id] or a
-end
-
-function state:position(id)
-    local p = self:read("position")
-    return id and p[id] or p
-end
-
-function state:health(id)
-    return self:read("actor/health/" .. id), self:read("actor/max_health/" .. id)
-end
-
-function state:stamina(id)
-    return self:read("actor/stamina/" .. id), self:read("actor/max_stamina/" .. id)
-end
-
-return function()
-    return state.create()
-end
+return state

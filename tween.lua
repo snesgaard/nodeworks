@@ -90,7 +90,6 @@ function TweenHandle:remove()
 end
 
 function TweenHandle:delay(delay)
-    print("setting", delay)
     self._delay = delay
     return self
 end
@@ -157,7 +156,11 @@ local function update_tween(dt, tween)
         end
     end
 
-    if is_done and tween._after then tween._after(unpack(tween._dst)) end
+    if is_done then
+        if tween._after then tween._after(unpack(tween._dst)) end
+
+        event(tween, "finish", unpack(tween._dst))
+    end
 
     return is_done
 end

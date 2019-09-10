@@ -20,11 +20,11 @@ function track:__init_state()
     return {time=-math.huge, frame=0, prev_value=nil}
 end
 
-function track:update(time, state, node, key)
+function track:update(time, state, node, key, player)
     if self.__call then
-        return self:__update_as_call(time, state, node, key)
+        return self:__update_as_call(time, state, node, key, player)
     else
-        return self:__update_as_value(time, state, node, key)
+        return self:__update_as_value(time, state, node, key, player)
     end
 end
 
@@ -95,7 +95,7 @@ function track:__update_as_value(time, state, node, key)
     return state
 end
 
-function track:__update_as_call(time, state, node, key)
+function track:__update_as_call(time, state, node, key, player)
     state = state or self:__init_state()
     local prev_frame = state.frame
     local prev_time = state.time
@@ -103,11 +103,13 @@ function track:__update_as_call(time, state, node, key)
     local dir = time > prev_time and 1 or -1
     local stop = dir > 0 and self.__size or 0
 
-    local function invoke(value)
-        if not key then
-            node(value)
+    local function invoke(...)
+        local f = key and node[key] or node
+
+        if f == event then
+            f(player, ...)
         else
-            node[key](value)
+            f(...)
         end
     end
 
@@ -162,7 +164,7 @@ end
 local FINISH = 1
 local LOOP = 2
 
-function animation:update(time, track_states, exit_code)
+function animation:update(time, track_states, player)
     track_states = track_states or {}
 
     if time > self:duration() then
@@ -172,7 +174,7 @@ function animation:update(time, track_states, exit_code)
             local n, k = self.__nodes[index], self.__keys[index]
             if n then
                 track_states[index] = track:update(
-                    self:duration(), track_states[index], n, k
+                    self:duration(), track_states[index], n, k, player
                 )
             end
         end
@@ -185,7 +187,7 @@ function animation:update(time, track_states, exit_code)
         local n, k = self.__nodes[index], self.__keys[index]
         if n then
             track_states[index] = track:update(
-                time, track_states[index], n, k
+                time, track_states[index], n, k, player
             )
         end
     end
@@ -248,20 +250,35 @@ function player:clear(name)
     return self
 end
 
-function player:play(name, loop)
-    if not name then
+function player:play(args)
+    local animations = list(unpack(args))
+
+    local opt = args
+
+    if not args then
         self.__play = true
         return
     end
 
-    local anime = self.__animations[name]
-    if not anime then
-        log.warn("Animation %s does not exist", anime)
-        return
-    end
-    self.__current_animation = anime
+    self.__animation_backlog = animations
+        :map(
+            function(a)
+                local anime = self.__animations[a]
+                if not anime then
+                    log.warn("Animation %s does not exist", a)
+                end
+                return anime
+            end
+        )
+        :filter(identity)
+    self.__current_opt = opt
+    self.__current_animation = self.__animation_backlog:head()
+    self.__animation_backlog = self.__animation_backlog:body()
     self.__time = 0
-    self.__loop = loop
+    --self.__loop = loop
+    self.__play = true
+
+    return self
 end
 
 function player:pause()
@@ -287,23 +304,37 @@ function player:__update(dt)
 
     self.__time = self.__time + (dt * self.__speed)
 
-    if self.__current_animation then
-        local code = nil
-        self.__animation_state, code = self.__current_animation:update(
-            self.__time, self.__animation_state
-        )
+    if not self.__current_animation then return end
 
-        if code == FINISH then
-            if not self.__loop then
-                self.__play = false
-                event(self, "finish")
-            else
-                event(self, "loop")
-                animation.reset_loop(self.__animation_state)
-                return self:__update(dt - self.__current_animation:duration())
-            end
-        end
+    local code = nil
+    self.__animation_state, code = self.__current_animation:update(
+        self.__time, self.__animation_state, self
+    )
+
+    if not code then return end
+
+    if self.__animation_backlog:size() > 0 then
+        local dt = -self.__current_animation:duration()
+        self.__animation_state = nil
+        self.__current_animation = self.__animation_backlog:head()
+        self.__animation_backlog = self.__animation_backlog:body()
+        event(self, "finish")
+        return self:__update(dt)
     end
+
+    if not self.__current_opt.loop then
+        self.__play = false
+        event(self, "finish")
+        return
+    else
+        event(self, "loop")
+        animation.reset_loop(self.__animation_state)
+        return self:__update(-self.__current_animation:duration())
+    end
+end
+
+function player:__handle_loop_end()
+
 end
 
 return player

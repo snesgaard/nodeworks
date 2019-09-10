@@ -27,6 +27,7 @@ Dictionary = require(BASE ..  ".dictionary")
 Event = require(BASE .. ".event")
 EventServer = require(BASE .. ".event_server")
 AnimationPlayer = require(BASE .. ".animation_player")
+AnimationGraph = require(BASE .. ".animation_graph")
 Spatial = require(BASE .. ".spatial")
 
 echo = require(BASE .. ".echo")
@@ -39,6 +40,7 @@ dict = Dictionary.create
 spatial = Spatial.create
 event_server = EventServer
 animation_player = AnimationPlayer
+animation_graph = AnimationGraph
 state = require(BASE .. ".state")
 color = require(BASE .. ".color")
 
@@ -59,6 +61,7 @@ local knife_path = BASE .. ".third.knife.knife"
 --timer = require (knife_path .. ".timer")
 sti = require(BASE .. ".third.Simple-Tiled-Implementation.sti")
 ease = require(BASE .. ".third.easing")
+action_queue = require(BASE .. ".animation_server")
 require(BASE .. ".ease")
 log = require(BASE .. ".third.log")
 tween = require(BASE .. ".tween")
@@ -162,7 +165,7 @@ end
 
 function string.pathsplit(path)
     return string.split(
-        path:gsub("/../", "/__parent/"):gsub("../", "__parent/"), '/'
+        path:gsub("%.%./", "/__parent/"), '/'
     )
 end
 
@@ -216,5 +219,26 @@ function compose(...)
     return prev
 end
 
+function join(a, b, ...)
+    if not b then return a end
+
+    return join(string.format("%s/%s", a, b), ...)
+end
+
+function trace(path)
+    if type(path) == "string" then
+        path = string.pathsplit(path)
+    end
+
+    local node = master
+    for i = 1, #path do
+        node = node[path[i]]
+        if not node then
+            log.warn("path %s could not be resolved", path)
+            return
+        end
+    end
+    return node
+end
 
 gfx.setDefaultFilter("nearest", "nearest")
