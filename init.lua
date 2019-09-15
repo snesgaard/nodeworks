@@ -13,6 +13,9 @@ function unpacked(f)
     return function(table) f(unpack(table)) end
 end
 
+gfx = love.graphics
+rng = love.math.random
+
 BASE = ...
 
 BASE = BASE == "init" and "" or BASE
@@ -27,7 +30,6 @@ Dictionary = require(BASE ..  ".dictionary")
 Event = require(BASE .. ".event")
 EventServer = require(BASE .. ".event_server")
 AnimationPlayer = require(BASE .. ".animation_player")
-AnimationGraph = require(BASE .. ".animation_graph")
 Spatial = require(BASE .. ".spatial")
 
 echo = require(BASE .. ".echo")
@@ -66,6 +68,7 @@ require(BASE .. ".ease")
 log = require(BASE .. ".third.log")
 tween = require(BASE .. ".tween")
 graph = require(BASE .. ".graph")
+gfx_nodes = require(BASE .. ".gfx_nodes")
 
 lume = require(BASE .. ".third.lume")
 lurker = require(BASE .. ".third.lurker")
@@ -73,16 +76,17 @@ lurker = require(BASE .. ".third.lurker")
 suit = require (BASE .. ".third.SUIT")
 require (BASE .. ".third.patch")
 
-function colorstack()
-    return Stack.create(color.create, compose(gfx.setColor, unpack))
+
+function create_colorstack()
+    return Stack.create(
+        color.create, compose(gfx.setColor, unpack)
+    )
 end
 
-function spatialstack()
+function create_spatialstack()
     return Stack.create(spatial)
 end
 
-gfx = love.graphics
-rng = love.math.random
 
 function gfx.prerender(w, h, f, ...)
     local args = {...}
@@ -256,3 +260,6 @@ function sub(a, b) return a - b end
 function dot(a, b) return a * b end
 
 gfx.setDefaultFilter("nearest", "nearest")
+
+colorstack = create_colorstack()
+spatialstack = create_spatialstack()

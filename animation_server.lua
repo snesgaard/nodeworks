@@ -40,4 +40,11 @@ function server:add(f, ...)
     return event(self, "wake")
 end
 
+function server:sleep(time)
+    local function f()
+        event:sleep(time)
+    end
+    return self:add(f)
+end
+
 return server

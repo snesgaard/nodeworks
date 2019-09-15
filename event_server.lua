@@ -110,6 +110,7 @@ end
 
 
 function server:sleep(time)
+    print("sleep", time)
     while time > 0 do
         dt = self:wait("update")
         time = time - dt
