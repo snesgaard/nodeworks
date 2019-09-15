@@ -65,12 +65,21 @@ action_queue = require(BASE .. ".animation_server")
 require(BASE .. ".ease")
 log = require(BASE .. ".third.log")
 tween = require(BASE .. ".tween")
+graph = require(BASE .. ".graph")
 
 lume = require(BASE .. ".third.lume")
 lurker = require(BASE .. ".third.lurker")
 
 suit = require (BASE .. ".third.SUIT")
 require (BASE .. ".third.patch")
+
+function colorstack()
+    return Stack.create(color.create, compose(gfx.setColor, unpack))
+end
+
+function spatialstack()
+    return Stack.create(spatial)
+end
 
 gfx = love.graphics
 rng = love.math.random
@@ -208,15 +217,16 @@ function identity(...) return ... end
 
 function compose(...)
     local funcs = {...}
-    local prev = identity
-    local next
-    for i = #funcs, 1, -1 do
-        local f = funcs[i]
-        prev = function(...)
-            return prev(f(...))
-        end
+
+    local function inner_action(index, ...)
+        if index <= 0 then return ... end
+        local f = funcs[index]
+        return inner_action(index - 1, f(...))
     end
-    return prev
+
+    return function(...)
+        return inner_action(#funcs, ...)
+    end
 end
 
 function join(a, b, ...)
@@ -240,5 +250,9 @@ function trace(path)
     end
     return node
 end
+
+function add(a, b) return a + b end
+function sub(a, b) return a - b end
+function dot(a, b) return a * b end
 
 gfx.setDefaultFilter("nearest", "nearest")

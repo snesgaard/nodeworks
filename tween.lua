@@ -167,11 +167,12 @@ end
 
 function tween.update(dt, group)
     group = group or default_group
-    --for i, t in ipairs(group or default_group) do
-    for i = #group, 1, -1 do
-        local t = group[i]
-        if update_tween(dt, t) then
+    local update_group = {unpack(group)}
+    for i = 1, #update_group do
+        local t = update_group[i]
+        if t and update_tween(dt, t) then
             remove_group(t)
+            i = i - 1
         end
     end
 end

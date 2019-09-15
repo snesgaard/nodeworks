@@ -1,7 +1,7 @@
 local color = {}
 color.__index = color
 
-local function create(r, g, b, a)
+function color.create(r, g, b, a)
     if type(r) == "string" then
         r, g, b, a = unpack(gfx.hex2color(r))
     end
@@ -11,20 +11,24 @@ local function create(r, g, b, a)
     return setmetatable(this, color)
 end
 
+function color:set(r, g, b, a)
+    return color.create(r or self.r, g or self.g, b or self.b, a or self.a)
+end
+
 function color.__tostring(c)
     return string.format("[%0.3f, %0.3f, %0.3f, %0.3f]", unpack(c))
 end
 
 function color:__add(c)
     if type(c) == "number" then
-        return create(
+        return color.create(
             self[1] + c,
             self[2] + c,
             self[3] + c,
             self[4] + c
         )
     else
-        return create(
+        return color.create(
             self[1] + c[1],
             self[2] + c[2],
             self[3] + c[3],
@@ -35,14 +39,14 @@ end
 
 function color:__sub(c)
     if type(c) == "number" then
-        return create(
+        return color.create(
             self[1] - c,
             self[2] - c,
             self[3] - c,
             self[4] - c
         )
     else
-        return create(
+        return color.create(
             self[1] - c[1],
             self[2] - c[2],
             self[3] - c[3],
@@ -53,11 +57,11 @@ end
 
 function color:__mul(s)
     if type(s) == "number" then
-        return create(
+        return color.create(
             self[1] * s, self[2] * s, self[3] * s, self[4] * s
         )
     else
-        return create(
+        return color.create(
             self[1] * s[1],
             self[2] * s[2],
             self[3] * s[3],
@@ -68,11 +72,11 @@ end
 
 function color:__div(s)
     if type(s) == "number" then
-        return create(
+        return color.create(
             self[1] / s, self[2] / s, self[3] / s, self[4] / s
         )
     else
-        return create(
+        return color.create(
             self[1] / s[1],
             self[2] / s[2],
             self[3] / s[3],
@@ -81,4 +85,9 @@ function color:__div(s)
     end
 end
 
-return create
+function color:darken(value)
+    return self * color.create(value, value, value, 1)
+end
+
+
+return color

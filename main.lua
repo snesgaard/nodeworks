@@ -29,8 +29,8 @@ drawer = {}
 
 function love.load()
     require "test.event_server"
-    require "test.node"
-    require "test.animation_player"
+    --require "test.node"
+    --require "test.animation_player"
     --love.event.quit()
 end
 

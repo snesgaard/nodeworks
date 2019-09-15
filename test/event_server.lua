@@ -18,7 +18,7 @@ coroutine.resume(co2)
 
 es:spin()
 
-assert(is_empty(es._co_registry))
+assert(is_empty(es._address))
 
 es = event_server()
 
@@ -41,14 +41,14 @@ coroutine.resume(co2)
 
 es:spin()
 
-assert(is_empty(es._co_registry))
+assert(is_empty(es._address))
 
 es = event_server()
 
 local context = {count = 0}
 
 local function callback(val)
-    assert(unpack(val))
+    assert(val)
     context.count = context.count + 1
 end
 
@@ -64,15 +64,15 @@ es:clear(token)
 es:invoke("thing", false)
 
 assert(context.count == 2)
-assert(is_empty(es._co_registry))
+assert(is_empty(es._address))
 
 es = event_server()
 
 local context = {}
 
 local function callback(val)
-    assert(unpack(val))
-    es:clear(context.token)
+    assert(val)
+    return false
 end
 
 context.token = es:listen("thing", callback)
@@ -82,7 +82,7 @@ es:invoke("thing", false)
 
 es:spin()
 
-assert(is_empty(es._co_registry))
+assert(is_empty(es._address))
 
 es = event_server()
 
@@ -124,4 +124,18 @@ local token = es:listen("thing", callback)
 es:clear(co)
 es:clear(token)
 es:invoke("thing", false)
+es:spin()
+
+es = event_server()
+
+local token = {}
+local co = coroutine.create(function()
+    es:wait(token, "obey")
+    es:wait(token, "blarg")
+    assert(false, "for some reason, was double invoked")
+end)
+
+coroutine.resume(co)
+es:invoke(token, "obey")
+es:invoke(token, "obey")
 es:spin()

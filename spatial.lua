@@ -27,6 +27,11 @@ function Spatial:size()
     return vec2(self.w, self.h)
 end
 
+function Spatial:set(x, y, w, h)
+    -- Uility for use with stack api
+    return Spatial.create(x or self.x, y or self.y, w or self.w, h or self.h)
+end
+
 function Spatial:scale(sx, sy)
     sx = sx or 1
     sy = sy or sx
@@ -59,6 +64,24 @@ function Spatial:right(x, y, w, h)
     return Spatial.create(self.x + self.w + x, self.y + y, w, h)
 end
 
+function Spatial:upright(x, y, w, h)
+    local prev = self
+    x = x or 0
+    y = y or 0
+    w = w or self.w
+    h = h or self.h
+    return Spatial.create(self.x + self.w + x, self.y - h - y, w, h)
+end
+
+function Spatial:downright(x, y, w, h)
+    local prev = self
+    x = x or 0
+    y = y or 0
+    w = w or self.w
+    h = h or self.h
+    return Spatial.create(self.x + self.w + x, self.y + h + y, w, h)
+end
+
 function Spatial:left(x, y, w, h)
     local prev = self
     x = x or 0
@@ -66,6 +89,24 @@ function Spatial:left(x, y, w, h)
     w = w or self.w
     h = h or self.h
     return Spatial.create(self.x - w - x, self.y + y, w, h)
+end
+
+function Spatial:upleft(x, y, w, h)
+    local prev = self
+    x = x or 0
+    y = y or 0
+    w = w or self.w
+    h = h or self.h
+    return Spatial.create(self.x - w - x, self.y - h - y, w, h)
+end
+
+function Spatial:downleft(x, y, w, h)
+    local prev = self
+    x = x or 0
+    y = y or 0
+    w = w or self.w
+    h = h or self.h
+    return Spatial.create(self.x - w - x, self.y + h + y, w, h)
 end
 
 function Spatial:down(x, y, w, h)
@@ -132,6 +173,10 @@ function Spatial:center()
     return vec2(self.x + self.w * 0.5, self.y + self.h * 0.5)
 end
 
+function Spatial:centerbottom()
+    return vec2(self.x + self.w * 0.5, self.y + self.h)
+end
+
 function Spatial:hmirror(ox, oy)
     local dx = self.x - ox
     local x = ox - dx
@@ -194,12 +239,10 @@ function Spatial:yalign(src, dst_side, src_side, margin)
     return dst:move(0, dy)
 end
 
-function Spatial:align(other, xalign, yalign)
-    local xself = string.split(xalign, "/")
-    local yself = string.split(yalign, "/")
-    return self
-        :xalign(other, xself:unpack())
-        :yalign(other, yself:unpack())
+function Spatial:align(other, xself, sother, yself, yother)
+    return other
+        :xalign(self, xself, xother)
+        :yalign(self, yself, yother)
 end
 
 function Spatial:commit(obj)
