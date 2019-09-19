@@ -81,9 +81,47 @@ local function draw_rect(mode)
     gfx.rectangle(mode, spatial:unpack())
 end
 
+local sprite = {}
+
+function sprite:begin(...)
+    local function get_args(a, ...)
+        -- First case, we assume that data was given as arugments
+        if type(a) == "userdata" then
+            return a, ...
+        -- Second we assume data was given as a frame
+        elseif type(a) == "table" then
+            local center = a.slices.origin or spatial()
+            local offset = center:center() - a.offset
+            return a.image, a.quad, offset
+        end
+    end
+
+    self.image, self.quad, self.offset = get_args(...)
+    self.offset = self.offset or vec2()
+    self.scale = vec2(2, 2)
+    self.pos = vec2()
+end
+
+function sprite:enter()
+    if not self.image then return end
+    local space = spatialstack:peek()
+    local x, y = self.pos:unpack()
+    x = x + space.x
+    y = y + space.y
+    local r = 0
+    local sx, sy = self.scale:unpack()
+    local ox, oy = self.offset:unpack()
+    if self.quad then
+        gfx.draw(self.image, self.quad, x, y, r, sx, sy, ox, oy)
+    else
+        gfx.draw(self.image, x, y, r, sx, sy, ox, oy)
+    end
+end
+
 nodes.draw_rect = draw_rect
 nodes.transform = transform_node
 nodes.line_width = line_width_node
 nodes.text = text_node
+nodes.sprite = sprite
 
 return nodes

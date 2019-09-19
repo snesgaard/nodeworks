@@ -69,6 +69,7 @@ log = require(BASE .. ".third.log")
 tween = require(BASE .. ".tween")
 graph = require(BASE .. ".graph")
 gfx_nodes = require(BASE .. ".gfx_nodes")
+fsm = require(BASE .. ".fsm")
 
 lume = require(BASE .. ".third.lume")
 lurker = require(BASE .. ".third.lurker")

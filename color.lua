@@ -12,7 +12,9 @@ function color.create(r, g, b, a)
 end
 
 function color:set(r, g, b, a)
-    return color.create(r or self.r, g or self.g, b or self.b, a or self.a)
+    return color.create(
+        r or self[1], g or self[2], b or self[3], a or self[4]
+    )
 end
 
 function color.__tostring(c)

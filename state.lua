@@ -47,34 +47,32 @@ function state:map(path, m, ...)
 end
 
 function state:transform(...)
-    local function get_opts(tag, f, args, ...)
-        if type(tag) == "function" then
-            return nil, tag, f
-        else
-            return tag, f, args
-        end
-    end
-
-    local function get_recur(tag, f, args, ...)
-        if type(tag) == "function" then
-            return args, ...
-        else
-            return ...
-        end
-    end
-
-    local function inner_action(epic, state, ...)
-        local tag, f, args = get_opts(...)
-
-        if not f then
+    local function inner_action(epic, state, transform, ...)
+        if not transform then
             return epic
         end
 
-        local history = {}
-        local next_history = f(state, args, history)
-        epic[#epic + 1] = next_history or history
+        local path, tag, args = transform.path, transform.tag, transform.args
 
-        if tag and type(tag) ~= "number" then
+        local import_path, name = unpack(string.split(path), ":")
+
+        if not name then
+            error(string.format("path %s invalid", path))
+        end
+
+        local module = require(import_path)
+
+        local f = module[name]
+
+        if not f then
+            error(string.format("Not found %s", path))
+        end
+
+        local history = {}
+        local next_state, info = f(state, args, history)
+        epic[#epic + 1] = {state=next_state, info=info, args=args, id=path}
+
+        if tag then
             if not epic[tag] then
                 epic[tag] = history
             else
@@ -83,7 +81,7 @@ function state:transform(...)
         end
 
         return inner_action(
-            epic, history:tail().state, get_recur(...)
+            epic, epic:tail().state, ...
         )
     end
 

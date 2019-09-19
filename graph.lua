@@ -207,6 +207,14 @@ function graph:traverse(id)
     return self
 end
 
+function graph:reset(id, ...)
+    local data = self._data[id]
+    local node = self._nodes[id]
+    if not node then return end
+    if node.begin then
+        node.begin(data, ...)
+    end
+end
 
 function graph:back(id)
     if not self._nodes[id] then

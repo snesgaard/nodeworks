@@ -35,7 +35,7 @@ function color_nodes.darken:enter()
 end
 
 function color_nodes.set:begin(r, g, b, a)
-    self.color = color.create(r, g, b, a)
+    self.color = {r, g, b, a}
 end
 
 function color_nodes.set:enter()

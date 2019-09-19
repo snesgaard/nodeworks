@@ -6,30 +6,38 @@ local function do_edge_traversal(self, from, edge, to, ...)
 
     local function exit(...)
         if from_state.exit and not is_loop then
-            from_state.exit(self, self._data, ...)
+            return from_state.exit(self, self._data, ...)
         end
      end
 
     local function enter(...)
         if to_state.enter and not is_loop then
-            to_state.enter(self, self._data, ...)
+            return to_state.enter(self, self._data, ...)
         end
     end
 
     local function transit(...)
         local f = from_state[edge]
         if f then
-            f(self, self._data, ...)
+            return f(self, self._data, ...)
         end
     end
 
     self._pending = true
     if exit(...) then
+        local msg = string.format(
+            "Exit prevented: %s/%s -> %s", from, to, edge
+        )
+        log.debug(msg)
         self._pending = false
         return
     end
 
     if transit(...) then
+        local msg = string.format(
+            "Transition prevented: %s/%s -> %s", from, to, edge
+        )
+        log.debug(msg)
         self._pending = false
         return
     end
@@ -45,15 +53,16 @@ end
 local fsm = {}
 
 function fsm:create(args)
-    self._states = dict(args.states),
-    self._data = dict(args.data),
-    self._edges = dict(),
-    self._state = nil,
-    self._pending = nilF
+    self._states = dict(args.states)
+    self._data = dict(args.data)
+    self._edges = dict()
+    self._state = nil
+    self._pending = nil
+    self._draw = args.draw
 
     local function add_edge(from, name, to)
         to = to or from
-        local key = string.join(name, from)
+        local key = join(name, from)
         -- We dont want to override, edges takes priority
         if self._edges[key] then
             return
@@ -65,7 +74,7 @@ function fsm:create(args)
         end
     end
 
-    for _, edge in pairs(args.edges) do
+    for _, edge in pairs(args.edges or {}) do
         add_edge(edge.from, edge.name, edge.to)
     end
 
@@ -75,14 +84,13 @@ function fsm:create(args)
         add_edge(state, name)
     end
 
-    for state_name, state in pairs(args.states) do
+    for state_name, state in pairs(args.states or {}) do
         for name, method in pairs(state) do
             add_state_method(state_name, name, method)
         end
     end
 
-    self = setmetatable(self, fsm)
-    self:force(args.init)
+    if args.init then self:force(args.init) end
 end
 
 function fsm:invoke(name, ...)
@@ -97,7 +105,7 @@ function fsm:invoke(name, ...)
 
     local from = self._state
     local edge = name
-    local to = self._edges[string.join(edge, from)]
+    local to = self._edges[join(edge, from)]
     if not to then
         log.warn(string.format("Edge %s not defined for %s", from, edge))
         return
@@ -135,13 +143,16 @@ function fsm:_get_state(state)
 end
 
 function fsm:__draw(...)
+    if self._draw then
+        self._draw(self._data, ...)
+    end
     local s = self._states[self._state]
-    if s:draw then s:draw(...) end
+    if s and s.draw then s:draw(...) end
 end
 
 function fsm:__update(...)
     local s = self._states[self._state]
-    if s:draw then s:draw(...) end
+    if s and s.draw then s:draw(...) end
 end
 
-return fsm.create
+return fsm
