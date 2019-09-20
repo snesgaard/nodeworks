@@ -1,87 +1,54 @@
+local rng = love.math.random
+
 local Sprite = {}
 
-function Sprite:create()
-    self._queue = list()
-    self._animation_alias = dict()
-    self._graph = graph.create()
-        :branch("color", gfx_nodes.set, 1, 1, 1, 1)
-        :leaf("sprite", gfx_nodes.sprite)
+function Sprite.create(this)
+    this.__origin = 'origin'
+    this.__mirror = 1
+    this.__color = {1, 1, 1, 1}
+    this.__offset = vec2(0, 0)
+    this.__center = vec2(0, 0)
+
+    return this
 end
 
-function Sprite:queue(name, opt)
-    self._queue = self._queue:insert({name, opt})
-    return self
+Sprite.origin = attribute("__origin")
+Sprite.color = attribute("__color")
+Sprite.quad = attribute("__quad")
+Sprite.image = attribute("__image")
+Sprite.offset = attribute("__offset")
+Sprite.center = attribute("__center")
+
+function Sprite:__draw(x, y)
+    if not self.__quad or not self.__image then return end
+
+    gfx.setColor(unpack(self.__color or {1, 1, 1}))
+
+    x = (x or 0)
+    y = (y or 0)
+    sx = self.__mirror
+    --self.__draw_frame:draw(self.__origin or "", x, y, 0, sx, 1)
+
+    gfx.draw(
+        self.__image, self.__quad,
+        x, y, 0, sx, 1, -self.__offset.x + self.__center.x,
+        -self.__offset.y + self.__center.y
+    )
 end
 
-function Sprite:pop()
-    local next = self._queue:head()
-    if not next then return end
-    self._queue = self._queue:body()
-    return self:play(unpack(next))
-end
+function Sprite:set_mirror(val)
+    local prev_mirror = self.__mirror
 
-function Sprite:play(name, opt)
-    local animation = self._animation_alias[name]
-    if not animation then
-        error(string.format("Unknown animation %s", name))
-    end
-    self._animation = animation
-    self._index = 0
-    self._time = 0
-    self:_set_frame()
-    return self
-end
-
-function Sprite:__update(dt)
-    if not self._animation then return end
-    if self._paused then return end
-    if self._index > self._animation:size() then return end
-
-    self._time = self._time - dt * self._speed
-    if self._time > 0 then
-        self._time = time
-        return
-    end
-
-    local index = self._index + 1
-    if index < self.animation:size() then
-        self._index = index
-        self:_set_frame()
-        return self:__update(0)
-    end
-
-    if self._animation_opt.loop then
-        event(self, "loop")
-        self._index = 0
-        return self:__update(0)
+    if not val then
+        self.__mirror = -self.__mirror
     else
-        event(self, "finish")
-        -- If nothing else ont he queue
-        -- Simply set all to dead
-        if not self:pop() then
-            self._animation = nil
-        end
-    end
-end
-
-function Sprite:_set_frame(frame)
-    local function get_frame()
-        if type(frame) == "table" then
-            return frame
-        elseif type(frame) == "number" then
-            return self._animations[frame]
-        else
-            return self._animations[self._index]
-        end
+        self.__mirror = val
     end
 
-    local frame = get_frame()
-    local node = self._graph:find("sprite")
-    node.image = frame.sheet
-    node.quad = frame.quad
-    self._time = self._time + frame.dt
-    -- TODO: Set offset
-    -- TODO: Advertise hitboxes / slices
+    if prev_mirror ~= self.__mirror then
+        local hitboxes = self:get_hitboxes()
+        self.on_hitbox(hitboxes)
+    end
 end
 
 return Sprite
