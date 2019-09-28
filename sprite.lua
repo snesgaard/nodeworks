@@ -12,8 +12,6 @@ function animation_state.create()
         frames = list(),
         index = -1,
         time = 0,
-        loop = false,
-        paused = false,
         speed = 1
     }
 
@@ -53,7 +51,7 @@ function animation_state:update(dt, event)
 end
 
 function animation_state:loop()
-    self.index = 1
+    self.index = 0
     self:update(0)
     return self
 end
@@ -69,7 +67,7 @@ function Sprite:create(animation_alias, atlas)
     atlas = get_atlas(atlas)
     self.animation_alias = dict()
     for key, val in pairs(animation_alias) do
-        local a = atlas:get_animation(key)
+        local a = atlas:get_animation(val)
         if not a then
             local msg = string.format("not found %s", key)
             error(msg)
@@ -77,7 +75,7 @@ function Sprite:create(animation_alias, atlas)
         self.animation_alias[key] = a
     end
     self.stack = list()
-    self.state = nil
+    self.state = animation_state.create()
     self.graph = graph.create()
         :branch("color", gfx_nodes.color.dot, 1, 1, 1, 1)
         :branch("texture", gfx_nodes.sprite)
@@ -100,28 +98,33 @@ end
 
 local function format_key(key)
     if type(key) == "table" then
-        return table
+        return dict(key)
     else
-        return {key}
+        return dict(key)
     end
 end
 
 function Sprite:queue(...)
-    local keys = {...}
+    local keys = list(...)
     local frames = keys
         :map(function(key)
             -- Create a level-1 copy to make share state can be set outside
             local opt = dict(format_key(key))
             -- O
-            opt.frames = self.animation_alias[unpack(key)]
+            opt.frames = self.animation_alias[unpack(opt)]
             if not opt.frames then
-                error(string.format("undefined %s", k)
+                error(string.format("undefined %s", opt[1]))
             end
             return opt
         end)
 
+    local f = frames:tail()
+    f.loop = f.loop == nil and true or f.loop
 
-    self.queue = frames
+    self.queue = frames:body()
+    self.opt = frames:head()
+    self.state:start(self.opt.frames)
+    self.graph:reset("texture", self.state:get_frame())
 end
 
 local action = {}
@@ -144,7 +147,7 @@ function action.finish(self, opt, state)
 end
 
 function Sprite:__update(dt)
-    if not self.state then return end
+    if not self.opt then return end
     if self.opt.paused then return end
 
     local speed = self.opt.speed or 1
@@ -165,4 +168,4 @@ function Sprite:__draw()
     self.graph:traverse()
 end
 
-return server
+return Sprite
