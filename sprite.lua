@@ -20,19 +20,10 @@ function animation_state.create()
     return setmetatable(this, animation_state)
 end
 
-function animation_state:pause()
-    self.paused = true
-end
-
-function animation_state:play()
-    self.paused = false
-end
-
 function animation_state:start(frames, opt)
     self.frames = frames
     self.index = 1
     self.time = self.frames[self.index].dt
-    self.loop = opt.loop
 end
 
 function animation_state:get_frame(index)
@@ -41,9 +32,6 @@ function animation_state:get_frame(index)
 end
 
 function animation_state:update(dt, event)
-    if self.paused then
-        return "none"
-    end
     if self.index > self.frames:size() then
         return "none"
     end
@@ -61,13 +49,13 @@ function animation_state:update(dt, event)
         return "next_frame"
     end
 
-    if self.loop then
-        self.index = 1
-        self:update(0)
-        return "loop"
-    else
-        return "finish"
-    end
+    return "finish"
+end
+
+function animation_state:loop()
+    self.index = 1
+    self:update(0)
+    return self
 end
 
 function animation_state:has_ended()
@@ -91,8 +79,12 @@ function Sprite:create(animation_alias, atlas)
     self.stack = list()
     self.state = nil
     self.graph = graph.create()
-        :branch("color", gfx_nodes.color.set, 1, 1, 1, 1)
+        :branch("color", gfx_nodes.color.dot, 1, 1, 1, 1)
         :branch("texture", gfx_nodes.sprite)
+end
+
+function Sprite:color()
+    return self.graph:find("color")
 end
 
 function Sprite:play(key, opt)
@@ -100,36 +92,73 @@ function Sprite:play(key, opt)
         error("Atlas not set")
     end
     local anime = self.animation_alias[key]
-    if not key then
+    if not anime then
         error(string.format("animation undefined %s", key))
     end
     self.state:start(anime, key)
 end
 
+local function format_key(key)
+    if type(key) == "table" then
+        return table
+    else
+        return {key}
+    end
+end
+
+function Sprite:queue(...)
+    local keys = {...}
+    local frames = keys
+        :map(function(key)
+            -- Create a level-1 copy to make share state can be set outside
+            local opt = dict(format_key(key))
+            -- O
+            opt.frames = self.animation_alias[unpack(key)]
+            if not opt.frames then
+                error(string.format("undefined %s", k)
+            end
+            return opt
+        end)
+
+
+    self.queue = frames
+end
+
 local action = {}
 
-function action.next_frame(self, state)
-    local frame = state:get_frame()
-    self.graph:reset("texture", frame)
+function action.next_frame(self, opt, state)
+    self.graph:reset("texture", state:get_frame())
 end
 
-function action.loop(self, state)
-    event(self, "loop")
-    local frame = state:get_frame()
-    self.graph:reset("texture", frame)
-end
+function action.finish(self, opt, state)
+    if self.opt.loop then
+        event(self, "loop", unpack(opt))
+        self.graph:reset("texture", state:loop():get_frame())
+        return
+    end
 
-function action.finish(self, state)
-    event(self, "finish")
-    state:pause()
+    event(self, "finish", unpack(opt))
+    if self.queue:size() <= 0 then
+        return self.queue:head(), self.queue:body()
+    end
 end
 
 function Sprite:__update(dt)
     if not self.state then return end
+    if self.opt.paused then return end
 
-    local code = self.state:update(dt)
-    local a = action[code]
-    if a then a(self, self.state) end
+    local speed = self.opt.speed or 1
+
+    local code = self.state:update(dt * speed)
+    local a = action[code] or function() end
+    local next_opt, next_queue = a(self, self.opt, self.state)
+    if next_opt then
+        self.opt = next_opt
+        self.state:start(next_opt.frames)
+    end
+    if next_queue then
+        self.queue = next_queue
+    end
 end
 
 function Sprite:__draw()
