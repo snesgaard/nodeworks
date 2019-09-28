@@ -50,7 +50,7 @@ function graph:leaf(id, nodetype, ...)
         error("ID Conflict! " .. id)
     end
     self._nodes[id] = nodetype
-    self._data[id] = {}
+    self._data[id] = dict()
 
     if nodetype.begin then
         nodetype.begin(self._data[id], ...)
