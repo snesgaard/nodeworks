@@ -70,7 +70,7 @@ function state:transform(...)
 
         local history = dict()
         local next_state, info = f(state, args, history)
-        epic[#epic + 1] = {state=next_state, info=info, args=args, id=path}
+        epic[#epic + 1] = dict{state=next_state, info=info, args=args, id=path}
 
         if tag then
             if not epic[tag] then
