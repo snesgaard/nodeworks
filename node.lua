@@ -1,6 +1,8 @@
 local Node = {}
 Node.__index = Node
 
+Node.draw_origin = true
+
 function Node.create(f, ...)
     local this = {
         __group = {
@@ -138,6 +140,14 @@ function Node:draw(x, y, r, sx, sy, ...)
     gfx.translate((x or 0) + t.pos.x, (y or 0) + t.pos.y)
     gfx.rotate((r or 0) + t.angle)
     gfx.scale((sx or 1) * t.scale.x, (sy or 1) * t.scale.y)
+
+    if Node.draw_origin then
+        local lw = gfx.getLineWidth()
+        gfx.setLineWidth(5)
+        gfx.line(-15, 0, 15, 0)
+        gfx.line(0, -15, 0, 15)
+        gfx.setLineWidth(lw)
+    end
 
     self:__draworder(0, 0, ...)
 

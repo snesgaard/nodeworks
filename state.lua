@@ -54,7 +54,7 @@ function state:transform(...)
 
         local path, tag, args = transform.path, transform.tag, transform.args
 
-        local import_path, name = unpack(string.split(path), ":")
+        local import_path, name = unpack(string.split(path, ":"))
 
         if not name then
             error(string.format("path %s invalid", path))
@@ -68,7 +68,7 @@ function state:transform(...)
             error(string.format("Not found %s", path))
         end
 
-        local history = {}
+        local history = dict()
         local next_state, info = f(state, args, history)
         epic[#epic + 1] = {state=next_state, info=info, args=args, id=path}
 
@@ -81,14 +81,14 @@ function state:transform(...)
         end
 
         return inner_action(
-            epic, epic:tail().state, ...
+            epic, List.tail(epic).state, ...
         )
     end
 
-    local epic = inner_action(dict(), state, ...)
+    local epic = inner_action(dict(), self, ...)
     local history = epic[#epic]
 
-    return history:tail().state, epic
+    return List.tail(epic).state, epic
 
 end
 
