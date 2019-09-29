@@ -26,8 +26,12 @@ function Node.create(f, ...)
     }
     if type(f) == "table" then
         f.create = f.create or function() end
-        setmetatable(f, {__index = Node})
-        f.__index = f
+        f.__index = f.__index or f
+        if not getmetatable(f) then
+            local t = {__index = Node}
+            setmetatable(t, Node)
+            setmetatable(f, t)
+        end
         this = setmetatable(this, f)
         this:set_order()
         this:__make_order()
@@ -114,12 +118,45 @@ function Node:set_order(order_func)
     self.__order_func = order_func or temporal_order
 end
 
+function Node:__transform_state()
+    local t = self.__transform
+    return list(t.pos.x, t.pos.y, t.angle, t.scale.x, t.scale.y)
+end
+
+function Node:__transform_changed()
+    -- Function that checks if some variable was changed
+    -- Used to prevent recomputing the transform matrix on every frame
+    local cache = self.__transform.cache or list()
+    local state = self:__transform_state()
+    for i = 1, 5 do
+        if cache[i] ~= state[i] then return state end
+    end
+end
+
 function Node:update(dt)
-    --timer.update(dt, self.__group.tween)
     tween.update(dt, self.__group.tween)
     local f, b = self.__threads2update.front, self.__threads2update.back
     self.__threads2update.front = b
     self.__threads2update.back = f
+
+    if not self.__parent then
+        -- If at top of tree then clear the mat3stack
+        -- Such taht transforms are reset
+        mat3stack:clear()
+    end
+
+    mat3stack:push()
+    local next_state = self:__transform_changed()
+    if next_state then
+        local t = self.__transform
+        t.cache = next_state
+        t.mat = mat3.translate(t.pos:unpack())
+            * mat3.rotate(t.angle)
+            * mat3.scale(t.scale:unpack())
+    end
+
+    mat3stack:map(mat3.__mul, self.__transform.mat)
+
     for co, _ in pairs(f) do
         f[co] = nil
         local status, msg = coroutine.resume(co, dt)
@@ -132,6 +169,8 @@ function Node:update(dt)
     for _, node in ipairs(self.__node_order) do
         node:update(dt)
     end
+
+    mat3stack:pop()
 end
 
 function Node:draw(x, y, r, sx, sy, ...)

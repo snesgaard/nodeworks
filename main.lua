@@ -28,7 +28,7 @@ updater = {}
 drawer = {}
 
 function love.load()
-    require "test.event_server"
+    require "test.mat3"
     --require "test.node"
     --require "test.animation_player"
     --love.event.quit()

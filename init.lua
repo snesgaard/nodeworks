@@ -31,6 +31,7 @@ Event = require(BASE .. ".event")
 EventServer = require(BASE .. ".event_server")
 AnimationPlayer = require(BASE .. ".animation_player")
 Spatial = require(BASE .. ".spatial")
+mat3 = require(BASE .. ".mat3")
 
 echo = require(BASE .. ".echo")
 
@@ -88,6 +89,9 @@ function create_spatialstack()
     return Stack.create(spatial)
 end
 
+function create_mat3stack()
+    return Stack.create(mat3.identity)
+end
 
 function gfx.prerender(w, h, f, ...)
     local args = {...}
@@ -264,3 +268,4 @@ gfx.setDefaultFilter("nearest", "nearest")
 
 colorstack = create_colorstack()
 spatialstack = create_spatialstack()
+mat3stack = create_mat3stack()

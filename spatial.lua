@@ -162,7 +162,7 @@ function Spatial:corner(x, y)
     local dx = x == "right" and self.w or 0
     local dy = y == "bottom" and self.h or 0
 
-    return Vec2(self.x + dx, self.y + dy)
+    return vec2(self.x + dx, self.y + dy)
 end
 
 function Spatial:map(f)

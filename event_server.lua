@@ -91,6 +91,9 @@ function server:wait(...)
     end
     local path = {get_path(...)}
     local o = get_subtable(self._observers, unpack(path))
+    if not o then
+        log.warn("invalid path %s", tostring(list(unpack(path))))
+    end
     o[#o + 1] = co
     self._address[co] = path
     return coroutine.yield()

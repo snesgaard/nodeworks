@@ -124,24 +124,48 @@ function Sprite:queue(...)
     self.queue = frames:body()
     self.opt = frames:head()
     self.state:start(self.opt.frames)
-    self.graph:reset("texture", self.state:get_frame())
+    self:update_frame(self.state)
+end
+
+function Sprite:update_frame(state)
+    -- First test gfx
+    local frame = state:get_frame()
+    self.graph:reset("texture", frame)
+    -- Next broadcast which slices where present
+    local center = Spatial.center(frame.slices.origin or spatial())
+    local m = mat3stack:peek()
+
+    for key, slice in pairs(frame.slices) do
+        slice = slice:move((-center):unpack())
+        local c1 = slice:corner()
+        local c2 = slice:corner("right", "bottom")
+        c1 = m:transform(c1)
+        c2 = m:transform(c2)
+        local w, h = (c2 - c1):unpack()
+        local x, y = c1:unpack()
+        slice = spatial(x, y, w, h)
+
+        event(self, join("slice", key), slice)
+    end
 end
 
 local action = {}
 
 function action.next_frame(self, opt, state)
-    self.graph:reset("texture", state:get_frame())
+    self:update_frame(state)
 end
 
 function action.finish(self, opt, state)
     if self.opt.loop then
         event(self, "loop", unpack(opt))
-        self.graph:reset("texture", state:loop():get_frame())
+        self:update_frame(state:loop())
         return
     end
 
     event(self, "finish", unpack(opt))
-    if self.queue:size() <= 0 then
+    if self.queue:size() > 0 then
+        self.state:start(self.queue:head().frames)
+        self:update_frame(self.state)
         return self.queue:head(), self.queue:body()
     end
 end
@@ -157,7 +181,6 @@ function Sprite:__update(dt)
     local next_opt, next_queue = a(self, self.opt, self.state)
     if next_opt then
         self.opt = next_opt
-        self.state:start(next_opt.frames)
     end
     if next_queue then
         self.queue = next_queue
