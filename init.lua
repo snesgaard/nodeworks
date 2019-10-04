@@ -75,6 +75,8 @@ fsm = require(BASE .. ".fsm")
 lume = require(BASE .. ".third.lume")
 lurker = require(BASE .. ".third.lurker")
 
+bump = require(BASE .. ".third.bump.bump")
+
 suit = require (BASE .. ".third.SUIT")
 require (BASE .. ".third.patch")
 
