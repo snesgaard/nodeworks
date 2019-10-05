@@ -70,13 +70,13 @@ function fsm:__index(key)
     end
 end
 
-function fsm:create(data)
+function fsm:create(data, ...)
     local edges = dict()
     local state_methods = dict()
     local global_methods = dict()
 
     rawset(self, "__edges", edges)
-    rawset(self, "__data", dict())
+    rawset(self, "__data", dict(data.data))
     rawset(self, "__states", data.states)
     rawset(self, "__methods", data.methods)
     rawset(self, "__state", "")
@@ -84,7 +84,7 @@ function fsm:create(data)
     rawset(self, "__global_methods", global_methods)
 
     -- Create state method clores
-    for name, state in pairs(data.states) do
+    for name, state in pairs(data.states or {}) do
         local s = dict()
         for key, func in pairs(state) do
             s[key] = fsm.method_closure(self, func)
@@ -93,13 +93,13 @@ function fsm:create(data)
     end
 
     -- Create global method closures
-    for name, func in pairs(data.methods) do
+    for name, func in pairs(data.methods or {}) do
         global_methods[name] = fsm.method_closure(self, func)
     end
 
     global_methods.data = data_method
     -- Create edge closures
-    for _, edge in ipairs(data.edges) do
+    for _, edge in ipairs(data.edges or {}) do
         local e = edges[edge.from] or dict()
         e[edge.name] = function(self, ...)
             local co = coroutine.create(edge_traversal)
@@ -110,6 +110,8 @@ function fsm:create(data)
         end
         edges[edge.from] = e
     end
+
+    if data.create then data.create(self, rawget(self, "__data"), ...) end
 
     if data.init then fsm.force(self, data.init) end
 end

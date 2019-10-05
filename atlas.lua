@@ -130,13 +130,7 @@ function Atlas:get_animation(name)
 
     local frames_sub = frames:sub(tag.from + 1, tag.to + 1)
 
-    if #frames_sub <= 0 then
-        return
-    elseif #frames_sub == 1 then
-        return frames_sub:head()
-    else
-        return frames_sub
-    end
+    return frames_sub
 end
 
 function Atlas:get_quads(name)

@@ -1,7 +1,7 @@
 local Node = {}
 Node.__index = Node
 
-Node.draw_origin = true
+Node.draw_origin = false
 
 function Node.create(f, ...)
     local this = {
@@ -133,7 +133,7 @@ function Node:__transform_changed()
     end
 end
 
-function Node:update(dt)
+function Node:update(dt, ...)
     tween.update(dt, self.__group.tween)
     local f, b = self.__threads2update.front, self.__threads2update.back
     self.__threads2update.front = b
@@ -164,10 +164,10 @@ function Node:update(dt)
             log.error(msg)
         end
     end
-    self:__update(dt)
+    self:__update(dt, ...)
 
     for _, node in ipairs(self.__node_order) do
-        node:update(dt)
+        node:update(dt, ...)
     end
 
     mat3stack:pop()

@@ -63,8 +63,8 @@ end
 local Sprite = {}
 Sprite.__index = Sprite
 
-function Sprite:create(animation_alias, atlas)
-    atlas = get_atlas(atlas)
+function Sprite:create(animation_alias, atlas_path)
+    atlas = get_atlas(atlas_path)
     self.animation_alias = dict()
     for key, val in pairs(animation_alias) do
         local a = atlas:get_animation(val)
@@ -72,13 +72,16 @@ function Sprite:create(animation_alias, atlas)
             local msg = string.format("not found %s", key)
             error(msg)
         end
+        log.debug(
+            string.format("loading animation %s, %s, %s", atlas_path, key, val)
+        )
         self.animation_alias[key] = a
     end
     self.stack = list()
     self.state = animation_state.create()
     self.graph = graph.create()
         :branch("color", gfx_nodes.color.dot, 1, 1, 1, 1)
-        :branch("texture", gfx_nodes.sprite)
+        :branch("texture", gfx_nodes.sprite, 0, 0, 0, 1, 1)
 end
 
 function Sprite:color()
@@ -121,7 +124,7 @@ function Sprite:queue(...)
     local f = frames:tail()
     f.loop = f.loop == nil and true or f.loop
 
-    self.queue = frames:body()
+    self._queue = frames:body()
     self.opt = frames:head()
     self.state:start(self.opt.frames)
     self:update_frame(self.state)
@@ -132,7 +135,8 @@ function Sprite:update_frame(state)
     local frame = state:get_frame()
     self.graph:reset("texture", frame)
     -- Next broadcast which slices where present
-    local center = Spatial.center(frame.slices.origin or spatial())
+    local origin = frame.slices.origin or spatial()
+    local center = vec2(origin:center().x, origin.y + origin.h)
     local m = mat3stack:peek()
 
     for key, slice in pairs(frame.slices) do
@@ -163,10 +167,10 @@ function action.finish(self, opt, state)
     end
 
     event(self, "finish", unpack(opt))
-    if self.queue:size() > 0 then
-        self.state:start(self.queue:head().frames)
+    if self._queue:size() > 0 then
+        self.state:start(self._queue:head().frames)
         self:update_frame(self.state)
-        return self.queue:head(), self.queue:body()
+        return self._queue:head(), self._queue:body()
     end
 end
 
@@ -183,12 +187,14 @@ function Sprite:__update(dt)
         self.opt = next_opt
     end
     if next_queue then
-        self.queue = next_queue
+        self._queue = next_queue
     end
 end
 
 function Sprite:__draw()
-    self.graph:traverse()
+    if not self.hidden then
+        self.graph:traverse()
+    end
 end
 
 return Sprite

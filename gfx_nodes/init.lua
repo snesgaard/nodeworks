@@ -90,15 +90,16 @@ function sprite:begin(...)
             return a, ...
         -- Second we assume data was given as a frame
         elseif type(a) == "table" then
-            local center = a.slices.origin or spatial()
-            local offset = center:center() - a.offset
+            local origin = a.slices.origin or spatial()
+            local center = vec2(origin:center().x, origin.y + origin.h)
+            local offset = center - a.offset
             return a.image, a.quad, offset
         end
     end
 
     self.image, self.quad, self.offset = get_args(...)
     self.offset = self.offset or vec2()
-    self.scale = vec2(2, 2)
+    self.scale = vec2(1, 1)
     self.pos = vec2()
 end
 
