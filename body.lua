@@ -54,6 +54,18 @@ function body:move(x, y, filter)
     return col, len
 end
 
+function body:set_move(x, y, filter)
+    local pos = self:pos()
+    local x, y, col, len = self.world:move(
+        self.body, x + self.body.x, y + self.body.y,
+        filter or default_filter
+    )
+    pos.x = x - self.body.x
+    pos.y = y - self.body.y
+
+    return col, len
+end
+
 function body:__update(dt)
     if not self.floating then
         self.speed = self.speed + self.gravity * dt
