@@ -250,7 +250,7 @@ function Spatial:commit(obj)
     return self
 end
 
-function Spatial.__eq(a, b)
+function Spatial.is_equal(a, b)
     return a.x == b.x and a.y == b.y and a.w == b.w and a.h == b.h
 end
 
@@ -349,10 +349,6 @@ for _, key in pairs(wrapped_apis) do
 
         return SpatialCollection.create(next_border, next_items)
     end
-end
-
-function SpatialCollection.__eq(a, b)
-    return a.x == b.x and a.y == b.y and a.w == b.w and a.h == b.h
 end
 
 return Spatial
