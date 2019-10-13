@@ -20,7 +20,6 @@ function server:process()
         self.queue = self.queue:body()
         local args = self.args:head()
         self.args = self.args:body()
-
         f(self, unpack(args))
         event(self, "action_done", f, unpack(args))
     end

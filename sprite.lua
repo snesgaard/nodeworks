@@ -72,9 +72,6 @@ function Sprite:create(animation_alias, atlas_path)
             local msg = string.format("not found %s", key)
             error(msg)
         end
-        log.debug(
-            string.format("loading animation %s, %s, %s", atlas_path, key, val)
-        )
         self.animation_alias[key] = a
     end
     self.stack = list()

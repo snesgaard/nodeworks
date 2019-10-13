@@ -2,17 +2,18 @@ local function edge_traversal(self, from_key, edge_key, to_key, ...)
     local states = rawget(self, "__states")
     local edges = rawget(self, "__edges")
     local data = rawget(self, "__data")
+    local verbose = rawget(self, "__verbose")
     local from = states[from_key] or {}
     local to = states[to_key] or {}
 
     rawset(self, "__state", from_key)
-    log.debug("Leaving %s", from_key)
+    if verbose then log.debug("Leaving %s", from_key) end
     if from.exit and from.exit(self, data, ...) then
         rawset(self, "__pending", false)
         return
     end
 
-    log.debug("Traversing %s %s", from_key, to_key)
+    if verbose then log.debug("Traversing %s %s", from_key, to_key) end
     local f = from[edge_key]
     if  f and f(self, data, ...) then
         rawset(self, "__pending", false)
@@ -21,7 +22,7 @@ local function edge_traversal(self, from_key, edge_key, to_key, ...)
 
     rawset(self, "__pending", false)
     rawset(self, "__state", to_key)
-    log.debug("Entering %s", to_key)
+    if verbose then log.debug("Entering %s", to_key) end
     if to.enter then
         to.enter(self, data, ...)
     end
@@ -82,6 +83,7 @@ function fsm:create(data, ...)
     rawset(self, "__state", "")
     rawset(self, "__state_methods", state_methods)
     rawset(self, "__global_methods", global_methods)
+    rawset(self, "__verbose", false)
 
     -- Create state method clores
     for name, state in pairs(data.states or {}) do
@@ -114,6 +116,10 @@ function fsm:create(data, ...)
     if data.create then data.create(self, rawget(self, "__data"), ...) end
 
     if data.init then fsm.force(self, data.init) end
+end
+
+function fsm:verbose(value)
+    rawset(self, "__verbose", value)
 end
 
 function fsm:force(to)
