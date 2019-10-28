@@ -1,0 +1,9 @@
+all:
+	make -C characters all
+	make -C maps all
+	make -C tiles all
+
+clean:
+	make -C characters clean
+	make -C maps clean
+	make -C tiles clean
