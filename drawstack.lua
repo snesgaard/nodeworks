@@ -11,7 +11,8 @@ function draw_stack.create()
     this._r = 0
     this._sx = 0
     this._sy = 0
-    return setmetatable(this, draw_stack)
+    this = setmetatable(this, draw_stack)
+    return this:reset()
 end
 
 function draw_stack:reset(x, y, r, sx, sy)
@@ -45,7 +46,7 @@ end
 
 function draw_stack:submit_func(func, opt, x, y, w, h)
     local function action(x, y, w, h, opt)
-        func(x, y, w, h)
+        func(x, y, w, h, opt)
     end
 
     self._draws[#self._draws + 1] = {action, x, y, w, h, opt}

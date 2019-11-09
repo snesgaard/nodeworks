@@ -87,8 +87,9 @@ function state:transform(...)
 
     local epic = inner_action(dict(), self, ...)
     local history = epic[#epic]
+    local tail_epoch = List.tail(epic)
 
-    return List.tail(epic).state, epic
+    return tail_epoch and tail_epoch.state or self, epic
 
 end
 
@@ -104,6 +105,12 @@ function state:write(path, value)
     for i = #parts, 1, -1 do
         local d = dirs[i]
         local p = parts[i]
+        if not d then
+            local msg = string.format(
+                "Path not found <%s>", path
+            )
+            error(msg)
+        end
         value = d:set(p, value)
     end
 

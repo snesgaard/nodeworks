@@ -133,6 +133,10 @@ function Atlas:get_animation(name)
     return frames_sub
 end
 
+function Atlas:get_frame(name)
+    return self:get_animation(name):head()
+end
+
 function Atlas:get_quads(name)
     local frames = self:get_animation(name)
     if not frames then

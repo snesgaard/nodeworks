@@ -239,10 +239,10 @@ function Spatial:yalign(src, dst_side, src_side, margin)
     return dst:move(0, dy)
 end
 
-function Spatial:align(other, xself, sother, yself, yother)
-    return other
-        :xalign(self, xself, xother)
-        :yalign(self, yself, yother)
+function Spatial:align(other, xself, xother, yself, yother)
+    return self
+        :xalign(other, xself, xother)
+        :yalign(other, yself, yother)
 end
 
 function Spatial:commit(obj)

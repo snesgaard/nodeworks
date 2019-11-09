@@ -262,6 +262,23 @@ function trace(path)
     return node
 end
 
+
+function graph_from_frame(frame)
+    local g = graph.create()
+        :branch("base_color", gfx_nodes.color.dot, 1, 1, 1)
+        :branch("texture", gfx_nodes.sprite, frame)
+
+    for name, slice in pairs(frame.slices) do
+        g:back("texture")
+        g:branch(
+            join("slice", name), gfx_nodes.spatial.set,
+            slice:scale(2, 2):unpack()
+        )
+    end
+
+    return g
+end
+
 function add(a, b) return a + b end
 function sub(a, b) return a - b end
 function dot(a, b) return a * b end

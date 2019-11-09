@@ -78,7 +78,7 @@ function Sprite:create(animation_alias, atlas_path)
     self.state = animation_state.create()
     self.graph = graph.create()
         :branch("color", gfx_nodes.color.dot, 1, 1, 1, 1)
-        :branch("texture", gfx_nodes.sprite, 0, 0, 0, 1, 1)
+        :branch("texture", gfx_nodes.sprite)
 end
 
 function Sprite:color()
