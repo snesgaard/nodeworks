@@ -79,6 +79,13 @@ function Sprite:create(animation_alias, atlas_path)
     self.graph = graph.create()
         :branch("color", gfx_nodes.color.dot, 1, 1, 1, 1)
         :branch("texture", gfx_nodes.sprite)
+
+    self.__shake = {
+        offset = vec2(),
+        freq = 60,
+        amp = 10,
+        duration = 0.3
+    }
 end
 
 function Sprite:color()
@@ -100,7 +107,7 @@ local function format_key(key)
     if type(key) == "table" then
         return dict(key)
     else
-        return dict(key)
+        return dict({key})
     end
 end
 
@@ -117,7 +124,6 @@ function Sprite:queue(...)
             end
             return opt
         end)
-
     local f = frames:tail()
     f.loop = f.loop == nil and true or f.loop
 
@@ -135,9 +141,10 @@ function Sprite:update_frame(state)
     local origin = frame.slices.origin or spatial()
     local center = vec2(origin:center().x, origin.y + origin.h)
     local m = mat3stack:peek()
+    local s = self.graph:data("texture").scale
 
     for key, slice in pairs(frame.slices) do
-        slice = slice:move((-center):unpack())
+        slice = slice:move((-center):unpack()):scale(s.x, s.y)
         local c1 = slice:corner()
         local c2 = slice:corner("right", "bottom")
         c1 = m:transform(c1)
@@ -145,7 +152,6 @@ function Sprite:update_frame(state)
         local w, h = (c2 - c1):unpack()
         local x, y = c1:unpack()
         slice = spatial(x, y, w, h)
-
         event(self, join("slice", key), slice)
     end
 end
@@ -190,8 +196,71 @@ end
 
 function Sprite:__draw()
     if not self.hidden then
+        gfx.push()
+        gfx.translate(self.__shake.offset:unpack())
         self.graph:traverse()
+        gfx.pop()
     end
+end
+
+local function do_shake(self, shake)
+    local time = shake.duration
+    while time > 0 do
+        local a = shake.amp * (time / shake.duration)
+        local f = shake.freq * time
+        shake.offset = vec2(math.cos(f) * a, 0)
+        time = time - event:wait("update")
+    end
+
+    shake.offset = vec2()
+end
+
+function Sprite:shake()
+    local shake = self.__shake
+    self:fork(do_shake, shake)
+end
+
+function Sprite:offset(animation, from, to)
+    local frames = self.animation_alias[animation]
+    if not frames then
+        error("Animation undefined %s", animation)
+    end
+
+    local f = frames:find(function(f)
+        return f.slices[from] and f.slices[to]
+    end)
+
+    if not f then
+        error(
+            "No frames with both %s and %s in animation %s",
+            from, to, animation
+        )
+    end
+
+    local from_slice = f.slices[from]
+    local to_slice = f.slices[to]
+
+    -- y coordinate is flipped to map aseprite coordinate system to LOVE's
+    -- Scale to match the sprites scaling
+    local s = self.graph:data("texture").scale
+    return (to_slice:center() - from_slice:center()) * vec2(1, -1) * s
+end
+
+function Sprite:attack_offset()
+    return self:offset("attack", "origin", "attack")
+end
+
+function Sprite:cast_offset()
+    return self:offset("cast", "origin", "cast")
+end
+
+function Sprite:shape()
+    local f = self.state:get_frame()
+    local q = f.quad
+    local x, y, w, h = q:getViewport()
+    local s = self.graph:data("texture").scale
+    local p = self.__transform.pos
+    return spatial(-w * 0.5, -h, w, h):scale(s.x, s.y):move(p:unpack())
 end
 
 return Sprite

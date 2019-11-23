@@ -55,13 +55,19 @@ function Spatial:move(x, y, align, valign)
     return Spatial.create(self.x + x, self.y + y, self.w, self.h)
 end
 
-function Spatial:right(x, y, w, h)
+function Spatial:right(x, y, w, h, align)
     local prev = self
     x = x or 0
     y = y or 0
     w = w or self.w
     h = h or self.h
-    return Spatial.create(self.x + self.w + x, self.y + y, w, h)
+    local dy = 0
+    if align == "center" then
+        dy = 0.5 * (self.h - h)
+    elseif align == "bottom" then
+        dy = self.h - h
+    end
+    return Spatial.create(self.x + self.w + x, self.y + y + dy, w, h)
 end
 
 function Spatial:upright(x, y, w, h)
@@ -82,13 +88,19 @@ function Spatial:downright(x, y, w, h)
     return Spatial.create(self.x + self.w + x, self.y + h + y, w, h)
 end
 
-function Spatial:left(x, y, w, h)
+function Spatial:left(x, y, w, h, align)
     local prev = self
     x = x or 0
     y = y or 0
     w = w or self.w
     h = h or self.h
-    return Spatial.create(self.x - w - x, self.y + y, w, h)
+    local dy = 0
+    if align == "center" then
+        dy = 0.5 * (self.h - h)
+    elseif align == "bottom" then
+        dy = self.h - h
+    end
+    return Spatial.create(self.x - w - x, self.y + y + dy, w, h)
 end
 
 function Spatial:upleft(x, y, w, h)
@@ -109,22 +121,34 @@ function Spatial:downleft(x, y, w, h)
     return Spatial.create(self.x - w - x, self.y + h + y, w, h)
 end
 
-function Spatial:down(x, y, w, h)
+function Spatial:down(x, y, w, h, align)
     local prev = self
     x = x or 0
     y = y or 0
     w = w or self.w
     h = h or self.h
-    return Spatial.create(self.x + x, self.y + self.h + y, w, h)
+    local dx = 0
+    if align == "center" then
+        dx = 0.5 * (self.w - w)
+    elseif align == "right" then
+        dx = self.w - w
+    end
+    return Spatial.create(self.x + x + dx, self.y + self.h + y, w, h)
 end
 
-function Spatial:up(x, y, w, h)
+function Spatial:up(x, y, w, h, align)
     local prev = self
     x = x or 0
     y = y or 0
     w = w or self.w
     h = h or self.h
-    return Spatial.create(self.x + x, self.y - h - y, w, h)
+    local dx = 0
+    if align == "center" then
+        dx = 0.5 * (self.w - w)
+    elseif align == "right" then
+        dx = self.w - w
+    end
+    return Spatial.create(self.x + x + dx, self.y - h - y, w, h)
 end
 
 function Spatial:set_position(x, y)

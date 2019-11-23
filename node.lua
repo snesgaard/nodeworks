@@ -193,7 +193,18 @@ function Node:draw(x, y, r, sx, sy, ...)
     gfx.pop()
 end
 
+function Node:hide()
+    self.__hidden = true
+    return self
+end
+
+function Node:show()
+    self.__hidden = false
+    return self
+end
+
 function Node:__draworder(x, y, ...)
+    if self.__hidden then return end
     self:__draw(0, 0, ...)
     self:__childdraw(0, 0)
 end
