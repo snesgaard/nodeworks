@@ -263,4 +263,8 @@ function Sprite:shape()
     return spatial(-w * 0.5, -h, w, h):scale(s.x, s.y):move(p:unpack())
 end
 
+function Sprite:get_animation(key)
+    return self.animation_alias[key]
+end
+
 return Sprite

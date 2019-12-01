@@ -53,6 +53,9 @@ function state:transform(...)
         end
 
         local path, tag, args = transform.path, transform.tag, transform.args
+        if not path then
+            error("A path must be supplied!")
+        end
 
         local import_path, name = unpack(string.split(path, ":"))
 
@@ -69,14 +72,23 @@ function state:transform(...)
         end
 
         local history = dict()
-        local next_state, info = f(state, args, history)
+        local next_state, info, post_transforms = f(state, args, history)
         epic[#epic + 1] = dict{state=next_state, info=info, args=args, id=path}
 
         if tag then
             if not epic[tag] then
-                epic[tag] = history
+                epic[tag] = #epic
             else
                 log.warn("Tag <%s> was already taken", tostring(tag))
+            end
+        end
+
+        if post_transforms and #post_transforms > 0 then
+            local next_state, post_epic = next_state:transform(
+                unpack(post_transforms)
+            )
+            for _, epoch in ipairs(post_epic) do
+                epic[#epic + 1] = epoch
             end
         end
 

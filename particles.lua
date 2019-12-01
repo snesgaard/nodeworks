@@ -1,6 +1,7 @@
 local argmap = dict{
     move = "moveTo",
     lifetime = "setParticleLifetime",
+    emission_life = "setEmitterLifetime",
     rate = "setEmissionRate",
     area = "setEmissionArea",
     spread = "setSpread",
