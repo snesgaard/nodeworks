@@ -155,8 +155,8 @@ function Spatial:set_position(x, y)
     return Spatial.create(x or self.x, y or self.y, self.w, self.h)
 end
 
-function Spatial:unpack()
-    return self.x, self.y, self.w, self.h
+function Spatial:unpack(...)
+    return self.x, self.y, self.w, self.h, ...
 end
 
 function Spatial:expand(w, h, align, valign)
@@ -170,7 +170,7 @@ function Spatial:expand(w, h, align, valign)
     local sx = scale_x[align or "center"]
     sx = sx or scale.center
 
-    local scale_y = {top = 0, center = 0.5, right = 1}
+    local scale_y = {top = 0, center = 0.5, bottom = 1}
     local sy = scale_y[valign] or scale_y.center
 
     return Spatial.create(
