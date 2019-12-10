@@ -189,6 +189,14 @@ function string.pathsplit(path)
     )
 end
 
+function string.stack(a, b, ...)
+    if not a or not b then
+        return a
+    else
+        return string.stack(a .. "\n" .. b, ...)
+    end
+end
+
 atlas_cache = {}
 function get_atlas(path)
     if not atlas_cache[path] then
