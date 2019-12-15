@@ -131,6 +131,7 @@ function Sprite:queue(...)
     self.opt = frames:head()
     self.state:start(self.opt.frames)
     self:update_frame(self.state)
+    event(self, "queuing", keys)
 end
 
 function Sprite:update_frame(state)
@@ -151,8 +152,12 @@ function Sprite:update_frame(state)
         c2 = m:transform(c2)
         local w, h = (c2 - c1):unpack()
         local x, y = c1:unpack()
-        slice = spatial(x, y, w, h)
-        event(self, join("slice", key), slice)
+        local slice_transformed = spatial(x, y, w, h)
+        event(self, join("slice", key), slice_transformed, slice, frame.frame_id)
+    end
+
+    for key, origin in pairs(frame.slices_origin) do
+        event(self, join("origin", key), origin)
     end
 end
 

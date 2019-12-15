@@ -15,6 +15,28 @@ function Spatial.create(x, y, w, h)
     )
 end
 
+function Spatial.__add(s1, s2)
+    return Spatial.create(
+        s1.x + s2.x, s1.y + s2.y,
+        s1.w + s2.w, s1.h + s2.h
+    )
+end
+
+function Spatial.__sub(s1, s2)
+    return Spatial.create(
+        s1.x - s2.x, s1.y - s2.y,
+        s1.w - s2.w, s1.h - s2.h
+    )
+end
+
+function Spatial:sanitize()
+    return Spatial.create(
+        self.w > 0 and self.x or self.x + self.w,
+        self.h > 0 and self.y or self.y + self.h,
+        math.abs(self.w), math.abs(self.h)
+    )
+end
+
 function Spatial:copy()
     return Spatial.create(self.x, self.y, self.w, self.h)
 end
