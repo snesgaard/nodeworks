@@ -127,7 +127,8 @@ function server:clear(co)
     self._address[co] = nil
     local index = List.argfind(o, co)
     if not index then
-        error("Somehow address was defined, but could not find thread")
+        --error("Somehow address was defined, but could not find thread")
+        return
     end
     for i = index, #o do
         o[i] = o[i + 1]
@@ -152,10 +153,14 @@ function server:_invoke_msg(...)
 
     -- Run through the thing
     for _, co in pairs(o) do
-        self._address[co] = nil
-        local status, msg = do_invocation(co, unpack(args))
-        if status == false then
-            error(msg)
+        -- If address is nil, this means that the co was cleared and
+        -- thus should not be executed
+        if self._address[co] then
+            self._address[co] = nil
+            local status, msg = do_invocation(co, unpack(args))
+            if status == false then
+                error(msg)
+            end
         end
     end
 end

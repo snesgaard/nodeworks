@@ -258,8 +258,8 @@ end
 
 function Node:get_local_transform()
     local next_state = self:__transform_changed()
+    local t = self.__transform
     if next_state then
-        local t = self.__transform
         t.cache = next_state
         t.mat = mat3.translate(t.pos:unpack())
             * mat3.rotate(t.angle)
@@ -276,7 +276,7 @@ function Node:get_full_transform()
         this = this.__parent
     end
     local transforms = nodes:map(function(n) return n:get_local_transform() end)
-    local m = mat3.create()
+    local m = mat3.identity()
     for i = 1, #transforms do
         m = transforms[i] * m
     end
