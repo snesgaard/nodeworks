@@ -73,8 +73,18 @@ function state:transform(...)
 
         local history = dict()
         local next_state, info, post_transforms = f(state, args, history)
-        epic[#epic + 1] = dict{state=next_state, info=info, args=args, id=path}
 
+        epic[#epic + 1] = dict{state=next_state, info=info or {}, args=args, id=path}
+
+        if self.post_transform then
+            local pt = self.post_transform
+            local additional_transform = pt(
+                self, path, next_state, info, args
+            ) or list()
+            post_transforms = List.concat(
+                (post_transforms or list()), additional_transform
+            )
+        end
         if tag then
             if not epic[tag] then
                 epic[tag] = #epic
