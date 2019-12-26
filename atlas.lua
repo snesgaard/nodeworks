@@ -65,6 +65,8 @@ function Atlas.create(path)
 
         for _, slice in pairs(data.meta.slices) do
             local hitboxes = List.create()
+            local delta = List.create()
+            local delta_init = List.create()
             for _, k in ipairs(slice.keys) do
                 hitboxes[k.frame + 1] = spatial(
                     k.bounds.x, k.bounds.y, k.bounds.w, k.bounds.h
@@ -83,6 +85,7 @@ function Atlas.create(path)
                     hitboxes[index] = hitboxes[index] or hitboxes[index + 1]
                 end
             end
+
             -- Filter pass
             local function get_limits()
                 local hb_mask = frame_hitbox_mask[slice.name] or {}
@@ -93,13 +96,19 @@ function Atlas.create(path)
 
             for i = 1, hb_to - 1 do
                 hitboxes[i] = nil
+                delta[i] = nil
+                delta_init[i] = nil
             end
             for i = hb_from + 1, #frames do
                 hitboxes[i] = nil
+                delta[i] = nil
+                delta_init[i] = nil
             end
             -- Fill pass
             for i, f in ipairs(frames) do
                 frames[i].slices[slice.name] = hitboxes[i]
+                frames[i].slices_origin[slice.name] = hitboxes[1]
+                frames[i].frame_id = name
             end
         end
         -- Fill in tags

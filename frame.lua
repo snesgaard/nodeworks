@@ -7,6 +7,9 @@ function frame.create(image, slices, quad, offset)
     this.quad = quad
     this.slices = slices
     this.offset = offset or vec2(0, 0)
+    this.deltas = dict{}
+    this.deltas_init = dict{}
+    this.slices_origin = dict{}
     return setmetatable(this, frame)
 end
 

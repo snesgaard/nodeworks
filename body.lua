@@ -4,6 +4,8 @@ local function check_pair(a, b, at, bt)
     return (a == at and b == bt) or (a == bt and b == at)
 end
 
+__draw_bodies = true
+
 local function default_filter(item, other)
     if check_pair(item.type, other.type, "wall", nil) then
         return false
@@ -97,9 +99,16 @@ function body:on_ceil()
     end
 end
 
-function body:set(x, y)
-    self.__transform.pos = vec2(x, y)
-    self.world:update(self.body, x, y)
+function body:set(x, y, w, h)
+    local pos = self.__transform.pos
+    if x and y then
+        self.__transform.pos = vec2(x, y)
+    end
+    self.world:update(self.body, x or pos.x, y or pos.y, w, h)
+end
+
+function body:get()
+    return self.world:getRect(self.body)
 end
 
 function body:pos()
@@ -108,9 +117,10 @@ end
 
 function body:__draw()
     if __draw_bodies then
+        local x, y, w, h = self.world:getRect(self.body)
         local c = {gfx.getColor()}
-        gfx.setColor(0, 1, 0.3)
-        gfx.rectangle("line", self.body:unpack())
+        gfx.setColor(0, 1, 0.3, 1.0)
+        gfx.rectangle("line", 0, 0, w, h)
         gfx.setColor(unpack(c))
     end
 end

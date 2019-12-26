@@ -52,6 +52,18 @@ function mat3:transform(v)
     return vec2(x / z, y / z)
 end
 
+function mat3:transform_spatial(s)
+    local v1 = vec2(s.x, s.y)
+    local v2 = vec2(s.x + s.w, s.y + s.h)
+    v1 = self:transform(v1)
+    v2 = self:transform(v2)
+
+    return spatial(
+        math.min(v1.x, v2.x), math.min(v1.y, v2.y),
+        math.abs(v1.x - v2.x), math.abs(v1.y - v2.y)
+    )
+end
+
 function mat3.rotate(angle)
     local cosa, sina = math.cos(angle), math.sin(angle)
     return mat3.create(

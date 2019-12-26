@@ -21,7 +21,7 @@ function Node.create(f, ...)
         __transform = {
             pos = vec2(0, 0),
             angle = 0,
-            scale = vec2(1, 1)
+            scale = vec2(1, 1),
         }
     }
     if type(f) == "table" then
@@ -133,6 +133,7 @@ function Node:__transform_changed()
     end
 end
 
+
 function Node:update(dt, ...)
     tween.update(dt, self.__group.tween)
     local f, b = self.__threads2update.front, self.__threads2update.back
@@ -145,7 +146,12 @@ function Node:update(dt, ...)
         mat3stack:clear()
     end
 
+    if self.__motion then
+        self:__motion(dt, ...)
+    end
+
     mat3stack:push()
+
     local next_state = self:__transform_changed()
     if next_state then
         local t = self.__transform
@@ -179,8 +185,7 @@ function Node:draw(x, y, r, sx, sy, ...)
     gfx.translate((x or 0) + t.pos.x, (y or 0) + t.pos.y)
     gfx.rotate((r or 0) + t.angle)
     gfx.scale((sx or 1) * t.scale.x, (sy or 1) * t.scale.y)
-
-    if Node.draw_origin then
+    if Node.draw_origin and not self.__hidden then
         local lw = gfx.getLineWidth()
         gfx.setLineWidth(5)
         gfx.line(-15, 0, 15, 0)
@@ -249,6 +254,33 @@ function Node:orphan(child)
 
 
     return self
+end
+
+function Node:get_local_transform()
+    local next_state = self:__transform_changed()
+    local t = self.__transform
+    if next_state then
+        t.cache = next_state
+        t.mat = mat3.translate(t.pos:unpack())
+            * mat3.rotate(t.angle)
+            * mat3.scale(t.scale:unpack())
+    end
+    return t.mat
+end
+
+function Node:get_full_transform()
+    local nodes = list()
+    local this = self
+    while this do
+        nodes[#nodes + 1] = this
+        this = this.__parent
+    end
+    local transforms = nodes:map(function(n) return n:get_local_transform() end)
+    local m = mat3.identity()
+    for i = 1, #transforms do
+        m = transforms[i] * m
+    end
+    return m
 end
 
 function Node:child(...)
