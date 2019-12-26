@@ -99,7 +99,7 @@ function sprite:begin(...)
 
     self.image, self.quad, self.offset = get_args(...)
     self.offset = self.offset or vec2()
-    self.scale = vec2(1, 1)
+    self.scale = vec2(2, 2)
     self.pos = vec2()
 end
 
