@@ -104,6 +104,15 @@ function list:map(f)
   return ret
 end
 
+function list:iter(f, init, stop)
+    init = init or 1
+    stop = stop or #self
+    for i = init, stop do
+        f(self[i])
+    end
+    return self
+end
+
 function list:argmap(f)
     local ret = list.create()
     for i = 1, #self do
