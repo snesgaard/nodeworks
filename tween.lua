@@ -122,6 +122,11 @@ function TweenHandle:after(after)
     return self
 end
 
+function TweenHandle:call(f)
+    self._call = f
+    return self
+end
+
 local tween = {}
 
 local function update_tween(dt, tween)
@@ -154,6 +159,10 @@ local function update_tween(dt, tween)
                 for k, v in pairs(dst) do set[k] = v end
             end
         end
+    end
+
+    if tween._call then
+        tween._call(tween._dst)
     end
 
     if is_done then
