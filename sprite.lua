@@ -188,7 +188,7 @@ function Sprite:__update(dt)
 
     local speed = self.opt.speed or 1
 
-    local code = self.state:update(dt * speed)
+    local code = self.state:update(dt * speed * (self.speed or 1))
     local a = action[code] or function() end
     local next_opt, next_queue = a(self, self.opt, self.state)
     if next_opt then

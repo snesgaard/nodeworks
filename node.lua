@@ -285,9 +285,10 @@ end
 
 function Node:child(...)
     local node = Node.create(...)
-    self.__children[node] = love.timer.getTime()
-    node.__parent = self
-    self:__make_order()
+    --self.__children[node] = love.timer.getTime()
+    --node.__parent = self
+    --self:__make_order()
+    self:adopt(node)
     return node
 end
 

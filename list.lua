@@ -60,6 +60,7 @@ function list:insert(val, index)
 end
 
 function list:erase(index)
+  if not index then return self end
   local ret = list.create(unpack(self))
   index = index or #ret
   local val = ret[index]
