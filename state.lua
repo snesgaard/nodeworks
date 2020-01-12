@@ -46,6 +46,16 @@ function state:map(path, m, ...)
     return self:write(path, m(v, ...))
 end
 
+local function insert_tag_in_epic(epic, tag)
+    if tag then
+        if not epic[tag] then
+            epic[tag] = #epic
+        else
+            log.warn("Tag <%s> was already taken", tostring(tag))
+        end
+    end
+end
+
 function state:transform(...)
     local function inner_action(epic, state, transform, ...)
         if not transform then
@@ -53,8 +63,13 @@ function state:transform(...)
         end
 
         local path, tag, args = transform.path, transform.tag, transform.args
-        if not path then
-            error("A path must be supplied!")
+        local event = transform.event
+        if not path and not event then
+            error("A path or event must be supplied!")
+        elseif not path then
+            table.insert(epic, dict{state=state, info={}, args=args, id=event})
+            insert_tag_in_epic(epic, tag)
+            return inner_action(epic, List.tail(epic).state, ...)
         end
 
         local import_path, name = unpack(string.split(path, ":"))
@@ -85,26 +100,16 @@ function state:transform(...)
                 (post_transforms or list()), additional_transform
             )
         end
-        if tag then
-            if not epic[tag] then
-                epic[tag] = #epic
-            else
-                log.warn("Tag <%s> was already taken", tostring(tag))
-            end
-        end
 
+        insert_tag_in_epic(epic, tag)
+
+        -- TODO Consider merging post transform with original transforms
+        -- Should prevent too much stack abuse
         if post_transforms and #post_transforms > 0 then
-            local next_state, post_epic = next_state:transform(
-                unpack(post_transforms)
-            )
-            for _, epoch in ipairs(post_epic) do
-                epic[#epic + 1] = epoch
-            end
+            inner_action(epic, List.tail(epic).state, unpack(post_transforms))
         end
 
-        return inner_action(
-            epic, List.tail(epic).state, ...
-        )
+        return inner_action(epic, List.tail(epic).state, ...)
     end
 
     local epic = inner_action(dict(), self, ...)
