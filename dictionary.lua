@@ -30,6 +30,12 @@ function dictionary.create(d)
   return setmetatable(data, dictionary)
 end
 
+function dictionary:find(value)
+    for k, v in pairs(self) do
+        if value == v then return k end
+    end
+end
+
 function dictionary.from_keyvalue(keys, values)
     local data = {}
     for _, keyval in pairs(List.zip(keys, values)) do

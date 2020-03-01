@@ -292,6 +292,13 @@ function list:__add(...)
     return self:concat(...)
 end
 
+function list:visit(f, ...)
+    for _, val in ipairs(self) do
+        f(val, ...)
+    end
+    return self
+end
+
 function list:print()
     print(self)
     return self

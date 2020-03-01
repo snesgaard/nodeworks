@@ -61,7 +61,6 @@ function animation_state:has_ended()
 end
 
 local Sprite = {}
-Sprite.__index = Sprite
 
 function Sprite:create(animation_alias, atlas_path)
     atlas = get_atlas(atlas_path)
@@ -76,9 +75,6 @@ function Sprite:create(animation_alias, atlas_path)
     end
     self.stack = list()
     self.state = animation_state.create()
-    self.graph = graph.create()
-        :branch("color", gfx_nodes.color.dot, 1, 1, 1, 1)
-        :branch("texture", gfx_nodes.sprite)
 
     self.__shake = {
         offset = vec2(),
@@ -86,21 +82,11 @@ function Sprite:create(animation_alias, atlas_path)
         amp = 10,
         duration = 0.3
     }
+    self.transform = transform()
 end
 
-function Sprite:color()
-    return self.graph:find("color")
-end
-
-function Sprite:play(key, opt)
-    if not self.atlas then
-        error("Atlas not set")
-    end
-    local anime = self.animation_alias[key]
-    if not anime then
-        error(string.format("animation undefined %s", key))
-    end
-    self.state:start(anime, key)
+function Sprite:get_animation(key)
+    return self.animation_alias[key]
 end
 
 local function format_key(key)
@@ -134,30 +120,51 @@ function Sprite:queue(...)
     event(self, "queuing", keys)
 end
 
+function Sprite:play(opt)
+    local opt = format_key(opt)
+    if self:is_playing(unpack(opt)) then return end
+    return self:queue(opt)
+end
+
+function Sprite:is_playing(key)
+    if not self.opt then return false end
+    return self.opt[1] == key
+end
+
 function Sprite:update_frame(state)
     -- First test gfx
     local frame = state:get_frame()
-    self.graph:reset("texture", frame)
     -- Next broadcast which slices where present
-    local origin = frame.slices.origin or spatial()
-    local center = vec2(origin:center().x, origin.y + origin.h)
-    local m = mat3stack:peek()
-    local s = self.graph:data("texture").scale
+    local origin = frame.slices[Sprite.default_origin] or spatial()
 
-    for key, slice in pairs(frame.slices) do
-        slice = slice:move((-center):unpack()):scale(s.x, s.y)
-        local c1 = slice:corner()
-        local c2 = slice:corner("right", "bottom")
-        c1 = m:transform(c1)
-        c2 = m:transform(c2)
-        local w, h = (c2 - c1):unpack()
-        local x, y = c1:unpack()
-        local slice_transformed = spatial(x, y, w, h)
-        event(self, join("slice", key), slice_transformed, slice, frame.frame_id)
+    local transforms = nil
+    local relative_slices = dict()
+    for key, slice in  pairs(frame.slices) do
+        local path = join("slice", key)
+        local origin_slice = slice:relative(origin)
+        relative_slices[key] = origin_slice
+        event(self, path, origin_slice)
+
+        local global_path = join("slice", key, "global")
+
+        if event:is_active(self, global_path) then
+            transforms = transforms or self:rootpath()
+            local global_slice = transforms:reduce(
+                function(slice, node)
+                    if not node.transform then
+                        return slice
+                    else
+                        return node.transform:forward(slice)
+                    end
+                end,
+                origin_slice
+            )
+            event(self, global_path, global_slice)
+        end
     end
 
-    for key, origin in pairs(frame.slices_origin) do
-        event(self, join("origin", key), origin)
+    if self.on_slice_update then
+        self.on_slice_update(relative_slices)
     end
 end
 
@@ -182,7 +189,7 @@ function action.finish(self, opt, state)
     end
 end
 
-function Sprite:__update(dt)
+function Sprite:update(dt, args)
     if not self.opt then return end
     if self.opt.paused then return end
 
@@ -199,11 +206,13 @@ function Sprite:__update(dt)
     end
 end
 
-function Sprite:__draw()
+function Sprite:draw()
     if not self.hidden then
         gfx.push()
         gfx.translate(self.__shake.offset:unpack())
-        self.graph:traverse()
+        --self.graph:traverse()
+        local f = self.state:get_frame()
+        if f then f:draw(Sprite.default_origin) end
         gfx.pop()
     end
 end
@@ -247,7 +256,8 @@ function Sprite:offset(animation, from, to)
 
     -- y coordinate is flipped to map aseprite coordinate system to LOVE's
     -- Scale to match the sprites scaling
-    local s = self.graph:data("texture").scale
+    -- TODO Repalce with actual sprite scale
+    local s = self.transform.scale
     return (to_slice:center() - from_slice:center()) * vec2(1, -1) * s
 end
 
@@ -263,7 +273,8 @@ function Sprite:shape()
     local f = self.state:get_frame()
     local q = f.quad
     local x, y, w, h = q:getViewport()
-    local s = self.graph:data("texture").scale
+    -- TODO Repalce with actual sprite scale
+    local s = self.transform.scale
     local p = self.__transform.pos
     return spatial(-w * 0.5, -h, w, h):scale(s.x, s.y):move(p:unpack())
 end

@@ -31,7 +31,9 @@ Event = require(BASE .. ".event")
 EventServer = require(BASE .. ".event_server")
 AnimationPlayer = require(BASE .. ".animation_player")
 Spatial = require(BASE .. ".spatial")
+Color = require(BASE .. ".color")
 mat3 = require(BASE .. ".mat3")
+Transform = require(BASE .. ".transform")
 
 echo = require(BASE .. ".echo")
 
@@ -41,11 +43,12 @@ list = List.create
 dict = Dictionary.create
 --event = Event.create
 spatial = Spatial.create
+color = Color.create
 event_server = EventServer
 animation_player = AnimationPlayer
 animation_graph = AnimationGraph
-state = require(BASE .. ".state")
-color = require(BASE .. ".color")
+transform = Transform.create
+State = require(BASE .. ".state")
 
 event = event_server()
 
@@ -83,7 +86,7 @@ require (BASE .. ".third.patch")
 
 function create_colorstack()
     return Stack.create(
-        color.create, compose(gfx.setColor, unpack)
+        color, compose(gfx.setColor, unpack)
     )
 end
 
@@ -100,7 +103,10 @@ function gfx.prerender(w, h, f, ...)
     local prev_c = gfx.getCanvas()
     local c = gfx.newCanvas(w, h)
     gfx.setCanvas({c, stencil=true})
+    gfx.push()
+    gfx.origin()
     f(w, h, unpack(args))
+    gfx.pop()
     gfx.setCanvas(prev_c)
     return c
 end
@@ -270,21 +276,8 @@ function trace(path)
     return node
 end
 
-
-function graph_from_frame(frame)
-    local g = graph.create()
-        :branch("base_color", gfx_nodes.color.dot, 1, 1, 1)
-        :branch("texture", gfx_nodes.sprite, frame)
-
-    for name, slice in pairs(frame.slices) do
-        g:back("texture")
-        g:branch(
-            join("slice", name), gfx_nodes.spatial.set,
-            slice:scale(2, 2):unpack()
-        )
-    end
-
-    return g
+function errorf(...)
+    error(string.format(...))
 end
 
 function add(a, b) return a + b end

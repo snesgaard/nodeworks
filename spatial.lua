@@ -229,6 +229,14 @@ function Spatial:hmirror(ox, oy)
     return Spatial.create(x - self.w, self.y, self.w, self.h)
 end
 
+function Spatial:relative(other)
+    other = other or self
+    local origin = other:centerbottom()
+    return Spatial.create(
+        self.x - origin.x, self.y - origin.y, self.w, self.h
+    )
+end
+
 function Spatial:xalign(src, dst_side, src_side, margin)
     local default_map = "left"
     margin = margin or 0

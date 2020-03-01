@@ -111,6 +111,17 @@ function server:listen(...)
     return co
 end
 
+function server:once(...)
+    local path = {get_path(...)}
+    local f = get_args(...)
+    local co = coroutine.create(function()
+        f(self:wait(unpack(path)))
+    end)
+    local status, msg = coroutine.resume(co)
+    if status == false then error(msg) end
+    return co
+end
+
 
 function server:sleep(time)
     while time > 0 do
@@ -121,6 +132,8 @@ end
 
 
 function server:clear(co)
+    if not co then return end
+
     local path = self._address[co]
     if not path then return end
     local o = get_subtable(self._observers, unpack(path))
@@ -165,6 +178,14 @@ function server:_invoke_msg(...)
     end
 end
 
+function server:get_listeners(...)
+    local o = get_subtable(self._observers, get_path(...))
+    return o or {}
+end
+
+function server:is_active(...)
+    return #self:get_listeners(...) > 0
+end
 
 function server:__call(...)
     return self:invoke(...)

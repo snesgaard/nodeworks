@@ -1,6 +1,11 @@
 local frame = {}
 frame.__index = frame
 
+function frame:__tostring()
+    local x, y, w, h = self.quad:getViewport()
+    return string.format("Frame(%.1f, %.1f, %.1f, %.1f)", x, y, w, h)
+end
+
 function frame.create(image, slices, quad, offset)
     local this = {}
     this.image = image
@@ -34,7 +39,7 @@ end
 
 function frame:draw(...)
     local origin, x, y, r, sx, sy = self:args(...)
-    local c = origin:center()
+    local c = origin:centerbottom()
     if self.quad then
         gfx.draw(
             self.image, self.quad, x, y, r, sx, sy,
