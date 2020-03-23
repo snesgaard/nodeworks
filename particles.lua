@@ -13,6 +13,7 @@ local argmap = dict{
     acceleration = "setLinearAcceleration",
     tangential_acceleration = "setTangentialAcceleration",
     relative_rotation = "setRelativeRotation",
+    radial_acceleration = "setRadialAcceleration",
     rotation = "setRotation",
     quad = "setQuads",
     spin = "setSpin",

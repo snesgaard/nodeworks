@@ -18,7 +18,7 @@ function Node.create(f, ...)
             setmetatable(f, t)
         end
         this = setmetatable(this, f)
-        if f.create then f.create(this, ...) end
+        if f.create and f.create ~= Node.create then f.create(this, ...) end
         --this.draw = f.draw
     elseif type(f) == "function" then
         this = setmetatable(this, Node)
@@ -47,6 +47,15 @@ function Node:destroy()
 
     self:orphan()
     event(self, "on_destroyed", self)
+end
+
+function Node:upsearch(attribute)
+    local node = self
+    while node do
+        local a = node[attribute]
+        if a then return a end
+        node = node:find("..")
+    end
 end
 
 function Node:find(path)
@@ -109,7 +118,9 @@ function Node:adopt(arg1, arg2)
     self._order[#self._order + 1] = node
     node._children[".."] = self
 
-    if node.on_adopted then node:on_adopted(self, name) end
+    if node.on_adopted then
+        node:on_adopted(self, name)
+    end
     return self, name
 end
 

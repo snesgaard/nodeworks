@@ -123,6 +123,10 @@ function gfx.hex2color(hex)
     return list(unpack(splitToRGB))
 end
 
+function rgb(r, g, b) return rgba(r, g, b, 255.0) end
+function rgba(r, g, b, a) return {r / 255.0, g / 255.0, b / 255.0, a / 255.0} end
+function vec4(r, g, b, a) return {r or 1, g or 1, b or 1, a or 1} end
+
 function reload(p)
     package.loaded[p] = nil
     return require(p)
@@ -157,6 +161,16 @@ function math.cycle(value, min, max)
     end
 end
 
+function math.sign(value)
+    if value < -1e-10 then
+        return -1
+    elseif value > 1e-10 then
+        return 1
+    else
+        return 0
+    end
+end
+
 function math.remap(value, prev_min, prev_max, next_min, next_max)
     local x = (value  - prev_min) / (prev_max - prev_min)
 
@@ -165,6 +179,24 @@ end
 
 function math.clamp(value, min, max)
     return math.max(min, math.min(value, max))
+end
+
+function math.atan2(x, y)
+    local e = 1e-10
+
+    if x > e then
+        return math.atan(y / x)
+    elseif x < -e and y >= e then
+        return math.atan(y / x) + math.pi
+    elseif x < -e and y < -e then
+        return math.atan(y / x) - math.pi
+    elseif math.abs(x) < e and y > e then
+        return math.pi * 0.5
+    elseif math.abs(x) < e and y < -e then
+        return -math.pi * 0.5
+    else
+        return 0
+    end
 end
 
 function istype(Type, object)

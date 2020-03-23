@@ -83,6 +83,10 @@ function vec2.length(v1)
   return math.sqrt(v1:dot(v1))
 end
 
+function vec2.argument(v)
+    return math.atan2(v.x, v.y)
+end
+
 
 function vec2.normalize(v1)
   return v1 * (1.0 / v1:length())

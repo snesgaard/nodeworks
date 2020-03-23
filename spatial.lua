@@ -219,8 +219,20 @@ function Spatial:center()
     return vec2(self.x + self.w * 0.5, self.y + self.h * 0.5)
 end
 
+function Spatial:topleft()
+    return vec2(self.x, self.y)
+end
+
+function Spatial:leftbottom()
+    return vec2(self.x, self.y + self.h)
+end
+
 function Spatial:centerbottom()
     return vec2(self.x + self.w * 0.5, self.y + self.h)
+end
+
+function Spatial:rightbottom()
+    return vec2(self.x + self.w, self.y + self.h)
 end
 
 function Spatial:hmirror(ox, oy)
@@ -229,9 +241,10 @@ function Spatial:hmirror(ox, oy)
     return Spatial.create(x - self.w, self.y, self.w, self.h)
 end
 
-function Spatial:relative(other)
+function Spatial:relative(other, origin_func)
     other = other or self
-    local origin = other:centerbottom()
+    local f = other[origin_func or "centerbottom"]
+    local origin = f(other)
     return Spatial.create(
         self.x - origin.x, self.y - origin.y, self.w, self.h
     )
