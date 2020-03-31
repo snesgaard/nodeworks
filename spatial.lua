@@ -321,9 +321,6 @@ function Spatial.is_equal(a, b)
     return a.x == b.x and a.y == b.y and a.w == b.w and a.h == b.h
 end
 
-local SpatialCollection = {}
-SpatialCollection.__index = SpatialCollection
-
 function Spatial.join(...)
     local this = {}
 
@@ -355,67 +352,8 @@ function Spatial.join(...)
         end
     end
 
-    return SpatialCollection.create(get_border(), items)
+    return get_border()
 end
 
-function SpatialCollection.create(border, items)
-    return setmetatable(
-        {border = border, items = items, x = border.x, y = border.y},
-        SpatialCollection
-    )
-end
-
-function SpatialCollection:unpack()
-    return self.border:unpack()
-end
-
-function SpatialCollection:commit_items(...)
-    local l = list(...)
-
-    for i, obj in ipairs(l) do
-        obj:set_spatial(self.items[i])
-    end
-
-    return self
-end
-
-function SpatialCollection:commit(obj)
-    obj:set_spatial(self.border)
-    return self
-end
-
-function SpatialCollection:compile()
-    return self.border
-end
-
-function SpatialCollection:pos()
-    return self.border:pos() - vec2(self.x, self.y)
-end
-
-function SpatialCollection:size()
-    return self.border:size()
-end
-
-function SpatialCollection:__tostring()
-    return string.format("Joined :: %s", self.border:__tostring())
-end
-
-local wrapped_apis = {
-    "move", "xalign", "yalign", "set_position"
-}
-
-for _, key in pairs(wrapped_apis) do
-    SpatialCollection[key] = function(self, ...)
-        local f = Spatial[key]
-        local next_border = f(self.border, ...)
-        local x = next_border.x - self.border.x
-        local y = next_border.y - self.border.y
-        local next_items = self.items:map(function(s)
-            return s:move(x, y)
-        end)
-
-        return SpatialCollection.create(next_border, next_items)
-    end
-end
 
 return Spatial

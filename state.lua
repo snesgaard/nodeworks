@@ -25,17 +25,14 @@ function state:__tostring()
     return tostring(self.root)
 end
 
-function state.create(other)
+function state.create(root)
     local this = {}
 
-    local root
-    if not other then
+    if not root then
         root = dict{}
         for _, f in pairs(state.setup) do
             f(root)
         end
-    else
-        root = other.root
     end
 
     this.root = root

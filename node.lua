@@ -58,6 +58,18 @@ function Node:upsearch(attribute)
     end
 end
 
+function Node:root()
+    local prev_node = self
+    local node = prev_node:find("..")
+
+    while node do
+        prev_node = node
+        node = prev_node:find("..")
+    end
+
+    return prev_node
+end
+
 function Node:find(path)
     local parts = string.split(path, '/')
     local node = self

@@ -11,17 +11,21 @@ end
 local function get_subtable(table, a, b)
     if type(a) == "string" then
         return traverse_table(table, a)
-    elseif type(a) == "table" and type(b) == "string" then
+    elseif type(a) == "table" then
         return traverse_table(table, a, b)
+    else
+        errorf("Unsupported event key %s", type(a))
     end
 end
 
 local function set_subtable(table, a, b, c)
     if type(a) == "string" then
         table[a] = b or {}
-    elseif type(a) == "table" and type(b) == "string" then
+    elseif type(a) == "table" then
         local sub =  traverse_table(table, a)
         sub[b] = c or {}
+    else
+        errorf("Unsupported event key %s", type(a))
     end
 end
 
