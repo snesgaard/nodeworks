@@ -31,6 +31,7 @@ ln -sr $src_make_master $dst_make_master
 
 ln -sr $src_dir/texatlas.py $path/texatlas.py
 ln -sr $src_dir/im_stack.py $path/im_stack.py
+ln -sr $src_dir/join_aseprite_jsons.py $path/join_aseprite_jsons.py
 
 mkdir -p $path/characters/sprites
 mkdir -p $path/maps/src
