@@ -134,6 +134,9 @@ end
 function Sprite:update_frame(state)
     -- First test gfx
     local frame = state:get_frame()
+    if self.on_root_motion then
+        self.on_root_motion(self, frame.root_motion)
+    end
     -- Next broadcast which slices where present
     local origin = frame.slices[Sprite.default_origin] or spatial()
 
@@ -206,13 +209,13 @@ function Sprite:update(dt, args)
     end
 end
 
-function Sprite:draw()
+function Sprite:draw(...)
     if not self.hidden then
         gfx.push()
         gfx.translate(self.__shake.offset:unpack())
         --self.graph:traverse()
         local f = self.state:get_frame()
-        if f then f:draw(Sprite.default_origin) end
+        if f then f:draw(Sprite.default_origin, ...) end
         gfx.pop()
     end
 end
@@ -282,5 +285,7 @@ end
 function Sprite:get_animation(key)
     return self.animation_alias[key]
 end
+
+Sprite.default_origin = "body"
 
 return Sprite

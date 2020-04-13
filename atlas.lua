@@ -114,8 +114,27 @@ function Atlas.create(path)
         end
     end
 
+    -- Compute root motion
+    for _, tag in pairs(this.tags) do
+        local prev_body = nil
+        for i = tag.from + 1, tag.to + 1 do
+            local frame = frames[i]
+            local body = frame.slices[Atlas.root_motion_slice]
+            if prev_body and body then
+                frame.root_motion = body:centerbottom() - prev_body:centerbottom()
+            else
+                frame.root_motion = vec2(0, 0)
+            end
+            if body then
+                prev_body = body
+            end
+        end
+    end
+
     return setmetatable(this, Atlas)
 end
+
+Atlas.root_motion_slice = "body"
 
 function Atlas:get_animation(name)
     local tag = self.tags[name]
