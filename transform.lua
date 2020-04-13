@@ -37,7 +37,7 @@ function transform:forward(p)
         return spatial(c1.x, c1.y, c2.x - c1.x, c2.y - c1.y)
             :sanitize()
     else
-        self:_forward_vector(p)
+        return self:_forward_vector(p)
     end
 end
 

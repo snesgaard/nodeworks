@@ -116,7 +116,7 @@ function Sprite:queue(...)
     self._queue = frames:body()
     self.opt = frames:head()
     self.state:start(self.opt.frames)
-    self:update_frame(self.state)
+    self:update_frame(self.state, self.opt)
     event(self, "queuing", keys)
 end
 
@@ -131,16 +131,33 @@ function Sprite:is_playing(key)
     return self.opt[1] == key
 end
 
-function Sprite:update_frame(state)
+local function transform_reduction(v, node)
+    if not node.transform then
+        return v
+    else
+        return node.transform:forward(v)
+    end
+end
+
+function Sprite:update_frame(state, opt)
+    opt = opt or {}
     -- First test gfx
     local frame = state:get_frame()
-    if self.on_root_motion then
-        self.on_root_motion(self, frame.root_motion)
-    end
     -- Next broadcast which slices where present
     local origin = frame.slices[Sprite.default_origin] or spatial()
 
-    local transforms = nil
+    local transforms = self:rootpath()
+    local origin_motion = transforms:reduce(transform_reduction, vec2(0, 0))
+    local root_motion = transforms:reduce(transform_reduction, frame.root_motion)
+    root_motion = root_motion - origin_motion
+
+    if self.on_root_motion then
+        self.on_root_motion(self, root_motion)
+    end
+    if opt.on_root_motion then
+        opt.on_root_motion(self, root_motion)
+    end
+
     local relative_slices = dict()
     for key, slice in  pairs(frame.slices) do
         local path = join("slice", key)
@@ -151,15 +168,8 @@ function Sprite:update_frame(state)
         local global_path = join("slice", key, "global")
 
         if event:is_active(self, global_path) then
-            transforms = transforms or self:rootpath()
             local global_slice = transforms:reduce(
-                function(slice, node)
-                    if not node.transform then
-                        return slice
-                    else
-                        return node.transform:forward(slice)
-                    end
-                end,
+                transform_reduction,
                 origin_slice
             )
             event(self, global_path, global_slice)
@@ -174,20 +184,20 @@ end
 local action = {}
 
 function action.next_frame(self, opt, state)
-    self:update_frame(state)
+    self:update_frame(state, opt)
 end
 
 function action.finish(self, opt, state)
     if self.opt.loop then
         event(self, "loop", unpack(opt))
-        self:update_frame(state:loop())
+        self:update_frame(state:loop(), opt)
         return
     end
 
     event(self, "finish", unpack(opt))
     if self._queue:size() > 0 then
         self.state:start(self._queue:head().frames)
-        self:update_frame(self.state)
+        self:update_frame(self.state, opt)
         return self._queue:head(), self._queue:body()
     end
 end
