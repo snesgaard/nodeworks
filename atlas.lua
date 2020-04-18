@@ -49,10 +49,10 @@ function Atlas.create(path)
     local frame_hitbox_mask = atlas_hitbox_mask[name] or {}
     local frames = this.frames
     for _, f in ipairs(data.frames) do
-        local x = f.frame.x
-        local y = f.frame.y
+        local x = f.frame.x + 1
+        local y = f.frame.y + 1
         -- ASsume a 1px margin
-        local w, h = f.frame.w - 2, f.frame.h - 2
+        local w, h = f.frame.w - 1, f.frame.h - 1
         local quad = gfx.newQuad(x, y, w, h, unpack(dim))
         local dt = f.duration / 1000.0
         local ox, oy = f.spriteSourceSize.x, f.spriteSourceSize.y
