@@ -231,6 +231,18 @@ function Spatial:centerbottom()
     return vec2(self.x + self.w * 0.5, self.y + self.h)
 end
 
+function Spatial:centertop()
+    return vec2(self.x + self.w * 0.5, self.y)
+end
+
+function Spatial:rightcenter()
+    return vec2(self.x + self.w, self.y + self.h * 0.5)
+end
+
+function Spatial:leftcenter()
+    return vec2(self.x, self.y + self.h * 0.5)
+end
+
 function Spatial:rightbottom()
     return vec2(self.x + self.w, self.y + self.h)
 end
