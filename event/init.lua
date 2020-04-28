@@ -1,0 +1,5 @@
+ease = require(... .. ".easing")
+require(... .. ".ease")
+event_server = require(... .. ".event_server")
+tween = require(... .. ".tween")
+require(... .. ".update_coroutine")

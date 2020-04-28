@@ -1,4 +1,4 @@
-local argmap = dict{
+local argmap = {
     move = "moveTo",
     lifetime = "setParticleLifetime",
     emission_life = "setEmitterLifetime",

@@ -9,8 +9,9 @@ function Node.create(f, ...)
         _order = List.create(),
         _threads = Dictionary.create(),
     }
-
-    if type(f) == "table" then
+    if not f then
+        return setmetatable(this, Node)
+    elseif type(f) == "table" then
         f.__index = f.__index or f
         if not getmetatable(f) then
             local t = {__index = Node}
@@ -21,13 +22,10 @@ function Node.create(f, ...)
         if f.create and f.create ~= Node.create then f.create(this, ...) end
         --this.draw = f.draw
     elseif type(f) == "function" then
-        this = setmetatable(this, Node)
-        f(this, ...)
+        return f(this, ...)
     else
-        this = setmetatable(this, Node)
+        errorf("Unsupported node type %s", type(f))
     end
-
-    return this
 end
 
 function Node:destroy()
@@ -90,16 +88,6 @@ function Node.rootpath(node)
     end
 
     return nodes:reverse()
-end
-
-function Node:hide()
-    self._hidden = true
-    return self
-end
-
-function Node:show()
-    self._hidden = false
-    return self
 end
 
 function Node:sort(f)

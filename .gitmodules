@@ -11,5 +11,5 @@
 	path = third/SUIT
 	url = https://github.com/vrld/SUIT
 [submodule "third/bump.lua"]
-	path = third/bump
+	path = scene/collision/bump
 	url = https://github.com/kikito/bump.lua

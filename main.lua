@@ -28,10 +28,11 @@ updater = {}
 drawer = {}
 
 function love.load()
-    require "test.mat3"
+    --require "test.mat3"
     --require "test.node"
     --require "test.animation_player"
     --love.event.quit()
+    root = Node.create()
 end
 
 function love.update(dt)
