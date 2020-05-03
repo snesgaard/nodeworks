@@ -1,5 +1,13 @@
 coroutine._cleaners = {}
 coroutine._threads = {}
+coroutine._children = {}
+
+local function get_children(co)
+    if not coroutine._children[co] then
+        coroutine._children[co] = {}
+    end
+    return coroutine._children[co]
+end
 
 function coroutine.on_cleanup(f, co)
     co = co or coroutine.running()
@@ -23,6 +31,15 @@ function coroutine.cleanup(co)
 
     coroutine._cleaners[co] = nil
     f(co)
+
+    local children = get_children(co)
+
+    for _, child in ipairs(children) do
+        coroutine.cleanup(child)
+    end
+
+    coroutine._children[co] = {}
+
     return true
 end
 
@@ -31,7 +48,6 @@ function coroutine.get(name)
 end
 
 function coroutine.set(name, func, ...)
-    log.debug("Setting %s: %s", name, tostring(func))
     local co = coroutine._threads[name]
 
     if co and co == coroutine.running() then
@@ -53,8 +69,37 @@ function coroutine.set(name, func, ...)
     if func then
         local co = coroutine.create(func)
         coroutine._threads[name] = co
-        coroutine.resume(co, ...)
+        local status, msg = coroutine.resume(co, ...)
+        if not status then
+            errorf("Error executing co, %s", msg)
+        end
     end
 
     return co
+end
+
+function coroutine.child(thread_or_func, ...)
+    local main = coroutine.running()
+
+    if not main then
+        errorf("Main cannot have children")
+    end
+
+    local co = thread_or_func
+    local t = type(co)
+
+    if t == "function" then
+        co = coroutine.create(co)
+        local status, msg = coroutine.resume(co, ...)
+        if not status then
+            errorf("Error executing co, %s", msg)
+        end
+    elseif t ~= "thread" then
+        errorf("Type %f cannot be made a coroutine", t)
+    end
+
+    local children = get_children(main)
+    table.insert(children, co)
+
+    return coroutine
 end
