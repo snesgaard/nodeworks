@@ -1,5 +1,7 @@
 bump = require(... .. ".bump.bump")
 
+require(... .. ".bumpdebug")
+
 local api = {
     Body = require(... .. ".body"),
     Hitbox = require(... .. ".hitbox"),
