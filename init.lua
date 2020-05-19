@@ -19,6 +19,7 @@ require (BASE .. ".third.patch")
 require(BASE .. ".core")
 require(BASE .. ".scene")
 require(BASE .. ".event")
+require(BASE .. ".ecs")
 
 event = event_server()
 
