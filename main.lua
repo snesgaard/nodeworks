@@ -1,27 +1,31 @@
 require "init"
+components = require "components"
 
-function subkeys(behave)
-    print("subkey", event:wait("keypressed"))
-    return subkeys(behave)
+local systems = {}
+
+systems.default = list(weapon, affinity) + systems.__ailments() + list(shield, charge) + damage
+
+function systems.attack()
+    return weapon, affinity,
 end
 
+function systems.heal()
+
+end
+
+function systems.__ailments()
+    return list(poison, bleed, sickness, blind)
+end
 
 function love.load()
+    world = ecs.world.create()
 
-    main_thread = behavior(function(behave)
+    poison = components.poison{
+        [components.tick] = {10},
+        [components.timer] = {0.2},
+        [components.multiplier] = {0.05},
+    }
 
-        behave(subkeys)
-
-        while true do
-            local key = event:wait("keypressed")
-            if key == "a" then
-                behave:remove(subkeys)
-            elseif key == "b" then
-                behave(subkeys)
-            end
-        end
-
-    end)
 
 end
 

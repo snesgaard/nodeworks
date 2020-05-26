@@ -1,70 +1,106 @@
-local pool = {}
-pool.__index = pool
-
-function pool.create(components)
-    local self = {}
-    self.__components = components
-    return setmetatable(self, pool)
-end
-
-function pool:add(entity, ...)
-    if not components then return self end
-    if not entity then return self end
-
-    if self[entity] then return self end
-
-    if entity:has(components) then
-        local index = #self + 1
-        self[index] = entity
-        self[entity] = index
-    end
-
-    return self:add(...)
-end
-
-function pool:remove(entity, ...)
-    -- TODO optimize to sort entites by index
-    if not entity then return self end
-
-    local index = self[entity]
-
-    if not index then return self end
-
-    self[entity] = nil
-    local size = #self
-
-    for i = index, size do
-        local e = self[i + 1]
-        if e then self[e] = i end
-        self[i] = e
-    end
-
-    return self:remove(...)
-end
-
 local world = {}
 world.__index = world
+world.__default_chain = "__default_chain"
 
-function world.create()
+function world.create(systems)
     local this = {
-        events = list(),
-        entities = pool({}),
-        pools = dict{},
-        chains = dict{}
+        __events = list(),
+        __entities = list(),
+        __context = dict(),
+        __systems = dict(),
     }
+    setmetatable(this, world)
+    if systems then this:systems(system) end
+    return this
+end
 
-    return setmetatable(this, world)
+function world:systems(systems)
+    if type(systems) == "function" then
+        self.__systems = dict{default=systems}
+    else
+        self.__systems = systems
+    end
+    return self
+end
+
+function world:chain(key)
+    local f = self.__systems[key]
+    if f then
+        if type(f) == "function" then return f() end
+        return f
+    end
+    
+    local f = self.__systems.default
+    if not f then errorf("Tried to read <%s>; but no default", key) end
+
+    if type(f) == "function" then return f() end
+    return f
+end
+
+function world:context(system)
+    local context = self.__context[system]
+
+    if context then return context end
+
+    local context = {pool=ecs.pool(system.__components), world=self}
+    context.pool:add(unpack(self.__entities))
+    self.__context[system] = context
+
+    return context
+end
+
+function world:update(entity)
+    if not self.__entities[entity] then
+        local index = #self.__entities + 1
+        self.__entities[entity] = index
+        self.__entities[index] = entity
+    end
+
+    for _, context in pairs(self.__context) do context.pool:update(entity) end
+
+    return self
+end
+
+function world:remove(entity)
+    local index = self.__entities[entity]
+    if not index then return self end
+
+    table.remove(self.__entities, index)
+    local size = #self.__entities
+    for i = index, size do
+        local e = self.__entities[i]
+        self.__entities[e] = i
+    end
+
+    for _, context in pairs(self.__context) do context.pool:remove(entity) end
+
+    return self
+end
+
+function world:__invoke(key, ...)
+    local chain = self:chain(key)
+
+    for _, system in ipairs(chain) do
+        local f = system[key]
+        local context = self:context(system)
+        f(context, ...)
+    end
+end
+
+function world:event(key, ...)
+    table.insert(self.__events, {key, ...})
+    return self
 end
 
 function world:spin()
-    if self.__spinning then return end
+    if self.__spinning then return self end
 
     self.__spinning = true
 
-    while self.event:size() > 0 do
-        local event  = self.event:head()
-        table.remove(self.event, 1)
-        self:call_event(unpack(event))
+    while #self.__events > 0 do
+        local event = self.__events:head()
+        table.remove(self.__events, 1)
+        self:__invoke(unpack(event))
     end
 
     self.__spinning = false
@@ -72,39 +108,8 @@ function world:spin()
     return self
 end
 
-function world:event(key, args)
-    local chain = self.chains[key] or {}
-
-    for _, system in ipairs(chain) do
-        local f = system[key]
-        if f then args = f(self:context(system), args) or args end
-    end
-
-    return args
+function world:__call(key, ...)
+    return self:event(key, ...):spin()
 end
 
-function world:__call(key, args)
-    return self:event(key, args):spin()
-end
-
-function world:__create_pool(system)
-    if self.pools[system] then return self end
-
-    self.pools[system] = pool.create()
-
-    self.pools[system]:add(unpack(self.entities))
-
-    return self
-end
-
-function world:add_chain(key, systems)
-    if self.chains[key] then return self end
-
-    for _, system in ipairs(systems) do self:__create_pool(system) end
-
-    self.chains[key] = systems
-
-    return self
-end
-
-return world
+return world.create

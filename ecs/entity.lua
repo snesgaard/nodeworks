@@ -1,22 +1,41 @@
 local entity = {}
+entity.__index = entity
 
 function entity.create(world)
     local this = {}
     this.world = world
 
     if world then
-        world:add(this)
+        world:update(this)
     end
     return setmetatable(this, entity)
 end
 
 function entity:add(component, ...)
-    self[component] = component(...)
+    local t = type(component)
+    if t == "function" then
+        self[component] = component(...)
+    elseif t == "table" then
+        self[component] = component.create(...)
+    else
+        errorf("Unsupported type <%s>", t)
+    end
+
+    if self.world then self.world:update(self) end
+
+    return self
+end
+
+function entity:assemble(func, ...)
+    func(self, ...)
+
+    if self.world then self.world:update(self) end
     return self
 end
 
 function entity:remove(component)
     self[component] = nil
+    if self.world then self.world:update(self) end
     return self
 end
 
@@ -36,7 +55,7 @@ function entity:set_world(world)
 
     self.world = world
 
-    if self.world then self.world:add(self) end
+    if self.world then self.world:update(self) end
 end
 
 function entity:destroy()
