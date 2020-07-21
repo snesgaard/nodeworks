@@ -68,6 +68,44 @@ local function user(user) return user end
 
 --------------------------------------------------
 
+local damage = {}
+damage.__index = damage
+
+function damage.create(args)
+    local this = {__damage}
+
+    for key, val in pairs(args) do
+        this.__damage[key] = val
+    end
+
+    return setmetatable(this, damage)
+end
+
+function damage:total()
+    return self:physical() + self:elemental()
+end
+
+function damage:physical()
+    return self.__damage.physical or 0
+end
+
+function damage:elemental()
+    return self.__damage.elemental or 0
+end
+
+function damage:is_physical()
+    return self.__damage.physical ~= nil
+end
+
+function damage:is_elemental()
+    return self.__damage.elemental ~= nil
+end
+
+
+
+
+
+--------------------------------------------------
 return {
     addition=addition,
     multiplier=multiplier,

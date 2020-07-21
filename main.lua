@@ -5,17 +5,7 @@ local systems = {}
 
 systems.default = list(weapon, affinity) + systems.__ailments() + list(shield, charge) + damage
 
-function systems.attack()
-    return weapon, affinity,
-end
 
-function systems.heal()
-
-end
-
-function systems.__ailments()
-    return list(poison, bleed, sickness, blind)
-end
 
 function love.load()
     world = ecs.world.create()
