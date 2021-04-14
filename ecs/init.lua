@@ -3,5 +3,6 @@ return {
   behavior = require(... .. ".behavior"),
   world = require(... .. ".world"),
   assemblage = require(... .. ".assemblage"),
-  system = require(... .. ".system")
+  system = require(... .. ".system"),
+  pool = require(... .. ".pool")
 }

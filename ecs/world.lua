@@ -2,40 +2,33 @@ local world = {}
 world.__index = world
 world.__default_chain = "__default_chain"
 
-function world.create(systems)
+function world.create(...)
     local this = {
         __events = list(),
         __entities = list(),
         __context = dict(),
         __systems = dict(),
+        __chains = dict(),
     }
     setmetatable(this, world)
-    if systems then this:systems(system) end
+    this:add_system(...)
     return this
 end
 
-function world:systems(systems)
-    if type(systems) == "function" then
-        self.__systems = dict{default=systems}
-    else
-        self.__systems = systems
-    end
-    return self
+function world:chain(event_key)
+    local c = self.__chains[event_key]
+    return c or self.__systems
 end
 
-function world:chain(key)
-    local f = self.__systems[key]
-    if f then
-        if type(f) == "function" then return f() end
-        return f
-    end
-    
-    local f = self.__systems.default
-    if not f then errorf("Tried to read <%s>; but no default", key) end
+function world:add_system(system, ...)
+    if not system then return self end
 
-    if type(f) == "function" then return f() end
-    return f
+    table.insert(self.__systems, system)
+
+    return self:add_system(...)
 end
+
+function world:systems() return self.__systems end
 
 function world:context(system)
     local context = self.__context[system]
@@ -83,7 +76,7 @@ function world:__invoke(key, ...)
     for _, system in ipairs(chain) do
         local f = system[key]
         local context = self:context(system)
-        f(context, ...)
+        if f then f(context, ...) end
     end
 end
 

@@ -101,8 +101,9 @@ function damage:is_elemental()
     return self.__damage.elemental ~= nil
 end
 
+function position(x, y) return vec2(x, y) end
 
-
+function velocity(x, y) return vec2(x, y) end
 
 
 --------------------------------------------------
@@ -116,5 +117,7 @@ return {
     charge=charge,
     shield=shield,
     target=target,
-    user=user
+    user=user,
+    position=position,
+    velocity=velocity
 }
