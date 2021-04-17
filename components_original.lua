@@ -13,11 +13,15 @@ end
 
 function timer:update(dt)
   self.time = self.time - dt
-  return self.time <= 0
+  return self:done()
 end
 
 function timer:reset()
   self.time = self.duration
+end
+
+function timer:done()
+    return self.time <= 0
 end
 
 --------------------------------------------------
@@ -48,7 +52,7 @@ local function addition(value) return value end
 
 --------------------------------------------------
 
-local poison = ecs.assemblage{tick, timer, multiplier, addition}
+local poison = ecs.assemblage(tick, timer, multiplier, addition)
 
 --------------------------------------------------
 

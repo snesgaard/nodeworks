@@ -26,6 +26,21 @@ function entity:add(component, ...)
     return self
 end
 
+function entity:update(component, ...)
+    if not self[component] then return end
+
+    local t = type(component)
+    if t == "function" then
+        self[component] = component(...)
+    elseif t == "table" then
+        self[component] = component.create(...)
+    else
+        errorf("Unsupported type <%s>", t)
+    end
+
+    return self
+end
+
 function entity:assemble(func, ...)
     func(self, ...)
 

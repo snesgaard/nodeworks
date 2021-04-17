@@ -15,6 +15,11 @@ function world.create(...)
     return this
 end
 
+function world:set_chain(key, chain)
+    self.__chains[key] = chain
+    return self
+end
+
 function world:chain(event_key)
     local c = self.__chains[event_key]
     return c or self.__systems

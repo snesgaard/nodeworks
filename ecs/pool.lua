@@ -22,6 +22,16 @@ function pool:add(entity, ...)
     return self:add(...)
 end
 
+function pool:sort(f)
+    table.sort(self, f)
+    
+    for i, entity in ipairs(self) do
+        self[entity] = i
+    end
+
+    return self
+end
+
 function pool:remove(entity, ...)
     -- TODO optimize to sort entites by index
     if not entity then return self end

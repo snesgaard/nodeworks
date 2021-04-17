@@ -1,7 +1,7 @@
 local system = {}
 
-function system.create(components)
-    return {__components=components}
+function system.create(...)
+    return {__components={...}}
 end
 
 return system.create

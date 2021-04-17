@@ -148,6 +148,16 @@ function Atlas:get_frame(name)
     return self:get_animation(name):head()
 end
 
+function Atlas:get_tags()
+    local tags = {}
+
+    for tag, _ in pairs(self.tags) do
+        table.insert(tags, tag)
+    end
+
+    return unpack(tags)
+end
+
 function Atlas:get_quads(name)
     local frames = self:get_animation(name)
     if not frames then
