@@ -1,25 +1,24 @@
 gfx = love.graphics
 rng = love.math.random
 
-local BASE = ...
-
-BASE = BASE == "init" and "" or BASE
+local BASE = (...):match('(.-)[^%.]+$')
 
 math = require "math"
+json = require(BASE .. "third.json")
+log = require(BASE .. "third.log")
+lume = require(BASE .. "third.lume")
+lurker = require(BASE .. "third.lurker")
+moon = require (BASE .. "third.moonshine")
+sti = require(BASE .. "third.Simple-Tiled-Implementation.sti")
+require (BASE .. "third.patch")
 
-json = require(BASE .. ".third.json")
-log = require(BASE .. ".third.log")
-lume = require(BASE .. ".third.lume")
-lurker = require(BASE .. ".third.lurker")
-moon = require (BASE .. ".third.moonshine")
-sti = require(BASE .. ".third.Simple-Tiled-Implementation.sti")
-suit = require (BASE .. ".third.SUIT")
-require (BASE .. ".third.patch")
-
-require(BASE .. ".core")
+ecs = require(BASE .. "ecs")
+core = require(BASE .. "core")
 require(BASE .. ".scene")
 require(BASE .. ".event")
-ecs = require(BASE .. ".ecs")
+
+components = require "components"
+systems = require "systems"
 
 event = event_server()
 

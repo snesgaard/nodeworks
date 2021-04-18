@@ -292,7 +292,7 @@ function list:__add(...)
     return self:concat(...)
 end
 
-function list:visit(f, ...)
+function list:foreach(f, ...)
     for _, val in ipairs(self) do
         f(val, ...)
     end

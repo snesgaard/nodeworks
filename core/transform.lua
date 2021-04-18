@@ -14,6 +14,12 @@ function transform.create(x, y, a, sx, sy)
     return setmetatable(t, transform)
 end
 
+function transform:push()
+    gfx.translate(self.position:unpack())
+    gfx.rotate(self.angle)
+    gfx.scale(self.scale:unpack())
+end
+
 function transform:_forward_vector(p)
     local sx, sy = self.scale:unpack()
     local cosa, sina = math.cos(self.angle),math.sin(self.angle)

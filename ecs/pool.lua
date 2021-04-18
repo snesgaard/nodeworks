@@ -8,12 +8,12 @@ function pool.create(components)
 end
 
 function pool:add(entity, ...)
-    if not components then return self end
+    if not self.__components then return self end
     if not entity then return self end
 
     if self[entity] then return self end
 
-    if entity:has(components) then
+    if entity:has(self.__components) then
         local index = #self + 1
         self[index] = entity
         self[entity] = index
@@ -24,7 +24,7 @@ end
 
 function pool:sort(f)
     table.sort(self, f)
-    
+
     for i, entity in ipairs(self) do
         self[entity] = i
     end
@@ -56,7 +56,7 @@ function pool:update(entity, ...)
     if not entity then return self end
 
     local index = self[entity]
-    local has = entity:has(component)
+    local has = entity:has(self.__components)
 
     if has and not index then
         self:add(entity)

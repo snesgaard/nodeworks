@@ -1,9 +1,4 @@
 require "init"
-components = require "components"
-local ecs = require "ecs"
-local animated = require "animated_sprite"
-
-local image_draw_system
 
 local sprite_draw_system = ecs.system(components.sprite)
 
@@ -12,7 +7,6 @@ function sprite_draw_system:draw()
         local sprite = entity[components.sprite]
         local image = sprite[components.image]
         local args = sprite[components.draw_args]
-
 
         gfx.push()
 
@@ -36,7 +30,11 @@ function sprite_draw_system:draw()
 end
 
 function love.load()
-    world = ecs.world(sprite_draw_system, animated.system)
+    world = ecs.world(
+        systems.animation,
+        systems.particles,
+        sprite_draw_system
+    )
     local atlas = get_atlas("build/characters")
     local frame = atlas:get_frame("wizard_movement/idle")
     test_entity = ecs.entity(world)
@@ -44,12 +42,12 @@ function love.load()
         :add(components.velocity, 20)
         :add(components.sprite)
         :add(components.transform, 200, 50, 0, 2, 2)
-        :add(animated.map, atlas, {
+        :add(components.animation_map, atlas, {
             idle="wizard_movement/idle", run="wizard_movement/run"
         })
-        :add(animated.state)
+        :add(components.animation_state)
 
-    animated.play(test_entity, "run")
+    systems.animation.play(test_entity, "run")
 end
 
 function love.keypressed(key, scancode, isrepeat)
