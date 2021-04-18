@@ -32,7 +32,3 @@ mat3 = Mat3.create
 spatial = Spatial.create
 transform = Transform.create
 atlas = Atlas.create
-
-return {
-    components = require(BASE .. ".components"),
-}

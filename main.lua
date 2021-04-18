@@ -47,25 +47,11 @@ function love.load()
         })
         :add(components.animation_state)
 
-    systems.animation.play(test_entity, "run")
+    systems.animation.play(test_entity, "run", true)
 end
 
 function love.keypressed(key, scancode, isrepeat)
     event("keypressed", key)
-
-    if key == "a" then
-        animated.play(test_entity, "idle")
-    end
-    if key == "b" then
-        animated.play(test_entity, "run")
-    end
-    if key == "space" then
-        if animated.is_paused(test_entity) then
-            animated.play(test_entity)
-        else
-            animated.pause(test_entity)
-        end
-    end
 
     if key == "escape" then love.event.quit() end
 end
