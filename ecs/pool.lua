@@ -3,23 +3,19 @@ pool.__index = pool
 
 function pool.create(components)
     local self = {}
-    self.__components = components
+    self.__components = components or {}
     return setmetatable(self, pool)
 end
 
-function pool:add(entity, ...)
-    if not self.__components then return self end
-    if not entity then return self end
+function pool:add(entity)
+    if not self:should_add(entity) then return false end
+    if self[entity] then return false end
 
-    if self[entity] then return self end
+    local index = #self + 1
+    self[index] = entity
+    self[entity] = index
 
-    if entity:has(self.__components) then
-        local index = #self + 1
-        self[index] = entity
-        self[entity] = index
-    end
-
-    return self:add(...)
+    return true
 end
 
 function pool:sort(f)
@@ -32,13 +28,13 @@ function pool:sort(f)
     return self
 end
 
-function pool:remove(entity, ...)
+function pool:remove(entity)
     -- TODO optimize to sort entites by index
-    if not entity then return self end
+    if not entity then return false end
 
     local index = self[entity]
 
-    if not index then return self end
+    if not index then return false end
 
     self[entity] = nil
     local size = #self
@@ -49,7 +45,7 @@ function pool:remove(entity, ...)
         self[i] = e
     end
 
-    return self:remove(...)
+    return true
 end
 
 function pool:update(entity, ...)
@@ -61,10 +57,14 @@ function pool:update(entity, ...)
     if has and not index then
         self:add(entity)
     elseif not has and index then
-        self:rmove(entity)
+        self:remove(entity)
     end
 
     return self:update(...)
+end
+
+function pool:should_add(entity)
+    return entity:has(self.__components)
 end
 
 return pool.create

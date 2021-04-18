@@ -5,10 +5,14 @@ function entity.create(world)
     local this = {}
     this.world = world
 
-    if world then
-        world:update(this)
-    end
-    return setmetatable(this, entity)
+    setmetatable(this, entity)
+
+    if world then world:update(this) end
+    return  this
+end
+
+function entity:__tostring()
+    return "Entity"
 end
 
 function entity:add(component, ...)
@@ -20,14 +24,13 @@ function entity:add(component, ...)
     else
         errorf("Unsupported type <%s>", t)
     end
-
     if self.world then self.world:update(self) end
 
     return self
 end
 
 function entity:update(component, ...)
-    if not self[component] then return end
+    if not self[component] then return self end
 
     local t = type(component)
     if t == "function" then
@@ -73,7 +76,7 @@ function entity:set_world(world)
     if self.world then self.world:update(self) end
 end
 
-function entity:destroy()
+function entity:remove()
     if self.world then self.world:remove(self) end
 end
 

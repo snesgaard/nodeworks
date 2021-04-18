@@ -106,4 +106,16 @@ components.animation_state = ecs.assemblage(
 
 ----------------------------------------
 
+--- COLLISSION ------------------------
+
+function components.body(x, y, w, h)
+    return spatial(x, y, w, h)
+end
+
+function components.hitbox(x, y, w, h)
+    return spatial(x, y, w, h)
+end
+
+---------------------------------------
+
 return components

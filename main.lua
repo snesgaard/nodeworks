@@ -47,11 +47,15 @@ function love.load()
         })
         :add(components.animation_state)
 
+    test_entity2 = ecs.entity(world)
+
     systems.animation.play(test_entity, "run", true)
 end
 
 function love.keypressed(key, scancode, isrepeat)
     event("keypressed", key)
+
+    if key == "d" then test_entity:remove() end
 
     if key == "escape" then love.event.quit() end
 end

@@ -30,6 +30,15 @@ function world:add_system(system, ...)
 
     table.insert(self.__systems, system)
 
+    local context = self:context(system)
+
+    for _, entity in ipairs(self.__entities) do
+        if context.pool:add(entity) then
+            local f = system.on_entity_added or function() end
+            f(context, entity)
+        end
+    end
+
     return self:add_system(...)
 end
 
@@ -41,7 +50,6 @@ function world:context(system)
     if context then return context end
 
     local context = {pool=ecs.pool(system.__components), world=self}
-    context.pool:add(unpack(self.__entities))
     self.__context[system] = context
 
     return context
@@ -54,7 +62,20 @@ function world:update(entity)
         self.__entities[index] = entity
     end
 
-    for _, context in pairs(self.__context) do context.pool:update(entity) end
+    for _, system in ipairs(self.__systems) do
+        local context = self:context(system)
+        if context.pool:should_add(entity) then
+            if context.pool:add(entity) then
+                local f = system.on_entity_added or function() end
+                f(context, entity)
+            end
+        else
+            if context.pool:remove(entity) then
+                local f = system.on_entity_removed or function() end
+                f(context, entity)
+            end
+        end
+    end
 
     return self
 end
@@ -70,7 +91,13 @@ function world:remove(entity)
         self.__entities[e] = i
     end
 
-    for _, context in pairs(self.__context) do context.pool:remove(entity) end
+    for _, system in ipairs(self.__systems) do
+        local context = self:context(system)
+        if context.pool:remove(entity) then
+            local f = system.on_entity_removed or function() end
+            f(context, entity)
+        end
+    end
 
     return self
 end
