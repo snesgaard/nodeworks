@@ -61,7 +61,6 @@ end
 --- System Logic ---
 local animation_system =  ecs.system(
     components.animation_state,
-    components.transform,
     components.sprite
 )
 

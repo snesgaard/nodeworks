@@ -22,4 +22,7 @@ function systems.particles:draw()
     end
 end
 
+systems.collision = require(... .. ".collision")
+systems.motion = require(... .. ".motion")
+
 return systems

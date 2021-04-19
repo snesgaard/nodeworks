@@ -19,7 +19,6 @@ end
 components.sprite = ecs.assemblage(components.image, components.draw_args)
 
 
-
 ---
 
 local timer = {}
@@ -71,6 +70,8 @@ function components.position(x, y) return vec2(x, y) end
 
 function components.velocity(x, y) return vec2(x, y) end
 
+function components.gravity(x, y) return vec2(x, y) end
+
 components.transform = transform
 
 components.particles = require(... .. ".particles")
@@ -114,6 +115,10 @@ end
 
 function components.hitbox(x, y, w, h)
     return spatial(x, y, w, h)
+end
+
+function components.bump_world(world)
+    return world
 end
 
 ---------------------------------------

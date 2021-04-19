@@ -76,7 +76,7 @@ function entity:set_world(world)
     if self.world then self.world:update(self) end
 end
 
-function entity:remove()
+function entity:destroy()
     if self.world then self.world:remove(self) end
 end
 
