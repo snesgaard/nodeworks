@@ -56,6 +56,7 @@ local function update_sprite(entity)
     sprite:update(components.image, frame.image, frame.quad)
     sprite[components.draw_args].ox = -frame.offset.x
     sprite[components.draw_args].oy = -frame.offset.y
+    sprite:update(components.slices, frame.slices)
 end
 
 --- System Logic ---

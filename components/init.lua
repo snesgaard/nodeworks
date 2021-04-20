@@ -16,7 +16,18 @@ function components.draw_args(x, y, r, sx, sy, ox, oy, kx, ky)
     }
 end
 
-components.sprite = ecs.assemblage(components.image, components.draw_args)
+function components.slices(slices)
+    return slices or {}
+end
+
+function components.body_slice(slice_name)
+    return slice_name or "body"
+end
+
+components.sprite = ecs.assemblage(
+    components.image, components.draw_args, components.body_slice,
+    components.slices
+)
 
 
 ---

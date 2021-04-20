@@ -14,15 +14,21 @@ function sprite_draw_system:draw()
         local position = entity[components.position] or components.position()
         gfx.translate(position:unpack())
 
+        local slices = sprite[components.slices]
+        local body_key = sprite[components.body_slice]
+        local body_slice = slices[body_key] or spatial()
+        local c = body_slice:centerbottom()
+        local ox, oy = args.ox + c.x, args.oy + c.y
+
         if image.image and image.quad then
             gfx.draw(
                 image.image, image.quad,
-                args.x, args.y, args.r, args.sx, args.sy, args.ox, args.oy
+                args.x, args.y, args.r, args.sx, args.sy, ox, oy
             )
         elseif image.image then
             gfx.draw(
                 image.image,
-                args.x, args.y, args.r, args.sx, args.sy, args.ox, args.oy
+                args.x, args.y, args.r, args.sx, args.sy, ox, oy
             )
         end
 
@@ -55,6 +61,7 @@ function love.load()
         :add(components.animation_state)
         :add(components.body, 0, 0, 50, 20)
         :add(components.bump_world, bump_world)
+        :add(components.body_slice)
 
     test_entity2 = ecs.entity(world)
         :add(components.body, 300, 0, 50, 4000)
