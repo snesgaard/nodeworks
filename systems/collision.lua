@@ -121,6 +121,21 @@ function system:update(dt)
 
         for _, c in ipairs(cols) do
             self.world:event("on_collision", c)
+
+            if c.type == "touch" and entity[components.velocity] then
+                local vx, vy = entity[components.velocity]:unpack()
+                local t = 0.9
+                if c.normal.y <= -t then
+                    vy = math.min(0, vy)
+                elseif c.normal.y >= t then
+                    vy = math.max(0, vy)
+                elseif c.normal.x <= -t then
+                    vx = math.min(0, vx)
+                elseif c.normal.x >= t then
+                    vx = math.max(0, vx)
+                end
+                entity:update(components.velocity, vx, vy)
+            end
         end
     end
 end
@@ -178,9 +193,7 @@ function hitbox_system:update(dt)
         -- First remove hitboxes no longer in the collection
         for tag, handle in pairs(handles) do
             if not collection[tag] then
-                print("removing", tag)
                 world:remove(handle)
-                print("done")
                 handles[tag] = nil
             end
         end
