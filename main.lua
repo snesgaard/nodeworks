@@ -40,7 +40,7 @@ function love.load()
     world = ecs.world(
         systems.animation,
         systems.particles,
-        systems.slice_body_update,
+        --systems.slice_body_update,
         systems.motion,
         systems.collision,
         sprite_draw_system
@@ -60,7 +60,7 @@ function love.load()
             idle="wizard_movement/idle", run="wizard_movement/run"
         })
         :add(components.animation_state)
-        :add(components.body, 0, 0, 50, 20)
+        :add(components.body, -10, -20, 20, 20)
         :add(components.bump_world, bump_world)
         :add(components.body_slice)
 
