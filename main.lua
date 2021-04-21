@@ -40,6 +40,7 @@ function love.load()
     world = ecs.world(
         systems.animation,
         systems.particles,
+        systems.slice_body_update,
         systems.motion,
         systems.collision,
         sprite_draw_system
@@ -65,6 +66,11 @@ function love.load()
 
     test_entity2 = ecs.entity(world)
         :add(components.body, 300, 0, 50, 4000)
+        :add(components.bump_world, bump_world)
+
+    test_entity3 = ecs.entity(world)
+        :add(components.position, 275, 200)
+        :add(components.body, 0, 0, 50, 50)
         :add(components.bump_world, bump_world)
 
     systems.animation.play(test_entity, "run", true)

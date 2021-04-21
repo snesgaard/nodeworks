@@ -57,15 +57,25 @@ end
 
 local function draw_coordinate_systems(pool)
     for _, entity in ipairs(pool) do
-        local p = entity[components.position] or components.position()
-        local x_min = vec2(-10, 0) + p
-        local x_max = vec2(10, 0) + p
-        local y_min = vec2(0, -10) + p
-        local y_max = vec2(0, 10) + p
-        gfx.setColor(1, 0, 0)
-        gfx.line(x_min.x, x_min.y, x_max.x, x_max.y)
-        gfx.setColor(0, 1, 0)
-        gfx.line(y_min.x, y_min.y, y_max.x, y_max.y)
+        local p = entity[components.position]
+        if p then
+            local x_min = vec2(-10, 0) + p
+            local x_max = vec2(10, 0) + p
+            local y_min = vec2(0, -10) + p
+            local y_max = vec2(0, 10) + p
+            gfx.setColor(1, 0, 0)
+            gfx.line(x_min.x, x_min.y, x_max.x, x_max.y)
+            gfx.setColor(0, 1, 0)
+            gfx.line(y_min.x, y_min.y, y_max.x, y_max.y)
+        end
+    end
+end
+
+local function get_transformed_body(entity, body)
+    body = body or entity[components.body]
+    local pos = entity[components.position] or components.position()
+    if body then
+        return body:move(pos:unpack())
     end
 end
 
@@ -91,7 +101,8 @@ function system:update(dt)
         local body = entity[components.body]
         local next_body = body:move(pos:unpack())
         local ax, ay, cols = world:move(entity, next_body.x, next_body.y)
-        entity:update(components.position, ax, ay)
+        local dx, dy = ax - next_body.x, ay - next_body.y
+        entity:update(components.position, pos.x + dx, pos.y + dy)
 
         for _, c in ipairs(cols) do
             self.world:event("on_collision", c)
@@ -114,6 +125,18 @@ function system:draw()
 
     world_draw_from_pool(self.pool)
     draw_coordinate_systems(self.pool)
+end
+
+function system.can_resize(entity, body)
+
+end
+
+function system.resize(entity, body)
+    local body = entity[components.body]
+    local world = entity[components.world]
+    if not body or not world then return false end
+    if not system.can_resize(entity, body) then return false end
+
 end
 
 return system
