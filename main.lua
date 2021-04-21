@@ -43,6 +43,7 @@ function love.load()
         --systems.slice_body_update,
         systems.motion,
         systems.collision,
+        systems.hitbox,
         sprite_draw_system
     )
 
@@ -63,9 +64,11 @@ function love.load()
         :add(components.body, -10, -20, 20, 20)
         :add(components.bump_world, bump_world)
         :add(components.body_slice)
+        :add(components.hitbox_collection, {yo=spatial(0, 0, 100, 100)})
 
     test_entity2 = ecs.entity(world)
         :add(components.body, 300, 0, 50, 4000)
+        :add(components.position)
         :add(components.bump_world, bump_world)
 
     test_entity3 = ecs.entity(world)
@@ -82,6 +85,10 @@ function love.keypressed(key, scancode, isrepeat)
     if key == "d" then test_entity:remove() end
 
     if key == "escape" then love.event.quit() end
+
+    if key == "space" then
+        test_entity:update(components.hitbox_collection, {foo=spatial(-10, 0, 10, 10)})
+    end
 end
 
 function love.update(dt)

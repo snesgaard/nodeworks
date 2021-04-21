@@ -79,29 +79,44 @@ local function get_transformed_body(entity, body)
     end
 end
 
+local function collision_filter(item, other)
+    if item[components.body] and other[components.body] then
+        return "touch"
+    else
+        return "cross"
+    end
+end
 
-local system = ecs.system(components.body, components.bump_world)
+
+local system = ecs.system(
+    components.body, components.bump_world, components.position
+)
 
 function system:on_entity_added(entity)
-    -- Give it a unique identifer
     local world = entity[components.bump_world]
-    local pos = entity[components.position] or components.position()
-    local body = entity[components.body]
-    world:add(entity, body:move(pos:unpack()):unpack())
+    local body = get_transformed_body(entity)
+    world:add(entity, body:unpack())
 end
 
 function system:on_entity_removed(entity)
-    self.__uuid = self.__uuid or {}
+    local world = entity[components.bump_world]
+    world:remove(entity)
 end
 
 function system:update(dt)
     for _, entity in ipairs(self.pool) do
         local world = entity[components.bump_world]
         local pos = entity[components.position] or components.position()
-        local body = entity[components.body]
-        local next_body = body:move(pos:unpack())
-        local ax, ay, cols = world:move(entity, next_body.x, next_body.y)
-        local dx, dy = ax - next_body.x, ay - next_body.y
+        local body = get_transformed_body(entity)
+
+        if not world:hasItem(entity) then
+            world:add(entity, body:unpack())
+        end
+
+        local ax, ay, cols = world:move(
+            entity, body.x, body.y, collision_filter
+        )
+        local dx, dy = ax - body.x, ay - body.y
         entity:update(components.position, pos.x + dx, pos.y + dy)
 
         for _, c in ipairs(cols) do
@@ -136,7 +151,77 @@ function system.resize(entity, body)
     local world = entity[components.world]
     if not body or not world then return false end
     if not system.can_resize(entity, body) then return false end
-
 end
 
-return system
+local hitbox_system = ecs.system(
+    components.bump_world, components.hitbox_collection,
+    components.position
+)
+
+function hitbox_system.build_handle(entity, tag, hitbox)
+    return ecs.entity()
+        :add(components.master, entity)
+        :add(components.tag, tag)
+        :add(components.hitbox, hitbox:unpack())
+end
+
+function hitbox_system:on_entity_added(entity)
+    self.__hitbox_handles = self.__hitbox_handles or {}
+    self.__hitbox_handles[entity] = {}
+end
+
+function hitbox_system:update(dt)
+    List.foreach(self.pool, function(entity)
+        local world = entity[components.bump_world]
+        local collection = entity[components.hitbox_collection]
+        local handles = self.__hitbox_handles[entity]
+        -- First remove hitboxes no longer in the collection
+        for tag, handle in pairs(handles) do
+            if not collection[tag] then
+                print("removing", tag)
+                world:remove(handle)
+                print("done")
+                handles[tag] = nil
+            end
+        end
+
+        for tag, hitbox in pairs(collection) do
+            local handle = handles[tag]
+            if not handle then
+                handle = hitbox_system.build_handle(entity, tag, hitbox)
+                handles[tag] = handle
+            end
+
+            local world_hitbox = get_transformed_body(entity, hitbox)
+
+            if not world:hasItem(handle) then
+                world:add(handle, world_hitbox:unpack())
+            end
+
+            local _, _, col = world:move(
+                handle, world_hitbox.x, world_hitbox.y,
+                collision_filter
+            )
+
+            for _, c in ipairs(col) do
+                self.world:event("on_collision", c)
+            end
+        end
+    end)
+end
+
+function hitbox_system:on_entity_removed(entity)
+    local world = entity[components.bump_world]
+    local collection = entity[components.hitbox_collection]
+    for tag, _ in pairs(collection) do
+        local t = self.__hitbox_handles[entity][tag]
+        if t then world:remove(t) end
+    end
+
+    self.__hitbox_handles[entity] = nil
+end
+
+return {
+    body = system,
+    hitbox = hitbox_system
+}

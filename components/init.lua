@@ -132,6 +132,14 @@ function components.bump_world(world)
     return world
 end
 
+function components.hitbox_collection(box_map)
+    return box_map or {}
+end
+
+function components.master(master) return master end
+
+function components.tag(tag) return tag end
+
 ---------------------------------------
 
 return components
