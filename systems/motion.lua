@@ -14,4 +14,25 @@ function system:update(dt)
     end
 end
 
+function system:on_collision(collision_info)
+    local entity = collision_info.item
+    if not self.pool[entity] or collision_info.type ~= "touch" then
+        return
+    end
+
+    local vx, vy = entity[components.velocity]:unpack()
+    local t = 0.9
+    if collision_info.normal.y <= -t then
+        vy = math.min(0, vy)
+    elseif collision_info.normal.y >= t then
+        vy = math.max(0, vy)
+    elseif collision_info.normal.x <= -t then
+        vx = math.min(0, vx)
+    elseif collision_info.normal.x >= t then
+        vx = math.max(0, vx)
+    end
+
+    entity:update(components.velocity, vx, vy)
+end
+
 return system

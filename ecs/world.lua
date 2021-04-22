@@ -110,6 +110,12 @@ function world:__invoke(key, ...)
         local context = self:context(system)
         if f then f(context, ...) end
     end
+
+    return self
+end
+
+function world:immediate_event(key, ...)
+    return self:__invoke(key, ...)
 end
 
 function world:event(key, ...)
@@ -136,5 +142,6 @@ end
 function world:__call(key, ...)
     return self:event(key, ...):spin()
 end
+
 
 return world.create

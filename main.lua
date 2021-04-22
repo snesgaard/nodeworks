@@ -37,9 +37,22 @@ function sprite_draw_system:draw()
     end
 end
 
+local root_motion_system = ecs.system(components.position)
+
+function root_motion_system:on_next_frame(entity, prev_frame, next_frame)
+    if not self.pool[entity] then return end
+    print("next_frame")
+end
+
+function root_motion_system:on_animation_ended(entity)
+    print("no more!")
+
+end
+
 function love.load()
     world = ecs.world(
         systems.animation,
+        root_motion_system,
         systems.particles,
         systems.hitbox_sprite,
         systems.motion,
@@ -80,7 +93,7 @@ function love.load()
 
     --test_entity[components.sprite]:update(components.mirror, true)
 
-    systems.animation.play(test_entity, "run")
+    systems.animation.play(test_entity, "run", true)
 end
 
 function love.keypressed(key, scancode, isrepeat)

@@ -84,6 +84,13 @@ end
 
 function entity:destroy()
     if self.world then self.world:remove(self) end
+    self.world = nil
+end
+
+function entity:event(event, ...)
+    self:add(event, ...)
+    self:remove(event)
+    return self
 end
 
 return entity.create

@@ -29,6 +29,10 @@ function components.mirror(value)
     return value
 end
 
+function components.on_frame_changed(prev_frame, next_frame)
+    return {prev_frame, next_frame}
+end
+
 components.sprite = ecs.assemblage(
     components.image, components.draw_args, components.body_slice,
     components.slices, components.mirror

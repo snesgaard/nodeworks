@@ -32,12 +32,13 @@ local function update_animation(entity, dt)
 
     if not should_be_updated(entity) then return end
     if not state[components.timer]:update(dt) then return end
+    local prev_frame = get_current_frame(entity)
     state:update(components.index, state[components.index] + 1)
 
     if state[components.index] > #state[components.frame_sequence] then
         if state[components.animation_args].once then
             state[components.animation_args].playing = false
-            return
+            return "on_animation_ended"
         end
 
         state:update(components.index, 1)
@@ -45,6 +46,7 @@ local function update_animation(entity, dt)
 
     local frame = get_current_frame(entity)
     state:update(components.timer, frame.dt)
+    return "on_next_frame", prev_frame, frame
 end
 
 local function update_sprite(entity)
@@ -59,6 +61,11 @@ local function update_sprite(entity)
     sprite:update(components.slices, frame.slices)
 end
 
+local function handle_event(world, entity, event_key, ...)
+    if not event_key then return end
+    world:immediate_event(event_key, entity, ...)
+end
+
 --- System Logic ---
 local animation_system =  ecs.system(
     components.animation_state,
@@ -67,8 +74,10 @@ local animation_system =  ecs.system(
 
 function animation_system:update(dt)
     for _, entity in ipairs(self.pool) do
-        update_animation(entity, dt)
+        handle_event(self.world, entity, update_animation(entity, dt))
         update_sprite(entity)
+
+
     end
 end
 

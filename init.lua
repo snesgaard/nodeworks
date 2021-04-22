@@ -18,6 +18,7 @@ require(BASE .. ".scene")
 require(BASE .. ".event")
 
 components = require "components"
+events = require "events"
 systems = require "systems"
 
 event = event_server()
