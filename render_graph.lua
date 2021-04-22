@@ -15,7 +15,9 @@ end
 
 function render_graph:__call()
     if self.__cache then return self.__cache end
+    gfx.push("all")
     local r = self.__func(self, self:__eval_links())
+    gfx.pop()
     self.__cache = r
     return r
 end

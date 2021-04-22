@@ -51,20 +51,20 @@ end
 function draw_scene(self)
     self.canvas = self.canvas or gfx.newCanvas(gfx.getWidth(), gfx.getHeight())
     gfx.setCanvas(self.canvas)
+
     gfx.clear(0, 0, 0, 0)
-    gfx.push()
     gfx.scale(2, 2)
     world("draw")
-    gfx.pop()
+    
     return self.canvas
 end
 
 function add_scene(self, ...)
-    local buffers = {...}
     self.canvas = self.canvas or gfx.newCanvas(gfx.getWidth(), gfx.getHeight())
     gfx.setCanvas(self.canvas)
-    gfx.clear(0, 0, 0, 1)
 
+    local buffers = {...}
+    gfx.clear(0, 0, 0, 1)
     gfx.setBlendMode("add")
     for _, b in ipairs(buffers) do
         gfx.draw(b, 0, 0)
@@ -144,6 +144,6 @@ end
 function love.draw()
     --gfx.scale(2, 2)
     --world("draw")
-    draw_scene_node:draw()
+     :draw()
     --gfx.draw(frame.image, frame.quad, 100, 100)
 end
