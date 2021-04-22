@@ -46,7 +46,31 @@ end
 
 function root_motion_system:on_animation_ended(entity)
     print("no more!")
+end
 
+function draw_scene(self)
+    self.canvas = self.canvas or gfx.newCanvas(gfx.getWidth(), gfx.getHeight())
+    gfx.setCanvas(self.canvas)
+    gfx.clear(0, 0, 0, 0)
+    gfx.push()
+    gfx.scale(2, 2)
+    world("draw")
+    gfx.pop()
+    return self.canvas
+end
+
+function add_scene(self, ...)
+    local buffers = {...}
+    self.canvas = self.canvas or gfx.newCanvas(gfx.getWidth(), gfx.getHeight())
+    gfx.setCanvas(self.canvas)
+    gfx.clear(0, 0, 0, 1)
+
+    gfx.setBlendMode("add")
+    for _, b in ipairs(buffers) do
+        gfx.draw(b, 0, 0)
+    end
+
+    return self.canvas
 end
 
 function love.load()
@@ -93,6 +117,9 @@ function love.load()
 
     --test_entity[components.sprite]:update(components.mirror, true)
 
+    draw_scene_node = render_graph(draw_scene)
+    add_node = render_graph(add_scene):link(draw_scene_node, draw_scene_node)
+
     systems.animation.play(test_entity, "run", true)
 end
 
@@ -115,7 +142,8 @@ function love.update(dt)
 end
 
 function love.draw()
-    gfx.scale(2, 2)
-    world("draw")
+    --gfx.scale(2, 2)
+    --world("draw")
+    draw_scene_node:draw()
     --gfx.draw(frame.image, frame.quad, 100, 100)
 end
