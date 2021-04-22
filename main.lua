@@ -40,7 +40,7 @@ function love.load()
     world = ecs.world(
         systems.animation,
         systems.particles,
-        --systems.slice_body_update,
+        systems.hitbox_sprite,
         systems.motion,
         systems.collision,
         systems.hitbox,
@@ -55,10 +55,11 @@ function love.load()
 
     test_entity = ecs.entity(world)
         :add(components.sprite)
-        :add(components.position, 200, 50)
+        :add(components.position, 200, 150)
         :add(components.velocity, 20, 0)
         :add(components.animation_map, atlas, {
-            idle="wizard_movement/idle", run="wizard_movement/run"
+            idle="wizard_movement/idle", run="wizard_movement/run",
+            hot="test"
         })
         :add(components.animation_state)
         :add(components.body, -10, -20, 20, 20)
@@ -76,7 +77,7 @@ function love.load()
         :add(components.body, 0, 0, 50, 50)
         :add(components.bump_world, bump_world)
 
-    systems.animation.play(test_entity, "run", true)
+    systems.animation.play(test_entity, "hot")
 end
 
 function love.keypressed(key, scancode, isrepeat)

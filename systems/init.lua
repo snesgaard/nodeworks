@@ -49,6 +49,7 @@ end
 
 systems.collision = require(... .. ".collision").body
 systems.hitbox = require(... .. ".collision").hitbox
+systems.hitbox_sprite = require(... .. ".sprite_collision").hitbox
 systems.motion = require(... .. ".motion")
 
 return systems
