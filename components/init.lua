@@ -24,9 +24,14 @@ function components.body_slice(slice_name)
     return slice_name or "body"
 end
 
+function components.mirror(value)
+    if value == nil then value = false end
+    return value
+end
+
 components.sprite = ecs.assemblage(
     components.image, components.draw_args, components.body_slice,
-    components.slices
+    components.slices, components.mirror
 )
 
 

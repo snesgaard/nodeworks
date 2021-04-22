@@ -19,16 +19,17 @@ function sprite_draw_system:draw()
         local body_slice = slices[body_key] or spatial()
         local c = body_slice:centerbottom()
         local ox, oy = args.ox + c.x, args.oy + c.y
+        local sx = sprite[components.mirror] and -1 or 1
 
         if image.image and image.quad then
             gfx.draw(
                 image.image, image.quad,
-                args.x, args.y, args.r, args.sx, args.sy, ox, oy
+                args.x, args.y, args.r, sx * args.sx, args.sy, ox, oy
             )
         elseif image.image then
             gfx.draw(
                 image.image,
-                args.x, args.y, args.r, args.sx, args.sy, ox, oy
+                args.x, args.y, args.r, sx * args.sx, args.sy, ox, oy
             )
         end
 
@@ -77,7 +78,9 @@ function love.load()
         :add(components.body, 0, 0, 50, 50)
         :add(components.bump_world, bump_world)
 
-    systems.animation.play(test_entity, "hot")
+    --test_entity[components.sprite]:update(components.mirror, true)
+
+    systems.animation.play(test_entity, "run")
 end
 
 function love.keypressed(key, scancode, isrepeat)
@@ -88,7 +91,8 @@ function love.keypressed(key, scancode, isrepeat)
     if key == "escape" then love.event.quit() end
 
     if key == "space" then
-        test_entity:update(components.hitbox_collection, {foo=spatial(-10, 0, 10, 10)})
+        local sprite = test_entity[components.sprite]
+        sprite:map(components.mirror, function(m) return not m end)
     end
 end
 

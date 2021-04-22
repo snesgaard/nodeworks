@@ -30,7 +30,7 @@ function entity:add(component, ...)
 end
 
 function entity:update(component, ...)
-    if not self[component] then return self end
+    if self[component] == nil then return self end
 
     local t = type(component)
     if t == "function" then
@@ -42,6 +42,12 @@ function entity:update(component, ...)
     end
 
     return self
+end
+
+function entity:map(component, f, ...)
+    if self[component] == nil then return self end
+
+    return self:update(component, f(self[component], ...))
 end
 
 function entity:assemble(func, ...)
