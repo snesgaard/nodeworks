@@ -80,7 +80,7 @@ local function get_transformed_body(entity, body)
 end
 
 local function collision_filter(item, other)
-    if item[components.body] and other[components.body] then
+    if type(item) == "table" and type(other) == "table" then
         return "touch"
     else
         return "cross"

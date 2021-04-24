@@ -52,4 +52,41 @@ systems.hitbox = require(... .. ".collision").hitbox
 systems.hitbox_sprite = require(... .. ".sprite_collision").hitbox
 systems.motion = require(... .. ".motion")
 
+systems.sprite = ecs.system(components.sprite)
+
+function systems.sprite:draw()
+    gfx.setColor(1, 1, 1)
+    for _, entity in ipairs(self.pool) do
+        local sprite = entity[components.sprite]
+        local image = sprite[components.image]
+        local args = sprite[components.draw_args]
+
+        gfx.push()
+
+        local position = entity[components.position] or components.position()
+        gfx.translate(position:unpack())
+
+        local slices = sprite[components.slices]
+        local body_key = sprite[components.body_slice]
+        local body_slice = slices[body_key] or spatial()
+        local c = body_slice:centerbottom()
+        local ox, oy = args.ox + c.x, args.oy + c.y
+        local sx = sprite[components.mirror] and -1 or 1
+
+        if image.image and image.quad then
+            gfx.draw(
+                image.image, image.quad,
+                args.x, args.y, args.r, sx * args.sx, args.sy, ox, oy
+            )
+        elseif image.image then
+            gfx.draw(
+                image.image,
+                args.x, args.y, args.r, sx * args.sx, args.sy, ox, oy
+            )
+        end
+
+        gfx.pop()
+    end
+end
+
 return systems
