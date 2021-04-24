@@ -81,7 +81,7 @@ end
 
 local function collision_filter(item, other)
     if type(item) == "table" and type(other) == "table" then
-        return "touch"
+        return "slide"
     else
         return "cross"
     end
