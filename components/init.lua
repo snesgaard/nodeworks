@@ -62,6 +62,10 @@ function timer:done()
     return self.time <= 0
 end
 
+function timer:time_left_normalized()
+    return self.time / self.duration
+end
+
 components.timer = timer
 
 --------------------------------------------------
@@ -94,7 +98,9 @@ function components.gravity(x, y) return vec2(x, y) end
 
 components.transform = transform
 
-components.particles = require(... .. ".particles")
+function components.particles(...)
+    return particles(...)
+end
 
 --- SPRITE ANIMATION-----------------
 
