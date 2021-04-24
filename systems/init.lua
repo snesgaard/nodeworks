@@ -73,16 +73,18 @@ function systems.sprite:draw()
         local ox, oy = args.ox + c.x, args.oy + c.y
         local sx = sprite[components.mirror] and -1 or 1
 
-        if image.image and image.quad then
-            gfx.draw(
-                image.image, image.quad,
-                args.x, args.y, args.r, sx * args.sx, args.sy, ox, oy
-            )
-        elseif image.image then
-            gfx.draw(
-                image.image,
-                args.x, args.y, args.r, sx * args.sx, args.sy, ox, oy
-            )
+        if sprite[components.visible] then
+            if image.image and image.quad then
+                gfx.draw(
+                    image.image, image.quad,
+                    args.x, args.y, args.r, sx * args.sx, args.sy, ox, oy
+                )
+            elseif image.image then
+                gfx.draw(
+                    image.image,
+                    args.x, args.y, args.r, sx * args.sx, args.sy, ox, oy
+                )
+            end
         end
 
         gfx.pop()
