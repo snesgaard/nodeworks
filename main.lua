@@ -55,7 +55,7 @@ function draw_scene(self)
     gfx.clear(0, 0, 0, 0)
     gfx.scale(2, 2)
     world("draw")
-    
+
     return self.canvas
 end
 
@@ -144,6 +144,6 @@ end
 function love.draw()
     --gfx.scale(2, 2)
     --world("draw")
-     :draw()
+     add_node:draw()
     --gfx.draw(frame.image, frame.quad, 100, 100)
 end
