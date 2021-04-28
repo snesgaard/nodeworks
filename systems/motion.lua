@@ -1,10 +1,11 @@
-local system = ecs.system(components.position, components.velocity)
+local system = ecs.system(components.position, components.velocity, components.gravity)
 
 function system:update(dt)
     for _, entity in ipairs(self.pool) do
         local g = entity[components.gravity] or components.gravity()
         local v = entity[components.velocity]
         local p = entity[components.position]
+        local g = entity[components.gravity]
 
         v = v + g * dt
         p = p + v * dt

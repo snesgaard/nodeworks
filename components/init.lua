@@ -29,13 +29,18 @@ function components.mirror(value)
     return value
 end
 
+function components.visible(value)
+    if value == nil then value = true end
+    return value
+end
+
 function components.on_frame_changed(prev_frame, next_frame)
     return {prev_frame, next_frame}
 end
 
 components.sprite = ecs.assemblage(
     components.image, components.draw_args, components.body_slice,
-    components.slices, components.mirror
+    components.slices, components.mirror, components.visible
 )
 
 
@@ -44,7 +49,7 @@ components.sprite = ecs.assemblage(
 local timer = {}
 timer.__index = timer
 
-function timer.create(duration)
+function timer.create(duration, time)
     duration = duration or 0
     return setmetatable({duration=duration or 0, time=time or duration}, timer)
 end
@@ -60,6 +65,10 @@ end
 
 function timer:done()
     return self.time <= 0
+end
+
+function timer:time_left_normalized()
+    return self.time / self.duration
 end
 
 components.timer = timer
@@ -94,7 +103,9 @@ function components.gravity(x, y) return vec2(x, y) end
 
 components.transform = transform
 
-components.particles = require(... .. ".particles")
+function components.particles(...)
+    return particles(...)
+end
 
 --- SPRITE ANIMATION-----------------
 
