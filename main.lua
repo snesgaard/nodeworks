@@ -33,8 +33,11 @@ end
 function love.load()
     world = ecs.world(
         systemA,
-        systemB
+        systemB,
+        systems.collision
     )
+
+    --systems.collision.show()
 
     ecs.entity(world)
         :add(componentA)

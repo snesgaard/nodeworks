@@ -47,8 +47,7 @@ function systems.particles:draw()
     end
 end
 
-systems.collision = require(... .. ".collision").body
-systems.hitbox = require(... .. ".collision").hitbox
+systems.collision = require(... .. ".collision")
 systems.hitbox_sprite = require(... .. ".sprite_collision").hitbox
 systems.motion = require(... .. ".motion")
 
