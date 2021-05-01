@@ -13,6 +13,7 @@ Spatial = require(BASE .. ".spatial")
 Transform = require(BASE .. ".transform")
 vec2 = require(BASE .. ".vec2")
 particles = require(BASE .. ".particles")
+ease = require(BASE .. ".ease")
 
 atlas_cache = {}
 function get_atlas(path)

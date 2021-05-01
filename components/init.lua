@@ -92,6 +92,9 @@ function tick:reset()
 end
 
 components.tick = tick
+---
+
+components.tween = require(... .. ".tween")
 
 ---
 
