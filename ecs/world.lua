@@ -108,7 +108,9 @@ function world:__invoke(key, ...)
     for _, system in ipairs(chain) do
         local f = system[key]
         local context = self:context(system)
-        if f then f(context, ...) end
+        if f and f(context, ...) then
+            break
+        end
     end
 
     return self
