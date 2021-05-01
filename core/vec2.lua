@@ -89,7 +89,8 @@ end
 
 
 function vec2.normalize(v1)
-  return v1 * (1.0 / v1:length())
+    local l = v1:length()
+    return v1 * (1.0 / math.max(1e-10, l))
 end
 
 function vec2.unpack(v)
