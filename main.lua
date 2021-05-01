@@ -1,16 +1,49 @@
 require "."
 
+local componentA = function()  return "A" end
+local componentB = function()  return "B" end
+local componentC = function()  return "C" end
+
+
+local systemA = ecs.system(componentA, componentB)
+
+function systemA.on_entity_added()
+    print("add A")
+end
+
+function systemA.on_entity_removed()
+    print("remove A")
+end
+
+local systemB = ecs.system.from_function(function(entity)
+    return {
+        everything = true,
+        picky = entity:has(componentA, componentC)
+    }
+end)
+
+function systemB:on_entity_added(entity, pool)
+    print("yes", pool)
+end
+
+function systemB:on_entity_removed(entity, pool)
+    print("removed", pool)
+end
+
 function love.load()
     world = ecs.world(
-        systems.collision
+        systemA,
+        systemB
     )
 
-    systems.collision.show()
+    ecs.entity(world)
+        :add(componentA)
+        :add(componentB)
+        :remove(componentB)
+        :add(componentB)
+        :add(componentC)
+        :destroy()
 
-    local tween = components.tween(vec2(100, 0), vec2(0, 100), 10):ease(ease.linear)
-
-    print(tween:update(5))
-    print(tween:update(2))
 end
 
 function love.keypressed(key, scancode, isrepeat)

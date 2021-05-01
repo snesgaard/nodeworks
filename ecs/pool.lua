@@ -1,14 +1,20 @@
 local pool = {}
 pool.__index = pool
 
-function pool.create(components)
-    local self = {}
-    self.__components = components or {}
+function pool:__tostring()
+    if self.__name then
+        return string.format("pool[%s, %i]", self.__name, #self)
+    else
+        return string.format("pool[%i]", #self)
+    end
+end
+
+function pool.create(name)
+    local self = {__name=name}
     return setmetatable(self, pool)
 end
 
 function pool:add(entity)
-    if not self:should_add(entity) then return false end
     if self[entity] then return false end
 
     local index = #self + 1
@@ -46,25 +52,6 @@ function pool:remove(entity)
     end
 
     return true
-end
-
-function pool:update(entity, ...)
-    if not entity then return self end
-
-    local index = self[entity]
-    local has = entity:has(self.__components)
-
-    if has and not index then
-        self:add(entity)
-    elseif not has and index then
-        self:remove(entity)
-    end
-
-    return self:update(...)
-end
-
-function pool:should_add(entity)
-    return entity:has(self.__components)
 end
 
 return pool.create

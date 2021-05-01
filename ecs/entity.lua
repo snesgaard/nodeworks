@@ -67,8 +67,8 @@ function entity:get(component)
     return self[component]
 end
 
-function entity:has(components)
-    for _, component in ipairs(components) do
+function entity:has(...)
+    for _, component in ipairs({...}) do
         if not self[component] then return false end
     end
     return true

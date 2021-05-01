@@ -1,3 +1,20 @@
+local context = {}
+context.__index = context
+
+function context:__fetch_pool(name)
+    if not self[name] then
+        local pool = ecs.pool(name)
+        self[name] = pool
+        self.__pools[name] = pool
+
+    end
+    return self[name]
+end
+
+function context.create(world)
+    return setmetatable({world = world, __pools = {}}, context)
+end
+
 local world = {}
 world.__index = world
 world.__default_chain = "__default_chain"
@@ -25,6 +42,22 @@ function world:chain(event_key)
     return c or self.__systems
 end
 
+function world:__update_entity_system(system, entity)
+    local pools = system.__pool_filter(entity)
+    local c = self:context(system)
+
+    for pool_name, should_add in pairs(pools) do
+        local pool = c:__fetch_pool(pool_name)
+
+        if should_add and pool:add(entity) and system.on_entity_added then
+            system.on_entity_added(c, entity, pool)
+        end
+        if not should_add and pool:remove(entity) and system.on_entity_removed then
+            system.on_entity_removed(c, entity, pool)
+        end
+    end
+end
+
 function world:add_system(system, ...)
     if not system then return self end
 
@@ -33,10 +66,7 @@ function world:add_system(system, ...)
     local context = self:context(system)
 
     for _, entity in ipairs(self.__entities) do
-        if context.pool:add(entity) then
-            local f = system.on_entity_added or function() end
-            f(context, entity)
-        end
+        self:__update_entity_system(system, entity)
     end
 
     return self:add_system(...)
@@ -45,14 +75,13 @@ end
 function world:systems() return self.__systems end
 
 function world:context(system)
-    local context = self.__context[system]
+    local c = self.__context[system]
 
-    if context then return context end
+    if c then return c end
 
-    local context = {pool=ecs.pool(system.__components), world=self}
-    self.__context[system] = context
+    self.__context[system] = context.create(self)
 
-    return context
+    return self.__context[system]
 end
 
 function world:update(entity)
@@ -63,18 +92,7 @@ function world:update(entity)
     end
 
     for _, system in ipairs(self.__systems) do
-        local context = self:context(system)
-        if context.pool:should_add(entity) then
-            if context.pool:add(entity) then
-                local f = system.on_entity_added or function() end
-                f(context, entity)
-            end
-        else
-            if context.pool:remove(entity) then
-                local f = system.on_entity_removed or function() end
-                f(context, entity)
-            end
-        end
+        self:__update_entity_system(system, entity)
     end
 
     return self
@@ -92,10 +110,11 @@ function world:remove(entity)
     end
 
     for _, system in ipairs(self.__systems) do
-        local context = self:context(system)
-        if context.pool:remove(entity) then
-            local f = system.on_entity_removed or function() end
-            f(context, entity)
+        local c = self:context(system)
+        for _, pool in pairs(c.__pools) do
+            if pool:remove(entity) and system.on_entity_removed then
+                system.on_entity_removed(c, entity, pool)
+            end
         end
     end
 
