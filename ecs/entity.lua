@@ -24,13 +24,15 @@ function entity:add(component, ...)
     else
         errorf("Unsupported type <%s>", t)
     end
-    if self.world then self.world:update(self) end
+    if self.world then self.world:update(self, ...) end
 
     return self
 end
 
 function entity:update(component, ...)
-    if self[component] == nil then return self end
+    local prev_value = self[component]
+
+    if prev_value == nil then return self end
 
     local t = type(component)
     if t == "function" then
@@ -38,10 +40,13 @@ function entity:update(component, ...)
     elseif t == "table" then
         self[component] = component.create(...)
     else
-        errorf("Unsupported type <%s>", t)
+         errorf("Unsupported type <%s>", t)
     end
 
+    if self.world then self.world:update(self, component, prev_value, self[component]) end
+
     return self
+
 end
 
 function entity:map(component, f, ...)
@@ -58,8 +63,9 @@ function entity:assemble(func, ...)
 end
 
 function entity:remove(component)
+    local prev = self[component]
     self[component] = nil
-    if self.world then self.world:update(self) end
+    if self.world then self.world:update(self, component, prev) end
     return self
 end
 
