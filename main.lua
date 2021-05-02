@@ -45,6 +45,15 @@ function love.load()
         :remove(componentB)
         :add(componentB)
         :add(componentC)
+        :add(components.hitbox)
+        :add(components.body)
+        :add(
+            components.hitbox_collection,
+            {
+                [components.hitbox] = {0, 0, 100, 50},
+                [components.body] = {},
+            },
+        )
         :destroy()
 
 end

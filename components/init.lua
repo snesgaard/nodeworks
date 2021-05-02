@@ -143,11 +143,7 @@ components.animation_state = ecs.assemblage(
 
 --- COLLISSION ------------------------
 
-function components.parent(parent) return parent end
-
-function components.body(w, h)
-    return spatial(-w * 0.5, -h, w, h)
-end
+function components.body() return true end
 
 function components.hitbox(x, y, w, h)
     return spatial(x, y, w, h)
@@ -157,11 +153,21 @@ function components.bump_world(world)
     return world
 end
 
-function components.hitbox_collection(box_map)
-    return box_map or {}
-end
+function components.hitbox_collection(...)
+    local function init_hitbox(hitbox_data)
+        local entity = ecs.entity()
 
-function components.master(master) return master end
+        for component, args in pairs(hitbox_data) do
+            entity:add(component, unpack(args))
+        end
+
+        entity:ensure(components.hitbox)
+
+        return entity
+    end
+
+    return List.map({...}, init_hitbox)
+end
 
 function components.tag(tag) return tag end
 
