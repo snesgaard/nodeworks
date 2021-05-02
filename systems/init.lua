@@ -91,4 +91,6 @@ function systems.sprite:draw()
     end
 end
 
+systems.scene_graph = require(... .. ".scene_graph")
+
 return systems

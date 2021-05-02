@@ -32,17 +32,32 @@ end
 
 function love.load()
     world = ecs.world(
-        systemA,
-        systemB
+        --systemA,
+        --systemB,
+        systems.scene_graph
     )
 
-    ecs.entity(world)
+    pp = ecs.entity(world)
         :add(componentA)
         :add(componentB)
         :remove(componentB)
         :add(componentB)
         :add(componentC)
-        :destroy()
+
+    pp2 = ecs.entity(world)
+
+    ecs.entity(world)
+        :add(components.parent, pp)
+        :update(components.parent, pp2)
+
+    --ecs.entity(world)
+        --:add(components.parent, pp)
+        --:destroy()
+
+    print(
+        " this many",
+        #pp:ensure(components.children), #pp2:ensure(components.children)
+    )
 
 end
 

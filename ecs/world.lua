@@ -42,18 +42,22 @@ function world:chain(event_key)
     return c or self.__systems
 end
 
-function world:__update_entity_system(system, entity)
+function world:__update_entity_system(system, entity, component, ...)
     local pools = system.__pool_filter(entity)
     local c = self:context(system)
 
     for pool_name, should_add in pairs(pools) do
         local pool = c:__fetch_pool(pool_name)
 
-        if should_add and pool:add(entity) and system.on_entity_added then
-            system.on_entity_added(c, entity, pool)
+        if should_add then
+            if pool[entity] and system.on_entity_updated then
+                system.on_entity_updated(c, entity, pool, component, ...)
+            elseif pool:add(entity) and system.on_entity_added then
+                system.on_entity_added(c, entity, pool, component, ...)
+            end
         end
         if not should_add and pool:remove(entity) and system.on_entity_removed then
-            system.on_entity_removed(c, entity, pool)
+            system.on_entity_removed(c, entity, pool, component, ...)
         end
     end
 end
@@ -84,7 +88,7 @@ function world:context(system)
     return self.__context[system]
 end
 
-function world:update(entity)
+function world:update(entity, ...)
     if not self.__entities[entity] then
         local index = #self.__entities + 1
         self.__entities[entity] = index
@@ -92,13 +96,13 @@ function world:update(entity)
     end
 
     for _, system in ipairs(self.__systems) do
-        self:__update_entity_system(system, entity)
+        self:__update_entity_system(system, entity, ...)
     end
 
     return self
 end
 
-function world:remove(entity)
+function world:destroy(entity)
     local index = self.__entities[entity]
     if not index then return self end
 
@@ -112,8 +116,8 @@ function world:remove(entity)
     for _, system in ipairs(self.__systems) do
         local c = self:context(system)
         for _, pool in pairs(c.__pools) do
-            if pool:remove(entity) and system.on_entity_removed then
-                system.on_entity_removed(c, entity, pool)
+            if pool:remove(entity) and system.on_entity_destroyed then
+                system.on_entity_destroyed(c, entity, pool)
             end
         end
     end

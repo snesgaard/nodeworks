@@ -29,8 +29,17 @@ function entity:add(component, ...)
     return self
 end
 
+function entity:ensure(component, ...)
+    if not self:has(component) then
+        self:add(component, ...)
+    end
+
+    return self[component]
+end
+
 function entity:update(component, ...)
-    if self[component] == nil then return self end
+    local prev_value = self[component]
+    if prev_value == nil then return self end
 
     local t = type(component)
     if t == "function" then
@@ -40,6 +49,8 @@ function entity:update(component, ...)
     else
         errorf("Unsupported type <%s>", t)
     end
+
+    if self.world then self.world:update(self, component, prev_value, self[component]) end
 
     return self
 end
@@ -58,8 +69,9 @@ function entity:assemble(func, ...)
 end
 
 function entity:remove(component)
+    local prev_value = self[component]
     self[component] = nil
-    if self.world then self.world:update(self) end
+    if self.world then self.world:update(self, component, prev_value) end
     return self
 end
 
@@ -75,7 +87,7 @@ function entity:has(...)
 end
 
 function entity:set_world(world)
-    if self.world then self.world:remove(self)end
+    if self.world then self.world:destroy(self)end
 
     self.world = world
 
@@ -83,13 +95,13 @@ function entity:set_world(world)
 end
 
 function entity:destroy()
-    if self.world then self.world:remove(self) end
+    if self.world then self.world:destroy(self) end
     self.world = nil
 end
 
 function entity:event(event, ...)
     self:add(event, ...)
-    self:remove(event)
+    self:destroy(event)
     return self
 end
 

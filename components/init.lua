@@ -164,5 +164,12 @@ function components.master(master) return master end
 function components.tag(tag) return tag end
 
 ---------------------------------------
+--- SCENE GRAPH
+
+function components.parent(parent) return parent end
+
+function components.children(...) return {...} end
+
+---
 
 return components

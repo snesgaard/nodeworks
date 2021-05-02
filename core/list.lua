@@ -140,14 +140,14 @@ function list:reduce(f, seed)
 end
 
 function list:find(val)
-  eval_f = type(val) == "function" and val or function(v) return v == val end
+  local eval_f = type(val) == "function" and val or function(v) return v == val end
   for i = 1, #self do
     if eval_f(self[i]) then return self[i] end
   end
 end
 
 function list:argfind(val)
-  eval_f = type(val) == "function" and val or function(v) return v == val end
+  local eval_f = type(val) == "function" and val or function(v) return v == val end
   for i = 1, #self do
     if eval_f(self[i]) then return i end
   end
