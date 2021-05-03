@@ -55,6 +55,12 @@ function entity:map(component, f, ...)
     return self:update(component, f(self[component], ...))
 end
 
+function entity:ensure(component, ...)
+    if not self[component] then self:add(component, ...) end
+    return self[component]
+end
+
+
 function entity:assemble(func, ...)
     func(self, ...)
 

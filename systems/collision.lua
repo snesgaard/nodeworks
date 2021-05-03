@@ -13,7 +13,11 @@ local system = ecs.system.from_function(
 )
 
 local function move_filter(item, other)
-    return ""
+    if item[components.body] and other[components.body] then
+        return "slide"
+    else
+        return "cross"
+    end
 end
 
 local function check_filter() return "cross" end
@@ -36,13 +40,16 @@ function system.create_hitbox(entity, world, parent_entity)
 
     local _, _, cols = bump_world:move(entity, world_hitbox.x, world_hitbox.y, check_filter)
     -- Check collision here
-    world("on_collision", parent_entity, entity, cols)
+    if #cols > 0 then
+        world("on_collision", cols)
+    end
 end
 
 function system.create_collection(entity, world)
     local colletion = entity[components.hitbox_collection]
     if not colletion then return end
     for _, hitbox in ipairs(colletion) do
+        hitbox:add(components.parent, entity)
         system.create_hitbox(hitbox, world, entity)
     end
 end
@@ -65,7 +72,9 @@ function system.update_hitbox(entity, world, parent_entity)
     local _, _, cols = bump_world:move(
         entity, world_hitbox.x, world_hitbox.y, check_filter
     )
-    world("on_collision", parent_entity, entity, cols)
+    if #cols > 0 then
+        world("on_collision", cols)
+    end
 end
 
 function system.update_collection(entity, world)
@@ -77,6 +86,8 @@ end
 system.on_entity_updated = {
 
     [components.hitbox] = function(self, entity, pool, previous_value)
+        if pool ~= self.hitboxes then return end
+
         system.update_hitbox(entity, self.world)
     end,
 
@@ -90,12 +101,21 @@ system.on_entity_updated = {
         end
     end,
 
-    [components.hitbox_collection] = function(self, entity, pool, prev_collection)
+    [components.hitbox_collection] = function(self, entity, pool, prev_collection, next_collection)
+        if pool ~= self.collections then return end
+
         local bump_world = entity[components.bump_world]
         system.remove_collection(bump_world, prev_collection)
         system.create_collection(entity, self.world)
     end,
 
+    [components.position] = function(self, entity, pool)
+        if pool == self.hitboxes then
+            system.update_hitbox(entity, self.world)
+        elseif pool == self.collections then
+            system.update_collection(entity, self.world)
+        end
+    end
 }
 
 function system.remove_hitbox(bump_world, entity)
@@ -118,6 +138,58 @@ function system:on_entity_removed(entity, pool, component, value)
         system.remove_collection(bump_world, collection)
     end
 end
+
+function system.show()
+    system.__debug_draw = true
+end
+
+function system.hide()
+    system.__debug_draw = false
+end
+
+local function move_hitbox(self, entity, dx, dy)
+    if not self.hitboxes[entity] then return dx, dy, {} end
+
+    local bump_world = entity[components.bump_world]
+    local x, y = bump_world:getRect(entity)
+    local ax, ay, cols = bump_world:move(
+        entity, x + dx, y + dx, move_filter
+    )
+
+    return ax - x, ay - y, cols
+end
+
+local function move_collection(self, entity, dx, dy)
+    if not self.collections[entity] then return {} end
+
+    local bump_world = entity[components.bump_world]
+    local collection = entity[components.hitbox_collection]
+    local cols = {}
+
+    for _, hitbox in ipairs(collection) do
+        local x, y = bump_world:getRect(hitbox)
+        local _, _, sub_col = bump_world:move(
+            hitbox, x + dx, y + dy, move_filter
+        )
+        for _, c in ipairs(sub_col) do table.insert(cols, c) end
+    end
+
+    return cols
+end
+
+function system:move(entity, dx, dy, dst)
+    dst = dst or {}
+    local dx, dy, hitbox_collisions = move_hitbox(self, entity, dx, dy)
+    local collection_collisions = move_collection(self, entity, dx, dy)
+
+    for _, col in ipairs(hitbox_collisions) do table.insert(dst, col) end
+    for _, col in ipairs(collection_collisions) do table.insert(dst, col) end
+
+    self.world("on_collision", dst)
+
+    return dx, dy, dst
+end
+
 
 
 return system

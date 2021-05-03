@@ -161,7 +161,9 @@ function components.hitbox_collection(...)
             entity:add(component, unpack(args))
         end
 
-        entity:ensure(components.hitbox)
+        if not entity[components.hitbox] then
+            error("Hitbox must be specified!")
+        end
 
         return entity
     end
@@ -170,6 +172,8 @@ function components.hitbox_collection(...)
 end
 
 function components.tag(tag) return tag end
+
+function components.parent(parent) return parent end
 
 ---------------------------------------
 

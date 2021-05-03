@@ -1,61 +1,58 @@
 require "."
 
-local componentA = function()  return "A" end
-local componentB = function()  return "B" end
-local componentC = function()  return "C" end
+echo_system = ecs.system()
 
-
-local systemA = ecs.system(componentA, componentB)
-
-function systemA.on_entity_added()
-    print("add A")
-end
-
-function systemA.on_entity_removed()
-    print("remove A")
-end
-
-local systemB = ecs.system.from_function(function(entity)
-    return {
-        everything = true,
-        picky = entity:has(componentA, componentC)
-    }
-end)
-
-function systemB:on_entity_added(entity, pool)
-    print("yes", pool)
-end
-
-function systemB:on_entity_removed(entity, pool)
-    print("removed", pool)
+function echo_system:on_collision(cols)
+    print("what")
+    for _, col in ipairs(cols) do
+        print(col.item[components.body], col.other[components.body])
+    end
 end
 
 function love.load()
     world = ecs.world(
-        systemA,
-        systemB,
+        echo_system,
         systems.collision
     )
 
-    --systems.collision.show()
+    bump_world = bump.newWorld()
+    bump_world2 = bump.newWorld()
 
-    ecs.entity(world)
-        :add(componentA)
-        :add(componentB)
-        :remove(componentB)
-        :add(componentB)
-        :add(componentC)
-        :add(components.hitbox)
+    systems.collision.show()
+
+    E = ecs.entity(world)
+        :add(components.hitbox, 0, 0, 100, 100)
+        :add(components.position, 300, 100)
+        :add(components.bump_world, bump_world)
         :add(components.body)
+        :remove(components.bump_world)
+        :add(components.bump_world, bump_world)
         :add(
             components.hitbox_collection,
             {
-                [components.hitbox] = {0, 0, 100, 50},
-                [components.body] = {},
+                [components.hitbox] = {-10, -10, 20, 20},
+                [components.body] = {}
             },
+            {
+                [components.hitbox] = {100, -10, 20, 20}
+            }
         )
-        :destroy()
+        :update(
+            components.hitbox_collection,
+            {[components.hitbox] = {-10, -10, 20, 20}}
+        )
 
+    F = ecs.entity(world)
+        :add(components.body)
+        :add(components.hitbox, 500, 0, 20, 700)
+        :add(components.position)
+        :add(components.bump_world, bump_world)
+
+    C = ecs.entity(world)
+        :add(components.body)
+        :add(components.hitbox, 490, 300, 700, 20)
+        :add(components.position)
+        :add(components.bump_world, bump_world)
 end
 
 function love.keypressed(key, scancode, isrepeat)
@@ -65,8 +62,13 @@ end
 
 function love.update(dt)
     world("update", dt)
+
+    local x, y, cols = systems.collision.move(
+        world:context(systems.collision), E, 50 * dt, 50 * dt
+    )
 end
 
 function love.draw()
+    bump_debug.draw_world(bump_world)
     world("draw")
 end

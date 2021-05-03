@@ -45,18 +45,17 @@ end
 function world:__update_entity_system(system, entity, component, ...)
     local pools = system.__pool_filter(entity)
     local c = self:context(system)
-
     for pool_name, should_add in pairs(pools) do
         local pool = c:__fetch_pool(pool_name)
 
         if should_add then
             if pool[entity] then
                 local t = type(system.on_entity_updated)
-                if t == "function"
+                if t == "function" then
                     system.on_entity_updated(c, entity, pool, component, ...)
                 elseif t == "table" then
                     local f = system.on_entity_updated[component]
-                    if f then f(c, entity, pool, component, ...) end
+                    if f then f(c, entity, pool, ...) end
                 end
             elseif pool:add(entity) and system.on_entity_added then
                 system.on_entity_added(c, entity, pool, component, ...)
@@ -100,7 +99,6 @@ function world:update(entity, ...)
         self.__entities[entity] = index
         self.__entities[index] = entity
     end
-
     for _, system in ipairs(self.__systems) do
         self:__update_entity_system(system, entity, ...)
     end
