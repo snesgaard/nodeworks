@@ -14,6 +14,9 @@ function vec2.__tostring(v)
     return string.format("[%f, %f]", v.x, v.y)
 end
 
+function vec2:copy()
+    return create(self.x, self.y)
+end
 
 function vec2:__unm()
     return create(-self.x, -self.y)

@@ -9,13 +9,14 @@ input = sys.argv[1:-1]
 
 ims = map(lambda p: cv2.imread(p, -1), input)
 
-print ims[0].shape
-print len(ims)
+#print ims[0].shape
+#print len(ims)
 
-width = reduce(lambda a, b: max(a, b), map(lambda a: a.shape[1], ims))
+width = reduce(lambda a, b: max(a, b), map(lambda a: a.shape[1], ims), 1)
 height = reduce(
     lambda a, b: a + b,
-    map(lambda a: a.shape[0], ims)
+    map(lambda a: a.shape[0], ims),
+    1
 )
 
 atlas = np.zeros((height, width, 4), dtype="uint8")

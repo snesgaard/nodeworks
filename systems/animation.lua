@@ -92,6 +92,7 @@ function animation_system.play(entity, id, once, mode)
     if not map then return false end
     local sequence = map[id]
     if not sequence then return false end
+    if sequence == state[components.frame_sequence] then return true end
     state:update(components.frame_sequence, sequence)
     state:update(components.animation_args, true, once, mode)
     set_frame(entity, 1)
@@ -112,6 +113,37 @@ function animation_system.stop(entity)
         [components.animation_args]
         .playing = false
     set_frame(entity, 1)
+end
+
+function animation_system.get_slice(entity, slice_name, body_slice, animation_tag, frame)
+    local frame = frame or 1
+    local map = entity[components.animation_map]
+    if not map then return end
+    local frames = map[animation_tag]
+    if not frames then return end
+    local frame = frames[frame]
+    if not frame then return end
+    local slice = frame.slices[slice_name]
+    local body = frame.slices[body_slice]
+    if not body then return slice end
+
+    return slice:relative(body)
+end
+
+function animation_system.transform_slice(slice, position, mirror)
+    if mirror then
+        slice = slice:hmirror()
+    end
+    return slice:move(position:unpack())
+end
+
+function animation_system.get_transformed_slice(entity, slice_name, body_slice, animation_tag, frame)
+    local base_slice = animation_system.get_slice(entity, slice_name, body_slice, animation_tag, frame)
+    return animation_system.transform_slice(
+    base_slice,
+    entity[components.position] or components.position(),
+    entity[components.mirror]
+)
 end
 
 function is_paused(entity)

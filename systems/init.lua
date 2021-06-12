@@ -63,14 +63,14 @@ function systems.sprite:draw()
         gfx.push()
 
         local position = entity[components.position] or components.position()
-        gfx.translate(position:unpack())
+        gfx.translate(position.x, position.y)
 
         local slices = sprite[components.slices]
         local body_key = sprite[components.body_slice]
         local body_slice = slices[body_key] or spatial()
         local c = body_slice:centerbottom()
         local ox, oy = args.ox + c.x, args.oy + c.y
-        local sx = sprite[components.mirror] and -1 or 1
+        local sx = entity[components.mirror] and -1 or 1
 
         if sprite[components.visible] then
             if image.image and image.quad then

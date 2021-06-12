@@ -106,6 +106,10 @@ function world:update(entity, ...)
     return self
 end
 
+function world:entities()
+    return self.__entities
+end
+
 function world:remove(entity, ...)
     local index = self.__entities[entity]
     if not index then return self end
@@ -166,6 +170,21 @@ function world:spin()
     self.__spinning = false
 
     return self
+end
+
+function world:action(key, ...)
+    local args = {...}
+    local chain = self:chain(key)
+
+    for _, system in ipairs(chain) do
+        local f = system[key]
+        if f then
+            local context = self:context(system)
+            args = {f(context, unpack(args))}
+        end
+    end
+
+    return unpack(args)
 end
 
 function world:__call(key, ...)

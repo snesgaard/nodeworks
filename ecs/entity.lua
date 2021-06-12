@@ -61,10 +61,34 @@ function entity:ensure(component, ...)
 end
 
 
-function entity:assemble(func, ...)
-    func(self, ...)
+function entity:assemble(defaults, user_spec)
+    user_spec = user_spec or {}
+    local c = {}
 
-    if self.world then self.world:update(self) end
+    for component, args in pairs(defaults) do
+        c[component] = args
+    end
+
+    for component, args in pairs(user_spec) do
+        c[component] = args
+    end
+
+    for component, args in pairs(c) do
+        self:add(component, unpack(args))
+    end
+
+    return self
+end
+
+function entity:disassemble(defaults, user)
+    for c, _ in pairs(defaults) do
+        self:remove(c)
+    end
+
+    for c, _ in pairs(user) do
+        self:remove(c)
+    end
+
     return self
 end
 

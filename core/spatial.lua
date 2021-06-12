@@ -247,7 +247,8 @@ function Spatial:rightbottom()
     return vec2(self.x + self.w, self.y + self.h)
 end
 
-function Spatial:hmirror(ox, oy)
+function Spatial:hmirror(ox)
+    ox = ox or 0
     local dx = self.x - ox
     local x = ox - dx
     return Spatial.create(x - self.w, self.y, self.w, self.h)

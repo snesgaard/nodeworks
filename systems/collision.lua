@@ -13,7 +13,11 @@ local system = ecs.system.from_function(
 )
 
 local function move_filter(item, other)
-    if item[components.body] and other[components.body] then
+    local f = item[components.move_filter] or function() end
+    local t = f(item, other)
+    if t then
+        return t
+    elseif item[components.body] and other[components.body] then
         return "slide"
     else
         return "cross"
@@ -153,7 +157,7 @@ local function move_hitbox(self, entity, dx, dy)
     local bump_world = entity[components.bump_world]
     local x, y = bump_world:getRect(entity)
     local ax, ay, cols = bump_world:move(
-        entity, x + dx, y + dx, move_filter
+        entity, x + dx, y + dy, move_filter
     )
 
     return ax - x, ay - y, cols
@@ -177,6 +181,13 @@ local function move_collection(self, entity, dx, dy)
     return cols
 end
 
+function system:move_to(entity, x, y, dst)
+    local pos = entity[components.position]
+    local dx, dy = x - pos.x, y - pos.y
+    local dx, dy, dst = system.move(self, entity, dx, dy, dst)
+    return pos.x + dx, pos.y + dy, dst
+end
+
 function system:move(entity, dx, dy, dst)
     dst = dst or {}
     local dx, dy, hitbox_collisions = move_hitbox(self, entity, dx, dy)
@@ -185,7 +196,13 @@ function system:move(entity, dx, dy, dst)
     for _, col in ipairs(hitbox_collisions) do table.insert(dst, col) end
     for _, col in ipairs(collection_collisions) do table.insert(dst, col) end
 
-    self.world("on_collision", dst)
+    local pos = entity[components.position]
+    pos.x = pos.x + dx
+    pos.y = pos.y + dy
+
+    if #dst > 0 then
+        self.world("on_collision", dst)
+    end
 
     return dx, dy, dst
 end

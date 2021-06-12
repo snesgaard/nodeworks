@@ -52,7 +52,7 @@ function Atlas.create(path)
         local x = f.frame.x + 1
         local y = f.frame.y + 1
         -- ASsume a 1px margin
-        local w, h = f.frame.w - 1, f.frame.h - 1
+        local w, h = f.frame.w - 2, f.frame.h - 2
         local quad = gfx.newQuad(x, y, w, h, unpack(dim))
         local dt = f.duration / 1000.0
         local ox, oy = f.spriteSourceSize.x, f.spriteSourceSize.y
@@ -138,6 +138,10 @@ Atlas.root_motion_slice = "body"
 
 function Atlas:get_animation(name)
     local tag = self.tags[name]
+
+    if not tag then
+        error(string.format("Could not find animation: %s", name))
+    end
 
     local frames_sub = self.frames:sub(tag.from + 1, tag.to + 1)
 

@@ -98,11 +98,16 @@ components.tween = require(... .. ".tween")
 
 ---
 
-function components.position(x, y) return vec2(x, y) end
+function components.position(x, y)
+    if type(x) == "table" then x, y = x:unpack() end
+    return vec2(x, y)
+end
 
 function components.velocity(x, y) return vec2(x, y) end
 
 function components.gravity(x, y) return vec2(x, y) end
+
+function components.drag(k) return k end
 
 components.transform = transform
 
@@ -117,6 +122,9 @@ function components.animation_map(atlas, animation_id_from_tag)
 
     for id, tag in pairs(animation_id_from_tag) do
         animation_map[id] = atlas:get_animation(tag)
+        if not animation_map[id] then
+            error("Could not find animation:", tag)
+        end
     end
 
     return animation_map
@@ -174,6 +182,8 @@ end
 function components.tag(tag) return tag end
 
 function components.parent(parent) return parent end
+
+function components.collision_filter(f) return f end
 
 ---------------------------------------
 

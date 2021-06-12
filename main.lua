@@ -3,10 +3,7 @@ require "."
 echo_system = ecs.system()
 
 function echo_system:on_collision(cols)
-    print("what")
-    for _, col in ipairs(cols) do
-        print(col.item[components.body], col.other[components.body])
-    end
+
 end
 
 function love.load()
@@ -63,9 +60,7 @@ end
 function love.update(dt)
     world("update", dt)
 
-    local x, y, cols = systems.collision.move(
-        world:context(systems.collision), E, 50 * dt, 50 * dt
-    )
+    local x, y, cols = world:action("move", E, 50 * dt, 50 * dt)
 end
 
 function love.draw()
