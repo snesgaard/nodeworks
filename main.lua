@@ -6,10 +6,15 @@ function echo_system:on_collision(cols)
 
 end
 
+function echo_system:on_entity_destroyed(entity)
+    print("destroyed", entity)
+end
+
 function love.load()
     world = ecs.world(
         echo_system,
-        systems.collision
+        systems.collision,
+        systems.parenting
     )
 
     bump_world = bump.newWorld()
@@ -50,6 +55,16 @@ function love.load()
         :add(components.hitbox, 490, 300, 700, 20)
         :add(components.position)
         :add(components.bump_world, bump_world)
+
+    P1 = ecs.entity(world)
+    P2 = ecs.entity(world, "P2"):add(components.parent, P1)
+    P3 = ecs.entity(world, "P3"):add(components.parent, P1)
+    P4 = ecs.entity(world, "P4"):add(components.parent, P2)
+
+    print(systems.parenting.children(P1), systems.parenting.children(P2))
+    P2:destroy()
+    print(systems.parenting.children(P1))
+    P1:destroy()
 end
 
 function love.keypressed(key, scancode, isrepeat)

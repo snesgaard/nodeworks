@@ -1,9 +1,10 @@
 local entity = {}
 entity.__index = entity
 
-function entity.create(world)
+function entity.create(world, tag)
     local this = {}
     this.world = world
+    this.tag = tag
 
     setmetatable(this, entity)
 
@@ -12,7 +13,11 @@ function entity.create(world)
 end
 
 function entity:__tostring()
-    return "Entity"
+    if self.tag then
+        return string.format("Entity(%s)", self.tag)
+    else
+        return "Entity"
+    end
 end
 
 function entity:add(component, ...)
@@ -119,7 +124,10 @@ function entity:set_world(world)
 end
 
 function entity:destroy()
-    if self.world then self.world:remove(self) end
+    if self.world then
+        self.world:remove(self)
+        self.world:immediate_event("on_entity_destroyed", self)
+    end
     self.world = nil
 end
 

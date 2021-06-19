@@ -90,4 +90,6 @@ function systems.sprite:draw()
     end
 end
 
+systems.parenting = require(... .. ".parenting")
+
 return systems
