@@ -3,7 +3,8 @@ frame.__index = frame
 
 function frame:__tostring()
     local x, y, w, h = self.quad:getViewport()
-    return string.format("Frame(%.1f, %.1f, %.1f, %.1f)", x, y, w, h)
+    local dt = self:get_dt()
+    return string.format("Frame(%.1f, %.1f, %.1f, %.1f, %1.2f ms)", x, y, w, h, dt * 1000)
 end
 
 function frame.create(image, slices, quad, offset)

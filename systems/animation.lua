@@ -63,7 +63,7 @@ end
 
 local function handle_event(world, entity, event_key, ...)
     if not event_key then return end
-    world:immediate_event(event_key, entity, ...)
+    world(event_key, entity, ...)
 end
 
 --- System Logic ---
@@ -76,8 +76,6 @@ function animation_system:update(dt)
     for _, entity in ipairs(self.pool) do
         handle_event(self.world, entity, update_animation(entity, dt))
         update_sprite(entity)
-
-
     end
 end
 
