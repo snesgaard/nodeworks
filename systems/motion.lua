@@ -7,7 +7,6 @@ function system:update(dt)
         local g = entity[components.gravity]
         local d = entity[components.drag] or 0
 
-        print(v, g -v * d)
         v = v + (g - v * d) * dt
         entity:update(components.velocity, v:unpack())
 

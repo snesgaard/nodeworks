@@ -7,8 +7,8 @@ end
 
 local function set_frame(entity, frame_index)
     local frame = get_frame(entity, frame_index)
-    entity[components.animation_state]:update(index, frame_index)
-    entity[components.animation_state]:update(timer, frame.dt)
+    entity[components.animation_state]:update(components.index, frame_index)
+    entity[components.animation_state]:update(components.timer, frame.dt)
 end
 
 local function get_current_frame(entity)
@@ -94,6 +94,7 @@ function animation_system.play(entity, id, once, mode)
     state:update(components.frame_sequence, sequence)
     state:update(components.animation_args, true, once, mode)
     set_frame(entity, 1)
+    update_sprite(entity)
 
     return true
 end
