@@ -5,7 +5,23 @@ function tween:is_done()
     return self.__time >= self.__duration
 end
 
+function tween:pause()
+    self.__paused = true
+    return self
+end
+
+function tween:play()
+    self.__paused = false
+    return self
+end
+
+function tween:is_paused()
+    return self.__paused
+end
+
 function tween:update(dt)
+    if self:is_paused() then return self:value() end
+
     self.__delay = math.max(0, self.__delay - dt)
 
     if self.__delay > 0 then return self:value() end

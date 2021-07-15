@@ -187,4 +187,20 @@ function components.collision_filter(f) return f end
 
 ---------------------------------------
 
+local action = {}
+action.__index = action
+
+function action.create(type, ...)
+    if type == nil then
+        error("Type must not be nil!")
+    end
+    return setmetatable({_type=type, _args={...}}, action)
+end
+
+function action:type() return self._type end
+
+function action:args() return unpack(self._args) end
+
+components.action = action
+
 return components
