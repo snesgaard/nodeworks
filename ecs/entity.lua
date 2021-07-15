@@ -109,7 +109,9 @@ function entity:get(component)
 end
 
 function entity:has(...)
-    for _, component in ipairs({...}) do
+    local query = {...}
+    if #query == 0 then return false end
+    for _, component in ipairs(query) do
         if not self[component] then return false end
     end
     return true

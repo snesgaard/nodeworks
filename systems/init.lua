@@ -51,7 +51,7 @@ systems.collision = require(... .. ".collision")
 systems.hitbox_sprite = require(... .. ".sprite_collision").hitbox
 systems.motion = require(... .. ".motion")
 
-systems.sprite = ecs.system(components.sprite)
+systems.sprite = ecs.system()
 
 function systems.sprite.draw(entity, x, y)
     if not entity then return end
