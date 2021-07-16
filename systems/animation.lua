@@ -141,8 +141,7 @@ function animation_system.transform_slice(slice, position, sx, sy, mirror)
     if mirror then sx = -sx end
 
     local x, y = position:unpack()
-    if mirror then slice = slice:hmirror() end
-    return slice:move(x, y)
+    return slice:scale(sx, sy):sanitize():move(x, y)
 end
 
 function animation_system.get_slice(entity, slice_name, body_slice, animation_tag, frame)
