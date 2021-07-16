@@ -184,12 +184,12 @@ end
 function system:move_to(entity, x, y, frame)
     local pos = entity[components.position]
     local dx, dy = x - pos.x, y - pos.y
-    local dx, dy, dst = system.move(self, entity, dx, dy, dst)
+    local dx, dy, dst = system.move(self, entity, dx, dy)
     return pos.x + dx, pos.y + dy, dst
 end
 
 function system:move(entity, dx, dy)
-    dst = dst or {}
+    local dst = {}
     local dx, dy, hitbox_collisions = move_hitbox(self, entity, dx, dy)
     local collection_collisions = move_collection(self, entity, dx, dy)
 
