@@ -12,7 +12,7 @@ function system:update(dt)
 
         if v.x ~= 0 or v.y ~= 0 then
             p = p + v * dt
-            self.world:action("move_to", entity, p:unpack())
+            systems.collision.move_to(entity, p:unpack())
         end
     end
 end
