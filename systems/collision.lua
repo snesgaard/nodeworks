@@ -151,10 +151,10 @@ function system.hide()
     system.__debug_draw = false
 end
 
-local function move_hitbox(self, entity, dx, dy)
-    if not self.hitboxes[entity] then return dx, dy, {} end
-
+local function move_hitbox(entity, dx, dy)
     local bump_world = entity[components.bump_world]
+
+    if not bump_world then return dx, dy, {} end
     local x, y = bump_world:getRect(entity)
     local ax, ay, cols = bump_world:move(
         entity, x + dx, y + dy, move_filter
@@ -163,11 +163,10 @@ local function move_hitbox(self, entity, dx, dy)
     return ax - x, ay - y, cols
 end
 
-local function move_collection(self, entity, dx, dy)
-    if not self.collections[entity] then return {} end
-
+local function move_collection(entity, dx, dy)
     local bump_world = entity[components.bump_world]
     local collection = entity[components.hitbox_collection]
+    if not bump_world or not collection then return {} end
     local cols = {}
 
     for _, hitbox in ipairs(collection) do
@@ -181,17 +180,17 @@ local function move_collection(self, entity, dx, dy)
     return cols
 end
 
-function system:move_to(entity, x, y, frame)
+function system.move_to(entity, x, y, frame)
     local pos = entity[components.position]
     local dx, dy = x - pos.x, y - pos.y
-    local dx, dy, dst = system.move(self, entity, dx, dy)
+    local dx, dy, dst = system.move(entity, dx, dy)
     return pos.x + dx, pos.y + dy, dst
 end
 
-function system:move(entity, dx, dy)
+function system.move(entity, dx, dy)
     local dst = {}
-    local dx, dy, hitbox_collisions = move_hitbox(self, entity, dx, dy)
-    local collection_collisions = move_collection(self, entity, dx, dy)
+    local dx, dy, hitbox_collisions = move_hitbox(entity, dx, dy)
+    local collection_collisions = move_collection(entity, dx, dy)
 
     for _, col in ipairs(hitbox_collisions) do table.insert(dst, col) end
     for _, col in ipairs(collection_collisions) do table.insert(dst, col) end
@@ -200,8 +199,8 @@ function system:move(entity, dx, dy)
     pos.x = pos.x + dx
     pos.y = pos.y + dy
 
-    if #dst > 0 then
-        self.world("on_collision", dst)
+    if #dst > 0 and entity.world then
+        entity.world("on_collision", dst)
     end
 
     return dx, dy, dst

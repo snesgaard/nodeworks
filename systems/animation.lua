@@ -38,7 +38,7 @@ local function update_animation(entity, dt)
     if state[components.index] > #state[components.frame_sequence] then
         if state[components.animation_args].once then
             state[components.animation_args].playing = false
-            return "on_animation_ended"
+            return prev_frame
         end
 
         state:update(components.index, 1)
@@ -46,7 +46,7 @@ local function update_animation(entity, dt)
 
     local frame = get_current_frame(entity)
     state:update(components.timer, frame.dt)
-    return "on_next_frame", prev_frame, frame
+    return prev_frame, frame
 end
 
 local function update_sprite(entity)
@@ -59,6 +59,15 @@ local function update_sprite(entity)
     sprite[components.draw_args].ox = -frame.offset.x
     sprite[components.draw_args].oy = -frame.offset.y
     sprite:update(components.slices, frame.slices)
+end
+
+local function broadcast_event(world, entity, prev_frame, next_frame)
+    if not world or prev_frame == next_frame then return end
+    if prev_frame and not next_frame then
+        world("on_animation_ended", entity)
+    end
+
+    world("on_next_frame", prev_frame, frame)
 end
 
 local function handle_event(world, entity, event_key, ...)
@@ -74,8 +83,9 @@ local animation_system =  ecs.system(
 
 function animation_system:update(dt)
     for _, entity in ipairs(self.pool) do
-        handle_event(self.world, entity, update_animation(entity, dt))
+        local prev_frame, next_frame = update_animation(entity, dt)
         update_sprite(entity)
+        broadcast_event(self.world, entity, prev_frame, next_frame)
     end
 end
 
@@ -91,10 +101,17 @@ function animation_system.play(entity, id, once, mode)
     local sequence = map[id]
     if not sequence then return false end
     if sequence == state[components.frame_sequence] then return true end
+
+    local prev_frame = get_current_frame(entity)
+
     state:update(components.frame_sequence, sequence)
     state:update(components.animation_args, true, once, mode)
     set_frame(entity, 1)
     update_sprite(entity)
+
+    local next_frame = get_current_frame(entity)
+
+    broadcast_event(entity.world, entity, prev_frame, next_frame)
 
     return true
 end
@@ -114,7 +131,7 @@ function animation_system.stop(entity)
     set_frame(entity, 1)
 end
 
-function animation_system.__get_slice(entity, slice_name, body_slice, animation_tag, frame)
+local function get_slice(entity, slice_name, body_slice, animation_tag, frame)
     local frame = frame or 1
     local map = entity[components.animation_map]
     if not map then return end
@@ -129,13 +146,13 @@ function animation_system.__get_slice(entity, slice_name, body_slice, animation_
     return slice:relative(body)
 end
 
-function animation_system.get_draw_args(entity)
+local function get_draw_args(entity)
     local sprite = entity[components.sprite]
     if not sprite then return components.draw_args() end
     return sprite[components.draw_args]
 end
 
-function animation_system.transform_slice(slice, position, sx, sy, mirror)
+local function transform_slice(slice, position, sx, sy, mirror)
     sx = sx or 1
     sy = sy or sx
     if mirror then sx = -sx end
@@ -145,9 +162,9 @@ function animation_system.transform_slice(slice, position, sx, sy, mirror)
 end
 
 function animation_system.get_slice(entity, slice_name, body_slice, animation_tag, frame)
-    local base_slice = animation_system.__get_slice(entity, slice_name, body_slice, animation_tag, frame) or spatial()
-    local draw_args = animation_system.get_draw_args(entity)
-    return animation_system.transform_slice(
+    local base_slice = get_slice(entity, slice_name, body_slice, animation_tag, frame) or spatial()
+    local draw_args = get_draw_args(entity)
+    return transform_slice(
         base_slice,
         entity[components.position] or components.position(),
         draw_args.sx, draw_args.sy,
@@ -156,7 +173,7 @@ function animation_system.get_slice(entity, slice_name, body_slice, animation_ta
 end
 
 function animation_system.get_base_slice(entity, slice_name, body_slice, animation_tag, frame)
-    local base_slice = animation_system.__get_slice(entity, slice_name, body_slice, animation_tag, frame)
+    local base_slice = get_slice(entity, slice_name, body_slice, animation_tag, frame)
     return base_slice
 end
 
