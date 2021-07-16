@@ -122,8 +122,8 @@ function animation_system.__get_slice(entity, slice_name, body_slice, animation_
     if not frames then return end
     local frame = frames[frame]
     if not frame then return end
-    local slice = frame.slices[slice_name]
-    local body = frame.slices[body_slice]
+    local slice = frame.slices[slice_name] or spatial()
+    local body = frame.slices[body_slice] or spatial()
     if not body then return slice end
 
     return slice:relative(body)
@@ -145,7 +145,7 @@ function animation_system.transform_slice(slice, position, sx, sy, mirror)
 end
 
 function animation_system.get_slice(entity, slice_name, body_slice, animation_tag, frame)
-    local base_slice = animation_system.__get_slice(entity, slice_name, body_slice, animation_tag, frame)
+    local base_slice = animation_system.__get_slice(entity, slice_name, body_slice, animation_tag, frame) or spatial()
     local draw_args = animation_system.get_draw_args(entity)
     return animation_system.transform_slice(
         base_slice,
