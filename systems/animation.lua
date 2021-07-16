@@ -114,7 +114,7 @@ function animation_system.stop(entity)
     set_frame(entity, 1)
 end
 
-function animation_system.get_slice(entity, slice_name, body_slice, animation_tag, frame)
+function animation_system.__get_slice(entity, slice_name, body_slice, animation_tag, frame)
     local frame = frame or 1
     local map = entity[components.animation_map]
     if not map then return end
@@ -129,20 +129,36 @@ function animation_system.get_slice(entity, slice_name, body_slice, animation_ta
     return slice:relative(body)
 end
 
-function animation_system.transform_slice(slice, position, mirror)
-    if mirror then
-        slice = slice:hmirror()
-    end
-    return slice:move(position:unpack())
+function animation_system.get_draw_args(entity)
+    local sprite = entity[components.sprite]
+    if not sprite then return components.draw_args() end
+    return sprite[components.draw_args]
 end
 
-function animation_system.get_transformed_slice(entity, slice_name, body_slice, animation_tag, frame)
-    local base_slice = animation_system.get_slice(entity, slice_name, body_slice, animation_tag, frame)
+function animation_system.transform_slice(slice, position, sx, sy, mirror)
+    sx = sx or 1
+    sy = sy or sx
+    if mirror then sx = -sx end
+
+    local x, y = position:unpack()
+    if mirror then slice = slice:hmirror() end
+    return slice:move(x, y)
+end
+
+function animation_system.get_slice(entity, slice_name, body_slice, animation_tag, frame)
+    local base_slice = animation_system.__get_slice(entity, slice_name, body_slice, animation_tag, frame)
+    local draw_args = animation_system.get_draw_args(entity)
     return animation_system.transform_slice(
-    base_slice,
-    entity[components.position] or components.position(),
-    entity[components.mirror]
-)
+        base_slice,
+        entity[components.position] or components.position(),
+        draw_args.sx, draw_args.sy,
+        entity[components.mirror]
+    )
+end
+
+function animation_system.get_base_slice(entity, slice_name, body_slice, animation_tag, frame)
+    local base_slice = animation_system.__get_slice(entity, slice_name, body_slice, animation_tag, frame)
+    return base_slice
 end
 
 function is_paused(entity)
