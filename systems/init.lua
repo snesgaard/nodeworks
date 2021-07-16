@@ -18,7 +18,7 @@ function systems.slice_body_update:update(dt)
         local world = entity[components.bump_world]
         local x, y = world:getRect(entity)
         world:update(entity, x, y, body_slice.w, body_slice.h)
-        local c = body_slice:centerbottom()
+        local c = body_slice:center()
         entity:update(components.body, body_slice:move(-c.x, -c.y):unpack())
     end
 
@@ -72,7 +72,7 @@ function systems.sprite.draw(entity, x, y)
     local slices = sprite[components.slices]
     local body_key = sprite[components.body_slice]
     local body_slice = slices[body_key] or spatial()
-    local c = body_slice:centerbottom()
+    local c = body_slice:center()
     local ox, oy = args.ox + c.x, args.oy + c.y
     local sx = entity[components.mirror] and -1 or 1
 

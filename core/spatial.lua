@@ -256,7 +256,7 @@ end
 
 function Spatial:relative(other, origin_func)
     other = other or self
-    local f = other[origin_func or "centerbottom"]
+    local f = other[origin_func or "center"]
     local origin = f(other)
     return Spatial.create(
         self.x - origin.x, self.y - origin.y, self.w, self.h

@@ -174,7 +174,8 @@ end
 
 function animation_system.get_base_slice(entity, slice_name, body_slice, animation_tag, frame)
     local base_slice = get_slice(entity, slice_name, body_slice, animation_tag, frame)
-    return base_slice
+    local draw_args = get_draw_args(entity)
+    return transform_slice(base_slice, vec2(), draw_args.sx, draw_args.sy, entity[components.mirror])
 end
 
 function is_paused(entity)

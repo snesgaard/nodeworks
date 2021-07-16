@@ -206,6 +206,4 @@ function system.move(entity, dx, dy)
     return dx, dy, dst
 end
 
-
-
 return system

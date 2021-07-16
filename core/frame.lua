@@ -40,7 +40,7 @@ end
 
 function frame:draw(...)
     local origin, x, y, r, sx, sy = self:args(...)
-    local c = origin:centerbottom()
+    local c = origin:center()
     if self.quad then
         gfx.draw(
             self.image, self.quad, x, y, r, sx, sy,

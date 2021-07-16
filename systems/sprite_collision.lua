@@ -8,7 +8,7 @@ function hitbox_system:update(dt)
         local mirror = sprite[components.mirror]
         local body_slice = entity[components.body_slice] or components.body_slice()
         local body = slices[body_slice] or spatial()
-        local c = body:centerbottom()
+        local c = body:center()
 
         local centered_slices = {}
         for key, slice in pairs(slices) do
