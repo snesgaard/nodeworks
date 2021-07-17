@@ -206,4 +206,21 @@ function system.move(entity, dx, dy)
     return dx, dy, dst
 end
 
+function system.get_rect(entity)
+    local bump_world = entity[components.bump_world]
+
+    if not bump_world or not bump_world:hasItem(entity) then return end
+
+    return spatial(bump_world:getRect(entity))
+end
+
+function system.check_rect(entity, rect, filter)
+    local bump_world = entity[components.bump_world]
+
+    if not bump_world then return {} end
+
+    local x, y, w, h = rect:unpack()
+    return bump_world:queryRect(x, y, w, h, filter)
+end
+
 return system
