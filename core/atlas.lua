@@ -27,6 +27,10 @@ local function read_json(path)
     end
 end
 
+local function get_event_tag(tag)
+    return string.match(tag, "event<(.*)>")
+end
+
 function Atlas.create(path)
     local sheet = gfx.newImage(path .. "/atlas.png")
     local data = read_json(path   .. "/atlas.json")
@@ -63,11 +67,18 @@ function Atlas.create(path)
 
     for _, tag in ipairs(data.meta.frameTags) do
         local name = tag.name
-        if this.tags[name] then
-            errorf("Naming conflict <%s>", name)
-        end
 
-        this.tags[name] = dict{to=tag.to, from=tag.from}
+        local event = get_event_tag(name)
+        if event then
+            for i = tag.from + 1, tag.to + 1 do
+                frames[i].events[event] = true
+            end
+        else
+            if this.tags[name] then
+                errorf("Naming conflict <%s>", name)
+            end
+            this.tags[name] = dict{to=tag.to, from=tag.from}
+        end
     end
 
 

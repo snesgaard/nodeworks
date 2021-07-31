@@ -12,6 +12,7 @@ function frame.create(image, slices, quad, offset)
     this.image = image
     this.quad = quad
     this.slices = slices
+    this.events = dict()
     this.offset = offset or vec2(0, 0)
     this.deltas = dict{}
     this.deltas_init = dict{}
