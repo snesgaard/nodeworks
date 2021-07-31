@@ -95,4 +95,6 @@ end
 
 systems.parenting = require(... .. ".parenting")
 
+systems.root_motion = require(... .. ".root_motion")
+
 return systems

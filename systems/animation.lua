@@ -63,11 +63,18 @@ end
 
 local function broadcast_event(world, entity, prev_frame, next_frame)
     if not world or prev_frame == next_frame then return end
+
     if prev_frame and not next_frame then
         world("on_animation_ended", entity)
     end
 
-    world("on_next_frame", prev_frame, frame)
+    if prev_frame and next_frame then
+        world("on_next_frame", entity, prev_frame, next_frame)
+    end
+
+    if not prev_frame and next_frame then
+        world("on_animation_begun", entity, next_frame)
+    end
 end
 
 local function handle_event(world, entity, event_key, ...)
@@ -111,7 +118,7 @@ function animation_system.play(entity, id, once, mode)
 
     local next_frame = get_current_frame(entity)
 
-    broadcast_event(entity.world, entity, prev_frame, next_frame)
+    broadcast_event(entity.world, entity, nil, next_frame)
 
     return true
 end
