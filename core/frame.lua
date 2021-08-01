@@ -55,4 +55,12 @@ function frame:draw(...)
     end
 end
 
+function frame:get_slice(slice_key, origin_key)
+    origin_key = origin_key or "body"
+    local origin_slice = self.slices[origin_key] or spatial()
+    local slice = self.slices[slice_key]
+    if not slice then return end
+    return slice:relative(origin_slice)
+end
+
 return frame

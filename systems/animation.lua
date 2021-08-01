@@ -61,19 +61,50 @@ local function update_sprite(entity)
     sprite:update(components.slices, frame.slices)
 end
 
-local function broadcast_event(world, entity, prev_frame, next_frame)
+local function format_event_begin(event)
+    return string.format("animation_event:%s", event)
+end
+
+local function format_event_end(event)
+    return string.format("animation_event:%s:end", event)
+end
+
+local function broadcast_event(world, entity, prev_frame, next_frame, id)
     if not world or prev_frame == next_frame then return end
 
     if prev_frame and not next_frame then
-        world("on_animation_ended", entity)
+        world("on_animation_ended", entity, id, prev_frame)
+
+        for event, _ in pairs(prev_frame.events) do
+            local key = format_event_end(event)
+            world(key, entity, prev_frame)
+        end
     end
 
     if prev_frame and next_frame then
-        world("on_next_frame", entity, prev_frame, next_frame)
+        world("on_next_frame", entity, prev_frame, next_frame, id)
+
+        for event, _ in pairs(prev_frame.events) do
+            if not next_frame.events[event] then
+                world(format_event_end(event), entity, prev_frame)
+            end
+        end
+
+        for event, _ in pairs(next_frame.events) do
+            if not prev_frame.events[event] then
+                world(format_event_begin(event), entity, prev_frame)
+            end
+        end
+
     end
 
     if not prev_frame and next_frame then
-        world("on_animation_begun", entity, next_frame)
+        world("on_animation_begun", entity, id, next_frame)
+
+        for event, _ in pairs(next_frame.events) do
+            local key = format_event_begin(event)
+            world(key, event, next_frame)
+        end
     end
 end
 
@@ -92,7 +123,10 @@ function animation_system:update(dt)
     for _, entity in ipairs(self.pool) do
         local prev_frame, next_frame = update_animation(entity, dt)
         update_sprite(entity)
-        broadcast_event(self.world, entity, prev_frame, next_frame)
+        broadcast_event(
+            self.world, entity, prev_frame, next_frame,
+            entity[components.animation_state][components.animation_args].id
+        )
     end
 end
 
@@ -107,20 +141,25 @@ function animation_system.play(entity, id, once, mode)
     if not map then return false end
     local sequence = map[id]
     if not sequence then return false end
-    if sequence == state[components.frame_sequence] then return true end
 
     local prev_frame = get_current_frame(entity)
+    local prev_id = state[components.animation_args].id
+
+    if sequence == state[components.frame_sequence] then return prev_frame end
 
     state:update(components.frame_sequence, sequence)
-    state:update(components.animation_args, true, once, mode)
+    state:update(components.animation_args, true, once, mode, id)
     set_frame(entity, 1)
     update_sprite(entity)
 
     local next_frame = get_current_frame(entity)
 
-    broadcast_event(entity.world, entity, nil, next_frame)
+    -- First signal end of animation
+    broadcast_event(entity.world, entity, prev_frame, nil, prev_id)
+    -- Next signal start of the next animation
+    broadcast_event(entity.world, entity, nil, next_frame, id)
 
-    return true
+    return next_frame
 end
 
 function animation_system.pause(entity)
@@ -166,6 +205,17 @@ local function transform_slice(slice, position, sx, sy, mirror)
 
     local x, y = position:unpack()
     return slice:scale(sx, sy):sanitize():move(x, y)
+end
+
+function animation_system.transform_slice(entity, slice)
+    if not slice or not entity then return end
+    local draw_args = get_draw_args(entity)
+    return transform_slice(
+        slice,
+        entity[components.position] or components.position(),
+        draw_args.sx, draw_args.sy,
+        entity[components.mirror]
+    )
 end
 
 function animation_system.get_slice(entity, slice_name, body_slice, animation_tag, frame)

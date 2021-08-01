@@ -132,11 +132,12 @@ end
 
 function components.index(i) return i or 0 end
 function components.frame_sequence(s) return s or {} end
-function components.animation_args(playing, once, mode)
+function components.animation_args(playing, once, mode, id)
     return {
         playing=playing or false,
         once=once or false,
-        mode=mode or "forward"
+        mode=mode or "forward",
+        id=id
     }
 end
 
