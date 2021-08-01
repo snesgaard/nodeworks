@@ -12,6 +12,7 @@ function frame.create(image, slices, quad, offset)
     this.image = image
     this.quad = quad
     this.slices = slices
+    this.events = dict()
     this.offset = offset or vec2(0, 0)
     this.deltas = dict{}
     this.deltas_init = dict{}
@@ -52,6 +53,14 @@ function frame:draw(...)
             -self.offset.x + c.x, -self.offset.y + c.y
         )
     end
+end
+
+function frame:get_slice(slice_key, origin_key)
+    origin_key = origin_key or "body"
+    local origin_slice = self.slices[origin_key] or spatial()
+    local slice = self.slices[slice_key]
+    if not slice then return end
+    return slice:relative(origin_slice)
 end
 
 return frame
