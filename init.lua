@@ -172,3 +172,8 @@ function sub(a, b) return a - b end
 function dot(a, b) return a * b end
 
 gfx.setDefaultFilter("nearest", "nearest")
+
+return {
+    component=components, system=systems,
+    
+}

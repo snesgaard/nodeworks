@@ -19,7 +19,7 @@ local world = {}
 world.__index = world
 world.__default_chain = "__default_chain"
 
-function world.create(...)
+function world.create(systems)
     local this = {
         __events = list(),
         __entities = list(),
@@ -28,7 +28,7 @@ function world.create(...)
         __chains = dict(),
     }
     setmetatable(this, world)
-    this:add_system(...)
+    this:add_system(unpack(systems))
     return this
 end
 
