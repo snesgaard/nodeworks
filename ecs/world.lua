@@ -99,6 +99,11 @@ function world:update(entity, ...)
         self.__entities[entity] = index
         self.__entities[index] = entity
     end
+
+    if self.on_component_updated then
+        self.on_component_updated(entity, ...)
+    end
+
     for _, system in ipairs(self.__systems) do
         self:__update_entity_system(system, entity, ...)
     end
@@ -135,6 +140,10 @@ end
 
 function world:__invoke(key, ...)
     local chain = self:chain(key)
+
+    if self.on_event_invoked then
+        self.on_event_invoked(key, ...)
+    end
 
     for _, system in ipairs(chain) do
         local f = system[key]
