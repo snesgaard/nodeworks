@@ -130,7 +130,8 @@ function animation_system:update(dt)
     end
 end
 
-function animation_system.play(entity, id, once, mode)
+function animation_system.play(entity, id, args)
+    args = args or {}
     local state = entity[components.animation_state]
     if not id then
         state[components.animation_args].playing = true
@@ -145,10 +146,10 @@ function animation_system.play(entity, id, once, mode)
     local prev_frame = get_current_frame(entity)
     local prev_id = state[components.animation_args].id
 
-    if sequence == state[components.frame_sequence] then return prev_frame end
+    if sequence == state[components.frame_sequence] and not args.interrupt then return prev_frame end
 
     state:update(components.frame_sequence, sequence)
-    state:update(components.animation_args, true, once, mode, id)
+    state:update(components.animation_args, true, args.once, args.mode, id)
     set_frame(entity, 1)
     update_sprite(entity)
 
