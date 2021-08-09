@@ -154,7 +154,7 @@ end
 local function move_hitbox(entity, dx, dy)
     local bump_world = entity[components.bump_world]
 
-    if not bump_world then return dx, dy, {} end
+    if not bump_world or not bump_world:hasItem(entity) then return dx, dy, {} end
     local x, y = bump_world:getRect(entity)
     local ax, ay, cols = bump_world:move(
         entity, x + dx, y + dy, move_filter

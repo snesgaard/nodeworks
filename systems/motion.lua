@@ -1,20 +1,25 @@
 local system = ecs.system(components.position, components.velocity, components.gravity)
 
-function system:update(dt)
-    for _, entity in ipairs(self.pool) do
-        local v = entity[components.velocity]
-        local p = entity[components.position]
-        local g = entity[components.gravity]
-        local d = entity[components.drag] or 0
+local function update_entity(entity, dt)
+    local disable = entity[components.disable_motion] or 0
+    if disable > 0 then return end
 
-        v = v + (g - v * d) * dt
-        entity:update(components.velocity, v:unpack())
+    local v = entity[components.velocity]
+    local p = entity[components.position]
+    local g = entity[components.gravity]
+    local d = entity[components.drag] or 0
 
-        if v.x ~= 0 or v.y ~= 0 then
-            p = p + v * dt
-            systems.collision.move_to(entity, p:unpack())
-        end
+    v = v + (g - v * d) * dt
+    entity:update(components.velocity, v:unpack())
+
+    if v.x ~= 0 or v.y ~= 0 then
+        p = p + v * dt
+        systems.collision.move_to(entity, p:unpack())
     end
+end
+
+function system:update(dt)
+    List.foreach(self.pool, update_entity, dt)
 end
 
 function system:on_collision(collision_info)

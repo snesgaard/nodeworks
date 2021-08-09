@@ -11,8 +11,16 @@ function context:__fetch_pool(name)
     return self[name]
 end
 
-function context.create(world)
-    return setmetatable({world = world, __pools = {}}, context)
+function context.create(world, system)
+    local c = setmetatable({world = world, __pools = {}}, context)
+
+    -- Just make sure that all pools exists intially
+    local pools = system.__pool_filter(ecs.entity())
+    for key, _ in pairs(pools) do
+        c:__fetch_pool(key)
+    end
+
+    return c
 end
 
 local world = {}
@@ -88,7 +96,7 @@ function world:context(system)
 
     if c then return c end
 
-    self.__context[system] = context.create(self)
+    self.__context[system] = context.create(self, system)
 
     return self.__context[system]
 end

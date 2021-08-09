@@ -36,7 +36,6 @@ end
 
 function entity:update(component, ...)
     local prev_value = self[component]
-
     if prev_value == nil then return self end
 
     local t = type(component)
@@ -55,8 +54,11 @@ function entity:update(component, ...)
 end
 
 function entity:map(component, f, ...)
-    if self[component] == nil then return self end
+    if self[component] == nil then
+        error("Attempted to map non-existing component")
+    end
 
+    print("map", f(self[component], ...))
     return self:update(component, f(self[component], ...))
 end
 
