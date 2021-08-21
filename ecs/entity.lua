@@ -58,7 +58,6 @@ function entity:map(component, f, ...)
         error("Attempted to map non-existing component")
     end
 
-    print("map", f(self[component], ...))
     return self:update(component, f(self[component], ...))
 end
 
@@ -68,32 +67,32 @@ function entity:ensure(component, ...)
 end
 
 
-function entity:assemble(defaults, user_spec)
-    user_spec = user_spec or {}
-    local c = {}
-
-    for component, args in pairs(defaults) do
-        c[component] = args
+local function assemble_get_data(f, ...)
+    local t = type(f)
+    if t == "table" then
+        return f
+    elseif t == "function" then
+        return f(...)
+    else
+        errorf("Unsupported type %s", t)
     end
+end
 
-    for component, args in pairs(user_spec) do
-        c[component] = args
-    end
+function entity:assemble(f, ...)
+    local data = assemble_get_data(f, ...)
 
-    for component, args in pairs(c) do
+    for component, args in pairs(data) do
         self:add(component, unpack(args))
     end
 
     return self
 end
 
-function entity:disassemble(defaults, user)
-    for c, _ in pairs(defaults) do
-        self:remove(c)
-    end
+function entity:disassemble(f, ...)
+    local data = assemble_get_data(f, ...)
 
-    for c, _ in pairs(user) do
-        self:remove(c)
+    for component, args in pairs(data) do
+        self:remove(component)
     end
 
     return self
