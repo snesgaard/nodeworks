@@ -154,6 +154,8 @@ components.animation_state = ecs.assemblage(
 
 function components.body() return true end
 
+function components.oneway() return true end
+
 function components.hitbox(x, y, w, h)
     return spatial(x, y, w, h)
 end

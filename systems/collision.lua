@@ -12,19 +12,30 @@ local system = ecs.system.from_function(
     end
 )
 
-local function move_filter(item, other)
+local function move_filter(item, other, ...)
     local f = item[components.move_filter] or function() end
     local t = f(item, other)
-    if t then
-        return t
-    elseif item[components.body] and other[components.body] then
-        return "slide"
-    else
-        return "cross"
+    if t then return t end
+
+
+    if not item[components.body] or not other[components.body] then return "cross" end
+
+    if other[components.oneway] then
+        local item_hb = system.get_world_hitbox(item)
+        local other_hb = system.get_world_hitbox(other)
+        if item_hb.y + item_hb.h > other_hb.y then return "cross" end
     end
+
+    return "slide"
 end
 
 local function check_filter() return "cross" end
+
+system.default_move_filter = move_filter
+
+function system.get_world_hitbox(entity)
+    return system.transform(entity[components.hitbox], entity)
+end
 
 function system.transform(hitbox, parent_entity)
     return hitbox:move(parent_entity[components.position]:unpack())
@@ -151,13 +162,13 @@ function system.hide()
     system.__debug_draw = false
 end
 
-local function move_hitbox(entity, dx, dy)
+local function move_hitbox(entity, dx, dy, move_filter)
     local bump_world = entity[components.bump_world]
 
     if not bump_world or not bump_world:hasItem(entity) then return dx, dy, {} end
     local x, y = bump_world:getRect(entity)
     local ax, ay, cols = bump_world:move(
-        entity, x + dx, y + dy, move_filter
+        entity, x + dx, y + dy, move_filter or system.default_move_filter
     )
 
     return ax - x, ay - y, cols
@@ -180,16 +191,16 @@ local function move_collection(entity, dx, dy)
     return cols
 end
 
-function system.move_to(entity, x, y, frame)
+function system.move_to(entity, x, y, move_filter)
     local pos = entity[components.position]
     local dx, dy = x - pos.x, y - pos.y
-    local dx, dy, dst = system.move(entity, dx, dy)
+    local dx, dy, dst = system.move(entity, dx, dy, move_filter)
     return pos.x + dx, pos.y + dy, dst
 end
 
-function system.move(entity, dx, dy)
+function system.move(entity, dx, dy, move_filter)
     local dst = {}
-    local dx, dy, hitbox_collisions = move_hitbox(entity, dx, dy)
+    local dx, dy, hitbox_collisions = move_hitbox(entity, dx, dy, move_filter)
     local collection_collisions = move_collection(entity, dx, dy)
 
     for _, col in ipairs(hitbox_collisions) do table.insert(dst, col) end
