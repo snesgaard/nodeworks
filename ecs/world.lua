@@ -34,6 +34,7 @@ function world.create(systems)
         __context = dict(),
         __systems = dict(),
         __chains = dict(),
+        __autochains = dict()
     }
     setmetatable(this, world)
     this:add_system(unpack(systems))
@@ -47,7 +48,15 @@ end
 
 function world:chain(event_key)
     local c = self.__chains[event_key]
-    return c or self.__systems
+    if c then return c end
+    local ac = self.__autochains[event_key]
+    if ac then return ac end
+    local auto_chain = {}
+    for _, system in ipairs(self.__systems) do
+        if system[event_key] then table.insert(auto_chain, system) end
+    end
+    self.__autochains[event_key] = auto_chain
+    return auto_chain
 end
 
 function world:__update_entity_system(system, entity, component, ...)
@@ -85,6 +94,8 @@ function world:add_system(system, ...)
     for _, entity in ipairs(self.__entities) do
         self:__update_entity_system(system, entity)
     end
+
+    self.__autochains = {}
 
     return self:add_system(...)
 end
