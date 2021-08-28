@@ -24,7 +24,7 @@ local function move_filter(item, other, ...)
     if other[components.oneway] then
         local item_hb = system.get_world_hitbox(item)
         local other_hb = system.get_world_hitbox(other)
-        if item_hb.y + item_hb.h > other_hb.y then return "cross" end
+        if item_hb.y + item_hb.h - other_hb.y > 0 then return "cross" end
     end
 
     return "slide"

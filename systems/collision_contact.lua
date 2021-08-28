@@ -2,10 +2,10 @@ local function collision_record_component() return {} end
 
 local system = ecs.system(collision_record_component)
 
-local function register_collision(world, item, other)
+local function register_collision(world, item, other, colinfo)
     local record = item:ensure(collision_record_component)
     if not record[other] then
-        world("on_contact_begin", item, other)
+        world("on_contact_begin", item, other, colinfo)
     end
     record[other] = 1
 end
@@ -32,8 +32,8 @@ function system:on_collision(collisions)
     for _, colinfo in ipairs(collisions) do
         local item = colinfo.item
         local other = colinfo.other
-        register_collision(self.world, item, other)
-        register_collision(self.world, other, item)
+        register_collision(self.world, item, other, colinfo)
+        register_collision(self.world, other, item, colinfo)
     end
 end
 
