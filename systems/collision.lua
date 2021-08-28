@@ -19,6 +19,7 @@ local function move_filter(item, other, ...)
 
 
     if not item[components.body] or not other[components.body] then return "cross" end
+    if item[components.oneway] then return "cross" end
 
     if other[components.oneway] then
         local item_hb = system.get_world_hitbox(item)
@@ -210,8 +211,9 @@ function system.move(entity, dx, dy, move_filter)
     pos.x = pos.x + dx
     pos.y = pos.y + dy
 
-    if #dst > 0 and entity.world then
-        entity.world("on_collision", dst)
+    if entity.world then
+        entity.world("on_moved", entity, dx, dy)
+        if #dst > 0 then entity.world("on_collision", dst) end
     end
 
     return dx, dy, dst
