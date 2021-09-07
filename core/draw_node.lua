@@ -1,10 +1,15 @@
 local node = {}
 node.__index = node
 
-function node.create(func, ...)
+function node.create(func, shader_str)
+    local shader = nil
+    if shader_str then
+        shader = gfx.newShader(shader_str)
+    end
     return setmetatable(
         {
-            __func = func
+            __func = func,
+            __shader = shader
         },
         node
     )
@@ -44,10 +49,13 @@ end
 
 function node:__call(...)
     gfx.push('all')
+    if self.__shader then gfx.setShader(self.__shader) end
     local f = self.__func
     local out = {f(self, ...)}
     gfx.pop()
     return unpack(out)
 end
+
+function node:shader() return self.__shader end
 
 return node.create
