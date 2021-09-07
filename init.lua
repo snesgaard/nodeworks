@@ -175,5 +175,5 @@ gfx.setDefaultFilter("nearest", "nearest")
 
 return {
     component=components, system=systems,
-    
+
 }

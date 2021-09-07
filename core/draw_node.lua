@@ -10,12 +10,27 @@ function node.create(func, ...)
     )
 end
 
+local function should_realloc(canvas, w, h, args)
+    local is_same = canvas:getWidth() == w and h == canvas:getHeight()
+    return not is_same
+end
+
+local function should_realloc_all(canvases, args)
+    if #canvases ~= #args then return true end
+
+    for i = 1, #canvases do
+        if should_realloc(canvases[i], unpack(args[i])) then return true end
+    end
+
+    return false
+end
+
 function node:canvas(first_arg, ...)
     local args = {first_arg, ...}
 
     if type(first_arg) == "number" then return self:canvas(args) end
 
-    if not self.__canvas then
+    if not self.__canvas or should_realloc_all(self.__canvas, args) then
         self.__canvas = List.map(
             args,
             function(arg) return gfx.newCanvas(unpack(arg)) end
@@ -35,4 +50,4 @@ function node:__call(...)
     return unpack(out)
 end
 
-return node
+return node.create
