@@ -16,7 +16,7 @@ $(atlas_json): $(raw_atlas_json) $(jsons)
 	python ../join_aseprite_jsons.py $@ $^
 
 $(atlas_im) $(raw_atlas_json): $(sprites)
-	aseprite -b $^ --sheet $(atlas_im) --data $(raw_atlas_json) \
+	@$(aseprite) -b $^ --sheet $(atlas_im) --data $(raw_atlas_json) \
 	           --list-slices  --trim --inner-padding 1 --format json-array\
 	           --list-tags --sheet-pack
 

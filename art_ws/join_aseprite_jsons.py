@@ -64,7 +64,7 @@ def patch_frame_slices(sprite_json, frame_to_index):
     new_slices = []
     for slice in slices:
         new_slice = slice.copy()
-        new_slice["keys"] = map(key_map, slice["keys"])
+        new_slice["keys"] = [key_map(s) for s in slice["keys"]]
         new_slice["from"] = from_index
         new_slice["to"] = to_index
         new_slices.append(new_slice)
