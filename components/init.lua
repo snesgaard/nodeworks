@@ -71,6 +71,10 @@ function timer:time_left_normalized()
     return self.time / self.duration
 end
 
+function timer:finish()
+    self.time = 0
+end
+
 components.timer = timer
 
 --------------------------------------------------
