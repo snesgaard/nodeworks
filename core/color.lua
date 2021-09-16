@@ -17,6 +17,26 @@ function color:set(r, g, b, a)
     )
 end
 
+function color:alpha(a)
+    local r, g, b = unpack(self)
+    return color.create(r, g, b, a)
+end
+
+function color:red(r)
+    local _, g, b, a = unpack(self)
+    return color.create(r, g, b, a)
+end
+
+function color:green(g)
+    local r, _, b, a = unpack(self)
+    return color.create(r, g, b, a)
+end
+
+function color:blue(b)
+    local r, g, _, a = unpack(self)
+    return color.create(r, g, b, a)
+end
+
 function color.__tostring(c)
     return string.format("[%0.3f, %0.3f, %0.3f, %0.3f]", unpack(c))
 end

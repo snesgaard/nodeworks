@@ -1,13 +1,15 @@
 import cv2
 import numpy as np
 import sys
+from functools import reduce
 
-print sys.argv
+print(sys.argv)
 
 output = sys.argv[-1]
 input = sys.argv[1:-1]
 
-ims = map(lambda p: cv2.imread(p, -1), input)
+#ims = map(lambda p: cv2.imread(p, -1), input)
+ims = [cv2.imread(p, -1) for p in input]
 
 #print ims[0].shape
 #print len(ims)
