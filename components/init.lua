@@ -34,6 +34,11 @@ function components.visible(value)
     return value
 end
 
+function components.hidden(v)
+    if v == nil then return true end
+    return v
+end
+
 function components.on_frame_changed(prev_frame, next_frame)
     return {prev_frame, next_frame}
 end

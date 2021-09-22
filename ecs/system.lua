@@ -1,3 +1,6 @@
+local system_instance = {}
+system_instance.__index = system_instance
+
 local system = {}
 system.__index = system
 
