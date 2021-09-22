@@ -18,6 +18,7 @@ function dictionary.__tostring(d)
 end
 
 function dictionary:print()
+    print(self)
     return self
 end
 
