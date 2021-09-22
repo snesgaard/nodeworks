@@ -109,12 +109,25 @@ function entity:get(component)
     return self[component]
 end
 
-function entity:has(...)
-    local query = {...}
-    if #query == 0 then return false end
-    for _, component in ipairs(query) do
+function entity:has(first, ...)
+    if not first then return false end
+
+    local function __check_all(component, ...)
+        if not component then return true end
+        if not self[component] then return false end
+        return __check_all(...)
+    end
+
+    return __check_all(first, ...)
+end
+
+function entity:has_assemblage(assemblage)
+    local a = type(assemblage) == "function" and assemblage() or assemblage
+
+    for component, _ in pairs(a) do
         if not self[component] then return false end
     end
+
     return true
 end
 
@@ -139,5 +152,28 @@ function entity:event(event, ...)
     self:remove(event)
     return self
 end
+
+function entity:__mod(component)
+    return self[component]
+end
+
+function entity:__add(component_args)
+    local c = component_args[1]
+    if not c then return self end
+    if self[c] then
+        return self:update(unpack(component_args))
+    else
+        return self:add(unpack(component_args))
+    end
+end
+
+function entity:__sub(component)
+    return self:remove(component)
+end
+
+function entity:__pow(assemble_args)
+    return self:assemble(unpack(assemble_args))
+end
+
 
 return entity.create

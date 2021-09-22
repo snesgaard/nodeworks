@@ -1,13 +1,24 @@
 src=$(wildcard src/*.tmx)
 lua=$(addprefix ./build/, $(notdir $(src:.tmx=.lua)))
+tilesets=$(shell find tileset -name *.tsx)
+tiled_cmd=./Tiled-1.7.2-x86_64.AppImage
 
 all: create_build_dirs $(lua)
 
-build/%.lua: src/%.tmx
-	@tiled --export-map "lua" $< $@
+build/%.lua: src/%.tmx $(tilesets) $(tiled_cmd)
+	@$(tiled_cmd) --export-map "lua" --embed-tilesets $< $@
 
 create_build_dirs:
 	@mkdir -p build
 
+
+download: $(tiled_cmd)
+
 clean:
 	@rm -rf build
+
+debug:
+	echo $(tilesets)
+
+$(tiled_cmd):
+	@echo "Go to itch.io to download tiled 1.7.2 and place it in the map folder"
