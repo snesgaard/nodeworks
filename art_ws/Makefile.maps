@@ -1,7 +1,7 @@
 src=$(wildcard src/*.tmx)
 lua=$(addprefix ./build/, $(notdir $(src:.tmx=.lua)))
 tilesets=$(shell find tileset -name *.tsx)
-tiled_cmd=./Tiled-1.7.2-x86_64.AppImage
+tiled_cmd=~/gamedev/Tiled-1.7.2-x86_64.AppImage
 
 all: create_build_dirs $(lua)
 
@@ -21,4 +21,4 @@ debug:
 	echo $(tilesets)
 
 $(tiled_cmd):
-	@echo "Go to itch.io to download tiled 1.7.2 and place it in the map folder"
+	@echo "Go to itch.io to download tiled 1.7.2 and place it at $(tiled_cmd) the map folder"
