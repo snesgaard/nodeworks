@@ -167,6 +167,10 @@ function errorf(...)
     error(string.format(...))
 end
 
+function printf(...)
+    print(string.format(...))
+end
+
 function add(a, b) return a + b end
 function sub(a, b) return a - b end
 function dot(a, b) return a * b end
@@ -175,5 +179,5 @@ gfx.setDefaultFilter("nearest", "nearest")
 
 return {
     component=components, system=systems,
-    sti=sti, ecs=ecs
+    sti=sti, ecs=ecs, ease=ease
 }
