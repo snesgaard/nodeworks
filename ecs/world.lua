@@ -41,6 +41,16 @@ function world.create(systems)
     return this
 end
 
+function world:breath_first()
+    self.__breath_first = true
+    return self
+end
+
+function world:depth_first()
+    self.__breath_first = false
+    return self
+end
+
 function world:set_chain(key, chain)
     self.__chains[key] = chain
     return self
@@ -189,10 +199,22 @@ function world:spin()
 
     self.__spinning = true
 
-    while #self.__events > 0 do
-        local event = self.__events:head()
-        table.remove(self.__events, 1)
+    local current_events = self.__events
+    self.__events = list()
+
+    while #current_events > 0 do
+        local event = current_events:head()
+        table.remove(current_events, 1)
         self:__invoke(unpack(event))
+
+        local next_events = self.__events
+        self.__events = list()
+
+        if self.__breath_first then
+            current_events = current_events + next_events
+        else
+            current_events = next_events + current_events
+        end
     end
 
     self.__spinning = false
