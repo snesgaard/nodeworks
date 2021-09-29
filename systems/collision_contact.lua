@@ -1,25 +1,34 @@
 local function collision_record_component() return {} end
 
+local function collision_record(coltype) return {count=1, type=coltype} end
+
 local system = ecs.system(collision_record_component)
 
 local function register_collision(world, item, other, colinfo)
     local record = item:ensure(collision_record_component)
-    if not record[other] then
+    local r = record[other]
+    if not r then
         world("on_contact_begin", item, other, colinfo)
+        record[other] = collision_record(colinfo.type)
+    else
+        r.count = 1
+        if r.type ~= colinfo.type then
+            world("on_contact_changed", item, other, colinfo, r.type)
+            r.type = colinfo.type
+        end
     end
-    record[other] = 1
 end
 
 local function update_entity(world, entity)
     local record = entity[collision_record_component]
     local there_was_values = false
-    for other, value in pairs(record) do
+    for other, r in pairs(record) do
         there_was_values = true
-        if value <= 0 then
+        if r.count <= 0 then
             record[other] = nil
             world("on_contact_end", entity, other)
         else
-            record[other] = value - 1
+            r.count = r.count - 1
         end
     end
 
