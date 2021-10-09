@@ -10,7 +10,6 @@ lume = require(BASE .. ".third.lume")
 lurker = require(BASE .. ".third.lurker")
 moon = require (BASE .. ".third.moonshine")
 sti = require(BASE .. ".third.Simple-Tiled-Implementation.sti")
-render_graph = require(BASE .. ".render_graph")
 require (BASE .. ".third.patch")
 
 ecs = require(BASE .. ".ecs")
