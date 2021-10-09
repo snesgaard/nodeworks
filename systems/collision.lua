@@ -1,239 +1,114 @@
-local system = ecs.system.from_function(
-    function(entity)
-        return {
-            hitboxes = entity:has(
-                components.bump_world, components.hitbox, components.position
-            ),
-            collections = entity:has(
-                components.bump_world, components.hitbox_collection,
-                components.position
-            )
-        }
-    end
-)
+local nw = require "nodeworks"
 
-local function move_filter(item, other, ...)
-    local f = item[components.move_filter] or function() end
-    local t = f(item, other)
-    if t then return t end
+local system = nw.ecs.system(nw.component.hitbox, nw.component.bump_world)
 
+local function cross_filter() return "cross" end
 
-    if not item[components.body] or not other[components.body] then return "cross" end
-    if item[components.oneway] then return "cross" end
-
-    if other[components.oneway] then
-        local item_hb = system.get_world_hitbox(item)
-        local other_hb = system.get_world_hitbox(other)
-        if item_hb.y + item_hb.h - other_hb.y > 0 then return "cross" end
+function system.default_move_filter(item, other)
+    if item[nw.component.body] and other[nw.component.body] then
+        return "slide"
     end
 
-    return "slide"
+    return "cross"
 end
 
-local function check_filter() return "cross" end
-
-system.default_move_filter = move_filter
-
-function system.get_world_hitbox(entity)
-    return system.transform(entity[components.hitbox], entity)
-end
-
-function system.transform(hitbox, parent_entity)
-    return hitbox:move(parent_entity[components.position]:unpack())
-end
-
-function system.create_hitbox(entity, world, parent_entity)
-    parent_entity = parent_entity or entity
-
-    local bump_world = parent_entity[components.bump_world]
-    local hitbox = entity[components.hitbox]
-
-    if not hitbox or bump_world:hasItem(entity) then return end
-
-    local world_hitbox = system.transform(hitbox, parent_entity)
-
-    bump_world:add(entity, world_hitbox:unpack())
-
-    local _, _, cols = bump_world:move(entity, world_hitbox.x, world_hitbox.y, check_filter)
-    -- Check collision here
-    if #cols > 0 then
-        world("on_collision", cols)
+local function aggregate_transform(hitbox, entity)
+    if entity[nw.component.mirror] then
+        hitbox = hitbox:hmirror()
     end
+    local pos = entity:ensure(nw.component.position)
+    return hitbox:move(pos.x, pos.y)
 end
 
-function system.create_collection(entity, world)
-    local colletion = entity[components.hitbox_collection]
-    if not colletion then return end
-    for _, hitbox in ipairs(colletion) do
-        hitbox:add(components.parent, entity)
-        system.create_hitbox(hitbox, world, entity)
-    end
+local function world_hitbox(entity, lineage)
+    local hb = entity % nw.component.hitbox
+    if not hb then return end
+    lineage = lineage or nw.system.parenting.lineage(entity)
+    local world_hb = lineage:reduce(aggregate_transform, hb)
+    return world_hb
 end
 
-function system:on_entity_added(entity, pool)
-    if pool == self.hitboxes then
-        system.create_hitbox(entity, self.world)
-    elseif pool == self.collections then
-        system.create_collection(entity, self.world)
-    end
+local function get_move_filter(entity, move_filter)
+    if nw.system.parenting.is_child(entity) then return cross_filter end
+    return move_filter or system.default_move_filter
 end
 
-function system.update_hitbox(entity, world, parent_entity)
-    parent_entity = parent_entity or entity
-    local bump_world = parent_entity[components.bump_world]
-    local world_hitbox = system.transform(hitbox, parent_entity)
-    bump_world:update(entity, world_hitbox:unpack())
-
-    -- Check collision here
-    local _, _, cols = bump_world:move(
-        entity, world_hitbox.x, world_hitbox.y, check_filter
-    )
-    if #cols > 0 then
-        world("on_collision", cols)
-    end
-end
-
-function system.update_collection(entity, world)
-    for _, hitbox in ipairs(entity[components.hitbox_collection]) do
-        system.update_hitbox(hitbox, world, entity)
-    end
-end
-
-system.on_entity_updated = {
-
-    [components.hitbox] = function(self, entity, pool, previous_value)
-        if pool ~= self.hitboxes then return end
-
-        system.update_hitbox(entity, self.world)
-    end,
-
-    [components.bump_world] = function(self, entity, pool, prev_bump)
-        if pool == self.hitboxes then
-            system.remove_hitbox(prev_bump, entity)
-            system.create_hitbox(entity, self.world)
-        else
-            system.remove_collection(prev_bump, entity)
-            system.create_collection(entity, self.world)
-        end
-    end,
-
-    [components.hitbox_collection] = function(self, entity, pool, prev_collection, next_collection)
-        if pool ~= self.collections then return end
-
-        local bump_world = entity[components.bump_world]
-        system.remove_collection(bump_world, prev_collection)
-        system.create_collection(entity, self.world)
-    end,
-
-    [components.position] = function(self, entity, pool)
-        if pool == self.hitboxes then
-            system.update_hitbox(entity, self.world)
-        elseif pool == self.collections then
-            system.update_collection(entity, self.world)
-        end
-    end
-}
-
-function system.remove_hitbox(bump_world, entity)
-    bump_world:remove(entity)
-end
-
-function system.remove_collection(bump_world, collection)
-    for _, hitbox in ipairs(collection) do
-        system.remove_hitbox(bump_world, hitbox)
-    end
-end
-
-function system:on_entity_removed(entity, pool, component, value)
-    local bump_world = entity[components.bump_world] or value
-
-    if pool == self.hitboxes then
-        system.remove_hitbox(bump_world, entity)
-    elseif pool == self.collisions then
-        local collection = entity[components.bump_world] or value
-        system.remove_collection(bump_world, collection)
-    end
-end
-
-function system.show()
-    system.__debug_draw = true
-end
-
-function system.hide()
-    system.__debug_draw = false
-end
-
-local function move_hitbox(entity, dx, dy, move_filter)
-    local bump_world = entity[components.bump_world]
-
+local function move(entity, dx, dy, move_filter, skip_pos_update)
+    local bump_world = entity % nw.component.bump_world
     if not bump_world or not bump_world:hasItem(entity) then return dx, dy, {} end
-    local x, y = bump_world:getRect(entity)
-    local ax, ay, cols = bump_world:move(
-        entity, x + dx, y + dy, move_filter or system.default_move_filter
+
+    -- Get positions in both world and in local frame
+    local position = entity:ensure(nw.component.position)
+    local world_hb = world_hitbox(entity)
+
+    -- Perform the motion ni bump
+    local fx, fy, cols = bump_world:move(
+        entity, world_hb.x + dx, world_hb.y + dy,
+        get_move_filter(entity, move_filter)
     )
 
-    return ax - x, ay - y, cols
-end
-
-local function move_collection(entity, dx, dy)
-    local bump_world = entity[components.bump_world]
-    local collection = entity[components.hitbox_collection]
-    if not bump_world or not collection then return {} end
-    local cols = {}
-
-    for _, hitbox in ipairs(collection) do
-        local x, y = bump_world:getRect(hitbox)
-        local _, _, sub_col = bump_world:move(
-            hitbox, x + dx, y + dy, move_filter
-        )
-        for _, c in ipairs(sub_col) do table.insert(cols, c) end
+    -- Compute the actual relative motion taken
+    local dx_f, dy_f = fx - world_hb.x, fy - world_hb.y
+    -- Update local position with the relative motion
+    if not skip_pos_update then
+        entity[nw.component.position] = position + vec2(dx_f, dy_f)
     end
 
-    return cols
-end
+    -- Broadcast any relevant events
+    if entity.world then
+        entity.world("on_moved", entity, dx_f, dy_f, cols)
+        if #cols > 0 then
+            entity.world("on_collision", entity, cols)
+        end
+    end
+    -- Now iterate through all children witht he relative motion
+    for _, child in ipairs(nw.system.parenting.children(entity)) do
+        move(child, 0, 0, cross_filter, true)
+    end
 
-function system.move_to(entity, x, y, move_filter)
-    local pos = entity[components.position]
-    local dx, dy = x - pos.x, y - pos.y
-    local dx, dy, dst = system.move(entity, dx, dy, move_filter)
-    return pos.x + dx, pos.y + dy, dst
+    -- return actual motion
+    return dx_f, dy_f, fx, fy, cols
 end
 
 function system.move(entity, dx, dy, move_filter)
-    local dst = {}
-    local dx, dy, hitbox_collisions = move_hitbox(entity, dx, dy, move_filter)
-    local collection_collisions = move_collection(entity, dx, dy)
+    local dx_f, dy_f, _, _, cols = move(entity, dx, dy, move_filter)
+    return dx_f, dy_f, cols
+end
 
-    for _, col in ipairs(hitbox_collisions) do table.insert(dst, col) end
-    for _, col in ipairs(collection_collisions) do table.insert(dst, col) end
+function system.move_to(entity, x, y, move_filter)
+    -- First compute the corresponding relative motion
+    local world_position = nw.system.parenting.world_position(entity)
+    local dx, dy = x - world_position.x, y - world_position.y
+    local _, _, fx, fy, cols = move(entity, dx, dy, move_filter)
+    return fx, fy, cols
+end
 
-    local pos = entity[components.position]
-    pos.x = pos.x + dx
-    pos.y = pos.y + dy
+function system.move_to_local(entity, x, y, move_filter)
+    local position = entity:ensure(nw.component.position)
+    local dx, dy = x - position.x, y - position.y
+    local _, _, _, _, cols = move(entity, dx, dy, move_filter)
+    local p = entity % nw.component.position
+    return p.x, p.y, cols
+end
 
-    if entity.world then
-        entity.world("on_moved", entity, dx, dy)
-        if #dst > 0 then entity.world("on_collision", dst) end
+function system:on_entity_added(entity)
+    local hb = entity % nw.component.hitbox
+    local bump_world = entity % nw.component.bump_world
+    local world_hb = world_hitbox(entity)
+    bump_world:add(entity, world_hb:unpack())
+    -- A bit of a hacky way to check for collisions
+    move(entity, 0, 0, cross_filter)
+end
+
+function system:on_entity_removed(entity, pool, component, prev_value)
+    local bump_world = component == nw.component.bump_world and prev_value or (entity % nw.component.bump_world)
+    bump_world:remove(entity)
+end
+
+function system:on_entity_updated(entity, pool, component, value)
+    if component == nw.component.parent then
+        move(entity, 0, 0)
     end
-
-    return dx, dy, dst
-end
-
-function system.get_rect(entity)
-    local bump_world = entity[components.bump_world]
-
-    if not bump_world or not bump_world:hasItem(entity) then return end
-
-    return spatial(bump_world:getRect(entity))
-end
-
-function system.check_rect(entity, rect, filter)
-    local bump_world = entity[components.bump_world]
-
-    if not bump_world then return {} end
-
-    local x, y, w, h = rect:unpack()
-    return bump_world:queryRect(x, y, w, h, filter)
 end
 
 return system

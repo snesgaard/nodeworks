@@ -43,6 +43,8 @@ end
 
 function system.children(entity) return entity[children_component] or list() end
 
+function system.parent(entity) return entity[components.parent] end
+
 function system.lineage(entity)
     local lineage = list()
     local e = entity
@@ -53,6 +55,46 @@ function system.lineage(entity)
     end
 
     return lineage
+end
+
+function system.is_child(entity)
+    return entity[components.parent]
+end
+
+local function read_position(entity) return entity[components.position] or vec2() end
+
+local function add(a, b) return a + b end
+
+function system.world_position(entity)
+    local lineage = system.lineage(entity)
+
+    local position = lineage
+        :map(read_position)
+        :reduce(add, vec2())
+
+    return position
+end
+
+function system.find_first(entity, component)
+    local node = entity
+    while node do
+        local c = node[component]
+        if c then return c end
+        node = node[components.parent]
+    end
+end
+
+function system:debug_draw()
+    for _, entity in ipairs(self.pool) do
+        local parent = system.parent(entity)
+        if parent then
+            local p1 = system.world_position(parent)
+            local p2 = system.world_position(entity)
+            gfx.line(p1.x, p1.y, p2.x, p2.y)
+            gfx.circle("fill", p2.x, p2.y, 6)
+            gfx.rectangle("fill", p1.x - 3, p1.y - 3, 6, 6)
+        end
+    end
 end
 
 return system
