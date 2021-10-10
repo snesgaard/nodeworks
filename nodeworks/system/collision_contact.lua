@@ -1,8 +1,10 @@
+local nw = require "nodeworks"
+
 local function collision_record_component() return {} end
 
 local function collision_record(coltype) return {count=1, type=coltype} end
 
-local system = ecs.system(collision_record_component)
+local system = nw.ecs.system(collision_record_component)
 
 local function register_collision(world, item, other, colinfo)
     local record = item:ensure(collision_record_component)

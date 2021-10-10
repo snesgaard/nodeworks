@@ -172,8 +172,8 @@ end
 function world:__invoke(key, ...)
     local chain = self:chain(key)
 
-    if self.on_event_invoked then
-        self.on_event_invoked(key, ...)
+    if self.on_event then
+        self.on_event(key, ...)
     end
 
     for _, system in ipairs(chain) do
