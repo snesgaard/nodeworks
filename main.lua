@@ -1,5 +1,6 @@
 local nw = require "."
 require("test")
+print("ALL TEST PASSED")
 
 function love.load()
     love.event.quit()

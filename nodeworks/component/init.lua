@@ -1,3 +1,5 @@
+local nw = require "nodeworks"
+
 local components = {}
 
 function components.image(image, quad)
@@ -43,7 +45,7 @@ function components.on_frame_changed(prev_frame, next_frame)
     return {prev_frame, next_frame}
 end
 
-components.sprite = ecs.assemblage(
+components.sprite = nw.ecs.assemblage(
     components.image, components.draw_args, components.body_slice,
     components.slices, components.mirror, components.visible
 )
@@ -150,7 +152,7 @@ function components.animation_args(playing, once, mode, id)
     }
 end
 
-components.animation_state = ecs.assemblage(
+components.animation_state = nw.ecs.assemblage(
     components.timer,
     components.frame_sequence,
     components.index,

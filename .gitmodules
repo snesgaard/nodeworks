@@ -11,5 +11,5 @@
 	path = nodeworks/third/SUIT
 	url = https://github.com/vrld/SUIT
 [submodule "third/bump.lua"]
-	path = nodeworks/scene/collision/bump
+	path = nodeworks/third/bump
 	url = https://github.com/kikito/bump.lua

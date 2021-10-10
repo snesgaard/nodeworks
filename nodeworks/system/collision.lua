@@ -1,27 +1,29 @@
-local system = ecs.system.from_function(
+local nw = require "nodeworks"
+
+local system = nw.ecs.system.from_function(
     function(entity)
         return {
             hitboxes = entity:has(
-                components.bump_world, components.hitbox, components.position
+                nw.component.bump_world, nw.component.hitbox, nw.component.position
             ),
             collections = entity:has(
-                components.bump_world, components.hitbox_collection,
-                components.position
+                nw.component.bump_world, nw.component.hitbox_collection,
+                nw.component.position
             )
         }
     end
 )
 
 local function move_filter(item, other, ...)
-    local f = item[components.move_filter] or function() end
+    local f = item[nw.component.move_filter] or function() end
     local t = f(item, other)
     if t then return t end
 
 
-    if not item[components.body] or not other[components.body] then return "cross" end
-    if item[components.oneway] then return "cross" end
+    if not item[nw.component.body] or not other[nw.component.body] then return "cross" end
+    if item[nw.component.oneway] then return "cross" end
 
-    if other[components.oneway] then
+    if other[nw.component.oneway] then
         local item_hb = system.get_world_hitbox(item)
         local other_hb = system.get_world_hitbox(other)
         if item_hb.y + item_hb.h - other_hb.y > 0 then return "cross" end
@@ -34,19 +36,23 @@ local function check_filter() return "cross" end
 
 system.default_move_filter = move_filter
 
+function system.bump_world()
+    return nw.third.bump.newWorld()
+end
+
 function system.get_world_hitbox(entity)
-    return system.transform(entity[components.hitbox], entity)
+    return system.transform(entity[nw.component.hitbox], entity)
 end
 
 function system.transform(hitbox, parent_entity)
-    return hitbox:move(parent_entity[components.position]:unpack())
+    return hitbox:move(parent_entity[nw.component.position]:unpack())
 end
 
 function system.create_hitbox(entity, world, parent_entity)
     parent_entity = parent_entity or entity
 
-    local bump_world = parent_entity[components.bump_world]
-    local hitbox = entity[components.hitbox]
+    local bump_world = parent_entity[nw.component.bump_world]
+    local hitbox = entity[nw.component.hitbox]
 
     if not hitbox or bump_world:hasItem(entity) then return end
 
@@ -62,10 +68,10 @@ function system.create_hitbox(entity, world, parent_entity)
 end
 
 function system.create_collection(entity, world)
-    local colletion = entity[components.hitbox_collection]
+    local colletion = entity[nw.component.hitbox_collection]
     if not colletion then return end
     for _, hitbox in ipairs(colletion) do
-        hitbox:add(components.parent, entity)
+        hitbox:add(nw.component.parent, entity)
         system.create_hitbox(hitbox, world, entity)
     end
 end
@@ -80,7 +86,7 @@ end
 
 function system.update_hitbox(entity, world, parent_entity)
     parent_entity = parent_entity or entity
-    local bump_world = parent_entity[components.bump_world]
+    local bump_world = parent_entity[nw.component.bump_world]
     local world_hitbox = system.transform(hitbox, parent_entity)
     bump_world:update(entity, world_hitbox:unpack())
 
@@ -94,20 +100,20 @@ function system.update_hitbox(entity, world, parent_entity)
 end
 
 function system.update_collection(entity, world)
-    for _, hitbox in ipairs(entity[components.hitbox_collection]) do
+    for _, hitbox in ipairs(entity[nw.component.hitbox_collection]) do
         system.update_hitbox(hitbox, world, entity)
     end
 end
 
 system.on_entity_updated = {
 
-    [components.hitbox] = function(self, entity, pool, previous_value)
+    [nw.component.hitbox] = function(self, entity, pool, previous_value)
         if pool ~= self.hitboxes then return end
 
         system.update_hitbox(entity, self.world)
     end,
 
-    [components.bump_world] = function(self, entity, pool, prev_bump)
+    [nw.component.bump_world] = function(self, entity, pool, prev_bump)
         if pool == self.hitboxes then
             system.remove_hitbox(prev_bump, entity)
             system.create_hitbox(entity, self.world)
@@ -117,15 +123,15 @@ system.on_entity_updated = {
         end
     end,
 
-    [components.hitbox_collection] = function(self, entity, pool, prev_collection, next_collection)
+    [nw.component.hitbox_collection] = function(self, entity, pool, prev_collection, next_collection)
         if pool ~= self.collections then return end
 
-        local bump_world = entity[components.bump_world]
+        local bump_world = entity[nw.component.bump_world]
         system.remove_collection(bump_world, prev_collection)
         system.create_collection(entity, self.world)
     end,
 
-    [components.position] = function(self, entity, pool)
+    [nw.component.position] = function(self, entity, pool)
         if pool == self.hitboxes then
             system.update_hitbox(entity, self.world)
         elseif pool == self.collections then
@@ -145,12 +151,12 @@ function system.remove_collection(bump_world, collection)
 end
 
 function system:on_entity_removed(entity, pool, component, value)
-    local bump_world = entity[components.bump_world] or value
+    local bump_world = entity[nw.component.bump_world] or value
 
     if pool == self.hitboxes then
         system.remove_hitbox(bump_world, entity)
     elseif pool == self.collisions then
-        local collection = entity[components.bump_world] or value
+        local collection = entity[nw.component.bump_world] or value
         system.remove_collection(bump_world, collection)
     end
 end
@@ -164,7 +170,7 @@ function system.hide()
 end
 
 local function move_hitbox(entity, dx, dy, move_filter)
-    local bump_world = entity[components.bump_world]
+    local bump_world = entity[nw.component.bump_world]
 
     if not bump_world or not bump_world:hasItem(entity) then return dx, dy, {} end
     local x, y = bump_world:getRect(entity)
@@ -176,8 +182,8 @@ local function move_hitbox(entity, dx, dy, move_filter)
 end
 
 local function move_collection(entity, dx, dy)
-    local bump_world = entity[components.bump_world]
-    local collection = entity[components.hitbox_collection]
+    local bump_world = entity[nw.component.bump_world]
+    local collection = entity[nw.component.hitbox_collection]
     if not bump_world or not collection then return {} end
     local cols = {}
 
@@ -193,10 +199,10 @@ local function move_collection(entity, dx, dy)
 end
 
 function system.move_to(entity, x, y, move_filter)
-    local pos = entity[components.position]
-    local dx, dy = x - pos.x, y - pos.y
+    local px, py = entity:ensure(nw.component.position):unpack()
+    local dx, dy = x - px, y - py
     local dx, dy, dst = system.move(entity, dx, dy, move_filter)
-    return pos.x + dx, pos.y + dy, dst
+    return px + dx, py + dy, dst
 end
 
 function system.move(entity, dx, dy, move_filter)
@@ -207,7 +213,7 @@ function system.move(entity, dx, dy, move_filter)
     for _, col in ipairs(hitbox_collisions) do table.insert(dst, col) end
     for _, col in ipairs(collection_collisions) do table.insert(dst, col) end
 
-    local pos = entity[components.position]
+    local pos = entity[nw.component.position]
     pos.x = pos.x + dx
     pos.y = pos.y + dy
 
@@ -220,7 +226,7 @@ function system.move(entity, dx, dy, move_filter)
 end
 
 function system.get_rect(entity)
-    local bump_world = entity[components.bump_world]
+    local bump_world = entity[nw.component.bump_world]
 
     if not bump_world or not bump_world:hasItem(entity) then return end
 
@@ -228,7 +234,7 @@ function system.get_rect(entity)
 end
 
 function system.check_rect(entity, rect, filter)
-    local bump_world = entity[components.bump_world]
+    local bump_world = entity[nw.component.bump_world]
 
     if not bump_world then return {} end
 

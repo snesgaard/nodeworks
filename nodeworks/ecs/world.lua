@@ -1,9 +1,11 @@
+local nw = require "nodeworks"
+
 local context = {}
 context.__index = context
 
 function context:__fetch_pool(name)
     if not self[name] then
-        local pool = ecs.pool(name)
+        local pool = nw.ecs.pool(name)
         self[name] = pool
         self.__pools[name] = pool
 
@@ -15,7 +17,7 @@ function context.create(world, system)
     local c = setmetatable({world = world, __pools = {}}, context)
 
     -- Just make sure that all pools exists intially
-    local pools = system.__pool_filter(ecs.entity())
+    local pools = system.__pool_filter(nw.ecs.entity())
     for key, _ in pairs(pools) do
         c:__fetch_pool(key)
     end
