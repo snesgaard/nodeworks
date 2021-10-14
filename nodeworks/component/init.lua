@@ -120,8 +120,6 @@ function components.gravity(x, y) return vec2(x, y) end
 
 function components.drag(k) return k end
 
-components.transform = transform
-
 function components.particles(...)
     return particles(...)
 end
