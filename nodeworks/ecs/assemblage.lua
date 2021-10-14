@@ -1,7 +1,9 @@
+local nw = require "nodeworks"
+
 return function(...)
     local components = {...}
     return function(args, world)
-        local entity = ecs.entity(world)
+        local entity = nw.ecs.entity(world)
 
         args = args or {}
 

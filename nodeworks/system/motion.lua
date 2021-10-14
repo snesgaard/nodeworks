@@ -1,20 +1,22 @@
-local system = ecs.system(components.position, components.velocity, components.gravity)
+local nw = require "nodeworks"
+
+local system = nw.ecs.system(nw.component.position, nw.component.velocity, nw.component.gravity)
 
 local function update_entity(entity, dt)
-    local disable = entity[components.disable_motion] or 0
+    local disable = entity[nw.component.disable_motion] or 0
     if disable > 0 then return end
 
-    local v = entity[components.velocity]
-    local p = entity[components.position]
-    local g = entity[components.gravity]
-    local d = entity[components.drag] or 0
+    local v = entity[nw.component.velocity]
+    local p = entity[nw.component.position]
+    local g = entity[nw.component.gravity]
+    local d = entity[nw.component.drag] or 0
 
     v = v + (g - v * d) * dt
-    entity:update(components.velocity, v:unpack())
+    entity:update(nw.component.velocity, v:unpack())
 
     if v.x ~= 0 or v.y ~= 0 then
         p = p + v * dt
-        systems.collision.move_to(entity, p:unpack())
+        nw.system.collision.move_to(entity, p:unpack())
     end
 end
 
@@ -29,7 +31,7 @@ function system:on_collision(collision_info)
         if info.type ~= "touch" and info.type ~= "slide" then return end
 
 
-        local vx, vy = info.item[components.velocity]:unpack()
+        local vx, vy = info.item[nw.component.velocity]:unpack()
         local t = 0.9
         if info.normal.y <= -t then
             vy = math.min(0, vy)
@@ -42,7 +44,7 @@ function system:on_collision(collision_info)
             vx = math.max(0, vx)
         end
 
-        info.item:update(components.velocity, vx, vy)
+        info.item:update(nw.component.velocity, vx, vy)
     end)
 end
 

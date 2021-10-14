@@ -213,9 +213,11 @@ function system.move(entity, dx, dy, move_filter)
     for _, col in ipairs(hitbox_collisions) do table.insert(dst, col) end
     for _, col in ipairs(collection_collisions) do table.insert(dst, col) end
 
+    -- TODO Change this to use map when collsiion has been refactored
     local pos = entity[nw.component.position]
-    pos.x = pos.x + dx
-    pos.y = pos.y + dy
+    entity[nw.component.position] = nw.component.position(
+        pos.x + dx, pos.y + dy
+    )
 
     if entity.world then
         entity.world("on_moved", entity, dx, dy)
