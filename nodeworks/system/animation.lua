@@ -233,7 +233,7 @@ function animation_system.get_slice(entity, slice_name, body_slice, animation_ta
 end
 
 function animation_system.get_base_slice(entity, slice_name, body_slice, animation_tag, frame)
-    local base_slice = get_slice(entity, slice_name, body_slice, animation_tag, frame)
+    local base_slice = get_slice(entity, slice_name, body_slice, animation_tag, frame) or spatial()
     local draw_args = get_draw_args(entity)
     return transform_slice(base_slice, vec2(), draw_args.sx, draw_args.sy, entity[nw.component.mirror])
 end
