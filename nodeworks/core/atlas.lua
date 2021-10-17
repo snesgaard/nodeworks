@@ -11,9 +11,11 @@ local function read_file(path)
 end
 
 local function read_json(path)
+    -- Load nodeworks here to avoid infinite loop
+    local nw = require "nodeworks"
     local data, err = love.filesystem.newFileData(path)
     if data:getExtension() == 'json' then
-        return json.decode(love.filesystem.read(path))
+        return nw.third.json.decode(love.filesystem.read(path))
     else
         return {
             frames = {
