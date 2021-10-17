@@ -29,7 +29,7 @@ function entity:add(component, ...)
     else
         errorf("Unsupported type <%s>", t)
     end
-    if self.world then self.world:update(self, ...) end
+    if self.world then self.world:update(self, component, nil, self[component]) end
 
     return self
 end
