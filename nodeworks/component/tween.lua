@@ -20,15 +20,18 @@ function tween:is_paused()
 end
 
 function tween:update(dt)
-    if self:is_paused() then return self:value() end
+    if self:is_paused() then return self:value(), dt end
 
     self.__delay = math.max(0, self.__delay - dt)
 
-    if self.__delay > 0 then return self:value() end
+    if self.__delay > 0 then return self:value(), 0 end
 
+    local prev_time = self.__time
     self.__time = math.min(self.__duration, self.__time + dt)
+    local time_spent = self.__time - prev_time
+    local time_left = dt - time_spent
 
-    return self:value()
+    return self:value(), time_left
 end
 
 function tween:value(time)

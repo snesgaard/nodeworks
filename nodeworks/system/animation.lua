@@ -1,64 +1,66 @@
+local nw = require "nodeworks"
+
 local function get_frame(entity, index)
     return entity
-        [components.animation_state]
-        [components.frame_sequence]
+        [nw.component.animation_state]
+        [nw.component.frame_sequence]
         [index]
 end
 
 local function set_frame(entity, frame_index)
     local frame = get_frame(entity, frame_index)
-    entity[components.animation_state]:update(components.index, frame_index)
-    entity[components.animation_state]:update(components.timer, frame.dt)
+    entity[nw.component.animation_state]:update(nw.component.index, frame_index)
+    entity[nw.component.animation_state]:update(nw.component.timer, frame.dt)
 end
 
 local function get_current_frame(entity)
     local i = entity
-        [components.animation_state]
-        [components.index]
+        [nw.component.animation_state]
+        [nw.component.index]
     local fs = entity
-        [components.animation_state]
-        [components.frame_sequence]
+        [nw.component.animation_state]
+        [nw.component.frame_sequence]
     return fs[i]
 end
 
 local function should_be_updated(entity)
-    local state = entity[components.animation_state]
-    local fs = state[components.frame_sequence]
-    return state[components.animation_args].playing and fs ~= nil and #fs > 0
+    local state = entity[nw.component.animation_state]
+    local fs = state[nw.component.frame_sequence]
+    return state[nw.component.animation_args].playing and fs ~= nil and #fs > 0
 end
 
 local function update_animation(entity, dt)
-    local state = entity[components.animation_state]
+    local state = entity[nw.component.animation_state]
 
     if not should_be_updated(entity) then return end
-    if not state[components.timer]:update(dt) then return end
+    if not state[nw.component.timer]:update(dt) then return end
     local prev_frame = get_current_frame(entity)
-    state:update(components.index, state[components.index] + 1)
+    state:update(nw.component.index, state[nw.component.index] + 1)
 
-    if state[components.index] > #state[components.frame_sequence] then
-        if state[components.animation_args].once then
-            state[components.animation_args].playing = false
+    if state[nw.component.index] > #state[nw.component.frame_sequence] then
+        if state[nw.component.animation_args].once then
+            state[nw.component.animation_args].playing = false
             return prev_frame
         end
 
-        state:update(components.index, 1)
+        state:update(nw.component.index, 1)
     end
 
     local frame = get_current_frame(entity)
-    state:update(components.timer, frame.dt)
+    state:update(nw.component.timer, frame.dt)
     return prev_frame, frame
 end
 
 local function update_sprite(entity)
-    local sprite = entity[components.sprite]
+    local sprite = entity[nw.component.sprite]
     local frame = get_current_frame(entity)
 
     if not frame then return end
 
-    sprite:update(components.image, frame.image, frame.quad)
-    sprite[components.draw_args].ox = -frame.offset.x
-    sprite[components.draw_args].oy = -frame.offset.y
-    sprite:update(components.slices, frame.slices)
+    sprite:update(nw.component.image, frame.image, frame.quad)
+    sprite[nw.component.draw_args].ox = -frame.offset.x
+    sprite[nw.component.draw_args].oy = -frame.offset.y
+    sprite:update(nw.component.slices, frame.slices)
 end
 
 local function format_event_begin(event)
@@ -114,9 +116,9 @@ local function handle_event(world, entity, event_key, ...)
 end
 
 --- System Logic ---
-local animation_system =  ecs.system(
-    components.animation_state,
-    components.sprite
+local animation_system =  nw.ecs.system(
+    nw.component.animation_state,
+    nw.component.sprite
 )
 
 function animation_system:update(dt)
@@ -125,31 +127,31 @@ function animation_system:update(dt)
         update_sprite(entity)
         broadcast_event(
             self.world, entity, prev_frame, next_frame,
-            entity[components.animation_state][components.animation_args].id
+            entity[nw.component.animation_state][nw.component.animation_args].id
         )
     end
 end
 
 function animation_system.play(entity, id, args)
     args = args or {}
-    local state = entity[components.animation_state]
+    local state = entity[nw.component.animation_state]
     if not id then
-        state[components.animation_args].playing = true
+        state[nw.component.animation_args].playing = true
         return
     end
 
-    local map = entity[components.animation_map]
+    local map = entity[nw.component.animation_map]
     if not map then return false end
     local sequence = map[id]
     if not sequence then return false end
 
     local prev_frame = get_current_frame(entity)
-    local prev_id = state[components.animation_args].id
+    local prev_id = state[nw.component.animation_args].id
 
-    if sequence == state[components.frame_sequence] and not args.interrupt then return prev_frame end
+    if sequence == state[nw.component.frame_sequence] and not args.interrupt then return prev_frame end
 
-    state:update(components.frame_sequence, sequence)
-    state:update(components.animation_args, true, args.once, args.mode, id)
+    state:update(nw.component.frame_sequence, sequence)
+    state:update(nw.component.animation_args, true, args.once, args.mode, id)
     set_frame(entity, 1)
     update_sprite(entity)
 
@@ -165,22 +167,22 @@ end
 
 function animation_system.pause(entity)
     entity
-        [components.animation_state]
-        [components.animation_args]
+        [nw.component.animation_state]
+        [nw.component.animation_args]
         .playing = false
 end
 
 function animation_system.stop(entity)
     entity
-        [components.animation_state]
-        [components.animation_args]
+        [nw.component.animation_state]
+        [nw.component.animation_args]
         .playing = false
     set_frame(entity, 1)
 end
 
 local function get_slice(entity, slice_name, body_slice, animation_tag, frame)
     local frame = frame or 1
-    local map = entity[components.animation_map]
+    local map = entity[nw.component.animation_map]
     if not map then return end
     local frames = map[animation_tag]
     if not frames then return end
@@ -194,9 +196,9 @@ local function get_slice(entity, slice_name, body_slice, animation_tag, frame)
 end
 
 local function get_draw_args(entity)
-    local sprite = entity[components.sprite]
-    if not sprite then return components.draw_args() end
-    return sprite[components.draw_args]
+    local sprite = entity[nw.component.sprite]
+    if not sprite then return nw.component.draw_args() end
+    return sprite[nw.component.draw_args]
 end
 
 local function transform_slice(slice, position, sx, sy, mirror)
@@ -213,9 +215,9 @@ function animation_system.transform_slice(entity, slice)
     local draw_args = get_draw_args(entity)
     return transform_slice(
         slice,
-        entity[components.position] or components.position(),
+        entity[nw.component.position] or nw.component.position(),
         draw_args.sx, draw_args.sy,
-        entity[components.mirror]
+        entity[nw.component.mirror]
     )
 end
 
@@ -224,22 +226,22 @@ function animation_system.get_slice(entity, slice_name, body_slice, animation_ta
     local draw_args = get_draw_args(entity)
     return transform_slice(
         base_slice,
-        entity[components.position] or components.position(),
+        entity[nw.component.position] or nw.component.position(),
         draw_args.sx, draw_args.sy,
-        entity[components.mirror]
+        entity[nw.component.mirror]
     )
 end
 
 function animation_system.get_base_slice(entity, slice_name, body_slice, animation_tag, frame)
-    local base_slice = get_slice(entity, slice_name, body_slice, animation_tag, frame)
+    local base_slice = get_slice(entity, slice_name, body_slice, animation_tag, frame) or spatial()
     local draw_args = get_draw_args(entity)
-    return transform_slice(base_slice, vec2(), draw_args.sx, draw_args.sy, entity[components.mirror])
+    return transform_slice(base_slice, vec2(), draw_args.sx, draw_args.sy, entity[nw.component.mirror])
 end
 
 function is_paused(entity)
     return not entity
-        [components.animation_state]
-        [components.animation_args]
+        [nw.component.animation_state]
+        [nw.component.animation_args]
         .playing
 end
 

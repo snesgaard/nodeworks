@@ -1,3 +1,5 @@
+local nw = require "nodeworks"
+
 local function children_component(...) return list(...) end
 
 local function adopt(parent, child)
@@ -13,24 +15,24 @@ local function orphan(parent, child)
 end
 
 
-local system = ecs.system(components.parent)
+local system = nw.ecs.system(nw.component.parent)
 
 function system:on_entity_added(entity)
-    adopt(entity[components.parent], entity)
+    adopt(entity[nw.component.parent], entity)
 end
 
 function system:on_entity_updated(entity, pool, component, prev_parent)
-    if component == components.parent then
+    if component == nw.component.parent then
         orphan(prev_parent, entity)
-        adopt(entity[components.parent], entity)
+        adopt(entity[nw.component.parent], entity)
     end
 end
 
 function system:on_entity_removed(entity, pool, component, prev_parent)
-    if component == components.parent then
+    if component == nw.component.parent then
         orphan(prev_parent, child)
     else
-        orphan(entity[components.parent], entity)
+        orphan(entity[nw.component.parent], entity)
     end
 end
 
@@ -49,7 +51,7 @@ function system.lineage(entity)
 
     while e do
         table.insert(lineage, e)
-        e = e[components.parent]
+        e = e[nw.component.parent]
     end
 
     return lineage
