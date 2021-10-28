@@ -96,18 +96,18 @@ function list:size()
   return #self
 end
 
-function list:map(f)
+function list:map(f, ...)
   local ret = list.create()
   for i = 1, #self do
-    ret[i] = f(self[i])
+    ret[i] = f(self[i], ...)
   end
   return ret
 end
 
-function list:argmap(f)
+function list:argmap(f, ...)
     local ret = list.create()
     for i = 1, #self do
-        ret[i] = f(i, self[i])
+        ret[i] = f(i, self[i], ...)
     end
     return ret
 end
@@ -161,20 +161,20 @@ function list:reverse()
   return ret
 end
 
-function list:filter(f)
+function list:filter(f, ...)
   local ret = list.create()
   for i = 1, #self do
     local val = self[i]
-    ret[#ret + 1] = f(val) and val or nil
+    ret[#ret + 1] = f(val, ...) and val or nil
   end
   return ret
 end
 
-function list:argfilter(f)
+function list:argfilter(f, ...)
   local ret = list.create()
   for i = 1, #self do
     local val = self[i]
-    ret[#ret + 1] = f(val) and i or nil
+    ret[#ret + 1] = f(val, ...) and i or nil
   end
   return ret
 end
