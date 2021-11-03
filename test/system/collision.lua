@@ -25,7 +25,7 @@ T("Collision", function(T)
 
     T("System population", function(T)
         local context = world:context(nw.system.collision)
-        T:assert(#context.hitboxes == 3)
+        T:assert(#context.pool == 3)
     end)
     T("Test relative motion (collision)", function(T)
         local dx, dy, cols = nw.system.collision.move(entity, 0, 200)
