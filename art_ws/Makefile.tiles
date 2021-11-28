@@ -12,7 +12,7 @@ $(atlas): $(jsons)
 build/%.json: %.aseprite
 	@$(aseprite) -b $< --sheet $(@:.json=.png) --data $@ \
 	           --list-slices --format json-array\
-	           --list-tags
+	           --list-tags --sheet-type vertical
 
 create_build_dirs:
 	@mkdir -p build

@@ -99,6 +99,8 @@ function entity:disassemble(f, ...)
 end
 
 function entity:remove(component)
+    if self[component] == nil then return self end
+
     local prev = self[component]
     self[component] = nil
     if self.world then self.world:update(self, component, prev) end

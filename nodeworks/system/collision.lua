@@ -1,6 +1,6 @@
 local nw = require "nodeworks"
 
-local system = nw.ecs.system(nw.component.hitbox, nw.component.bump_world)
+local system = nw.ecs.system(nw.component.hitbox, nw.component.bump_world, nw.component.position)
 
 local function cross_filter() return "cross" end
 
