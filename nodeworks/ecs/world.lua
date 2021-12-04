@@ -14,7 +14,7 @@ function context:__fetch_pool(name)
 end
 
 function context.create(world, system)
-    local c = setmetatable({world = world, __pools = {}}, context)
+    local c = setmetatable({world = world, __pools = {}, __system=system}, context)
 
     -- Just make sure that all pools exists intially
     local pools = system.__pool_filter(nw.ecs.entity())
@@ -23,6 +23,21 @@ function context.create(world, system)
     end
 
     return c
+end
+
+function context:filter(f)
+    if not f then return self end
+
+    local filtered_context = context.create(self.world, self.__system)
+    for pool_name, pool in pairs(self.__pools) do
+        for _, entity in ipairs(pool) do
+            if f(entity) then
+                filtered_context.__pools[pool_name]:add(entity)
+            end
+        end
+    end
+
+    return filtered_context
 end
 
 local world = {}
@@ -169,17 +184,22 @@ function world:remove(entity, ...)
     return self
 end
 
-function world:__invoke(key, ...)
+local function entity_filter(entity)
+     return entity[nw.component.layer] == "object"
+end
+
+function world:__invoke(event)
+    local key = event:key()
     local chain = self:chain(key)
 
     if self.on_event then
-        self.on_event(key, ...)
+        self.on_event(key, event:args())
     end
 
     for _, system in ipairs(chain) do
         local f = system[key]
-        local context = self:context(system)
-        if f and f(context, ...) then
+        local context = self:context(system):filter(event.__filter)
+        if f and f(context, event:args()) then
             break
         end
     end
@@ -187,12 +207,18 @@ function world:__invoke(key, ...)
     return self
 end
 
-function world:immediate_event(key, ...)
-    return self:__invoke(key, ...)
+function world:event(key, ...)
+    table.insert(self.__events, nw.ecs.event(key, ...))
+    return self
 end
 
-function world:event(key, ...)
-    table.insert(self.__events, {key, ...})
+function world:filter_event(filter, key, ...)
+    local event = nw.ecs.event(key, ...):filter(filter)
+    return self:event_obj(event)
+end
+
+function world:event_obj(event)
+    table.insert(self.__events, event)
     return self
 end
 
@@ -207,7 +233,7 @@ function world:spin()
     while #current_events > 0 do
         local event = current_events:head()
         table.remove(current_events, 1)
-        self:__invoke(unpack(event))
+        self:__invoke(event)
 
         local next_events = self.__events
         self.__events = list()

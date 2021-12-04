@@ -17,6 +17,7 @@ function list_equal(a, b, cmp)
     return true
 end
 
+require "test.ecs.event"
 require "test.system.collision"
 require "test.system.collision_contact"
 require "test.system.animation"

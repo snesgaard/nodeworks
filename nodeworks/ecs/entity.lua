@@ -144,7 +144,7 @@ end
 function entity:destroy()
     if self.world then
         self.world:remove(self)
-        self.world:immediate_event("on_entity_destroyed", self)
+        self.world("on_entity_destroyed", self)
     end
     self.world = nil
 end
@@ -153,6 +153,13 @@ function entity:event(event, ...)
     self:add(event, ...)
     self:remove(event)
     return self
+end
+
+function entity:spawn(inherit)
+    inherit = inherit or self.inherit
+    local child = entity.create(self.world)
+    if type(inherit) == "function" then inherit(self, child) end
+    return child
 end
 
 function entity:__mod(component)
@@ -177,5 +184,11 @@ function entity:__pow(assemble_args)
     return self:assemble(unpack(assemble_args))
 end
 
+local entity_creator = {}
+entity_creator.__index = entity_creator
 
-return entity.create
+function entity_creator:__call(...)
+    return entity.create(...)
+end
+
+return setmetatable(entity, entity_creator)
