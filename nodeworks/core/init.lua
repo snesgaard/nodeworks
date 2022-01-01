@@ -10,6 +10,8 @@ Dictionary = require(BASE ..  ".dictionary")
 Frame = require(BASE .. ".frame")
 require(BASE .. ".functional")
 List = require(BASE .. ".list")
+Pool = require(BASE .. ".pool")
+Stack = require(BASE .. ".stack")
 Mat3 = require(BASE .. ".mat3")
 Spatial = require(BASE .. ".spatial")
 Transform = require(BASE .. ".transform")
@@ -31,6 +33,8 @@ function clear_atlas(path)
 end
 
 color = Color.create
+stack = Stack.create
+pool = Pool.create
 dict = Dictionary.create
 list = List.create
 mat3 = Mat3.create

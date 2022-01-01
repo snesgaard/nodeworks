@@ -4,17 +4,19 @@ entity.__index = entity
 function entity.create(world, tag)
     local this = {}
     this.world = world
-    this.tag = tag
 
     setmetatable(this, entity)
+    return this:set_world(world):set_tag(tag)
+end
 
-    if world then world:update(this) end
-    return  this
+function entity:set_tag(tag)
+    self._tag = tag
+    return self
 end
 
 function entity:__tostring()
-    if self.tag then
-        return string.format("Entity(%s)", self.tag)
+    if self._tag then
+        return string.format("Entity(%s)", self._tag)
     else
         return "Entity"
     end
@@ -22,6 +24,9 @@ end
 
 function entity:add(component, ...)
     local t = type(component)
+
+    local prev_value = self[component]
+
     if t == "function" then
         self[component] = component(...)
     elseif t == "table" then
@@ -29,28 +34,21 @@ function entity:add(component, ...)
     else
         errorf("Unsupported type <%s>", t)
     end
-    if self.world then self.world:update(self, component, nil, self[component]) end
+
+    if self.world and prev_value == nil then
+        self.world:entity_updated(self, component, prev_value, self[component])
+    end
 
     return self
 end
 
-function entity:update(component, ...)
-    local prev_value = self[component]
-    if prev_value == nil then return self end
+function entity:remove(component)
+    if self[component] == nil then return self end
 
-    local t = type(component)
-    if t == "function" then
-        self[component] = component(...)
-    elseif t == "table" then
-        self[component] = component.create(...)
-    else
-         errorf("Unsupported type <%s>", t)
-    end
-
-    if self.world then self.world:update(self, component, prev_value, self[component]) end
-
+    local prev = self[component]
+    self[component] = nil
+    if self.world then self.world:entity_updated(self, component, prev) end
     return self
-
 end
 
 function entity:map(component, f, ...)
@@ -58,7 +56,7 @@ function entity:map(component, f, ...)
         error("Attempted to map non-existing component")
     end
 
-    return self:update(component, f(self[component], ...))
+    return self:add(component, f(self[component], ...))
 end
 
 function entity:ensure(component, ...)
@@ -98,15 +96,6 @@ function entity:disassemble(f, ...)
     return self
 end
 
-function entity:remove(component)
-    if self[component] == nil then return self end
-
-    local prev = self[component]
-    self[component] = nil
-    if self.world then self.world:update(self, component, prev) end
-    return self
-end
-
 function entity:get(component)
     return self[component]
 end
@@ -134,32 +123,11 @@ function entity:has_assemblage(assemblage)
 end
 
 function entity:set_world(world)
-    if self.world then self.world:remove(self)end
+    if self.world then self.world:remove_entity(self)end
 
     self.world = world
 
-    if self.world then self.world:update(self) end
-end
-
-function entity:destroy()
-    if self.world then
-        self.world:remove(self)
-        self.world("on_entity_destroyed", self)
-    end
-    self.world = nil
-end
-
-function entity:event(event, ...)
-    self:add(event, ...)
-    self:remove(event)
-    return self
-end
-
-function entity:spawn(inherit)
-    inherit = inherit or self.inherit
-    local child = entity.create(self.world)
-    if type(inherit) == "function" then inherit(self, child) end
-    return child
+    if self.world then self.world:add_entity(self) end
 end
 
 function entity:__mod(component)
@@ -184,11 +152,4 @@ function entity:__pow(assemble_args)
     return self:assemble(unpack(assemble_args))
 end
 
-local entity_creator = {}
-entity_creator.__index = entity_creator
-
-function entity_creator:__call(...)
-    return entity.create(...)
-end
-
-return setmetatable(entity, entity_creator)
+return entity.create

@@ -61,11 +61,7 @@ end
 
 function list:erase(index)
   local ret = list.create(unpack(self))
-  index = index or #ret
-  local val = ret[index]
-  for i = index, #ret do
-    ret[i] = ret[i + 1]
-  end
+  table.remove(ret, index)
   return ret
 end
 
