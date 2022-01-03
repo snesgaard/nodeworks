@@ -20,7 +20,7 @@ end
 require "test.core.stack"
 require "test.core.pool"
 require "test.core.event_queue"
---require "test.ecs.world"
+require "test.ecs.entity"
 --[[
 require "test.ecs.event"
 require "test.system.collision"

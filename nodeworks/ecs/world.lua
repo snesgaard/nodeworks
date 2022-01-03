@@ -1,164 +1,182 @@
+local nw = require "nodeworks"
+
 local world = {}
 world.__index = world
 
-local function create()
-    local this = {
-        _entities = ecs.pool(),
-        _system_stack = list(),
-        _pools = dict(),
-        _queue = list(),
-        _spinning = false
-    }
-    return setmetatable(this, world)
+function world.create()
+    return setmetatable(
+        {
+            entities = nw.ecs.pool(),
+            system_stack = stack(),
+            pools = dict(),
+            changed_entities = list(),
+            event_queue = event_queue()
+        },
+        world
+    )
 end
 
-function world:_pop_queue()
-    local q = self._queue
-    if #q > 0 then self._queue = list() end
-    return q
-end
+local function call_if_exists(f, ...) if f then return f(...) end end
 
-function world:_get_pool(system)
-    local p = self._pools[system]
-    if p then return p end
-
-    local alloc_p = ecs.pool()
-    self._pools[system] = alloc_p
-    return alloc_p
-end
-
-function world:spin()
-    if self._spinning then return end
-
-    self._spinning = true
-
-    local queue = self:_pop_queue()
-
-    while #queue > 0 do
-        world:_handle_action(unpack(queue:head()))
-        -- Add new events first, to make search depth first
-        queue = self:_pop_queue() + queue:body()
-    end
-
-    self._spinning = false
-
+function world:notify_change(entity)
+    table.insert(changed_entities, entity)
     return self
 end
 
-function world:_handle_action(action, ...) return action(...) end
-
------------- ACTIONS -----------------
-
-local function call_if_exists(f, ...)
-    if f then return f(...) end
+function world:entity(tag)
+    return nw.ecs.entity(world, tag)
 end
 
-local function event(self, event, ...)
-    local function pack_args(prev_args, first_arg, ...)
-        if first_arg == nil then return prev_args end
-
-        return {first_arg, ...}
+function world:singleton()
+    if not self.singleton_entity then
+        self.singleton_entity = self:entity("singleton")
     end
 
-    local function invoke(args, system, ...)
-        if List.head(args) == ecs.constants.block then return args end
-
-        if not system then return args end
-
-        local f = system[event]
-        if not f then return invoke(args, ...) end
-
-        local next_args = pack_args(
-            args,
-            f(self, self:_get_pool(system), unpack(args))
-        )
-        return _invoke(next_args, ...)
-    end
-
-
-    local args = {...}
-    for i = #self._system_stack, 1, -1 do
-        args = invoke(args, unpack(self._system_stack[i]))
-    end
+    return self.singleton_entity
 end
 
-local function entity_updated(self, entity)
-    local function handle_system(system, ...)
-        if not system then return end
+function world:resolve_changed_entities()
+    if self.changed_entities:empty() then return end
 
-        local pool = self:_get_pool(system)
-        local should_add = system.__pool_filter(entity)
-        local is_added = pool[entity] ~= nil
-        if should_add == is_added then return end
+    local function handle_change(system, entity, past)
+        local pool = self:get_pool(system)
+        local is_there = pool[entity]
+        local should_be_there = system.entity_filter(entity)
 
-        if should_add then
+        if not is_there and not should_be_there then return end
+
+        if not is_there and should_be_there then
             pool:add(entity)
             call_if_exists(system.on_entity_added, self, entity)
+        elseif is_there and should_be_there then
+            call_if_exists(system.on_entity_changed, self, entity, past)
         else
+            call_if_exists(system.on_entity_removed, self, entity, past)
             pool:remove(entity)
-            call_if_exists(system.on_entity_removed, self, entity)
-        end
-
-        return handle_system(...)
-    end
-
-    for i = #self._system_stack, 1, -1 do
-        handle_system(unpack(self._system_stack[i]))
-    end
-end
-
-local function remove_entity(self, entity)
-    local function handle_system(system, ...)
-        local pool = self:_get_pool(system)
-        if pool:remove(entity) then
-            call_if_exists(system.on_entity_removed, self, entity)
         end
     end
 
-    for i = #self._system_stack, 1, -1 do
-        handle_system(unpack(self._system_stack[i]))
+    local function handle_dead(system, entity, past)
+        local pool = self:get_pool(system)
+        if not pool[entity] then return end
+
+        call_if_exists(system.on_entity_removed, self, entity, past)
+        pool:remove(entity)
     end
 
-    self._entities:remove(entity)
+    local function handle_entity(entity)
+        if not entity:has_changed() then return end
 
-    return self
+        local past = entity:pop_past()
+        if not entity:is_dead() then
+            self.entities:add(entity)
+            system_stack:foreach(List.foreach, handle_change, entity, past)
+        else
+            system_stack:foreach(List.foreach, handle_dead, entity, past)
+            self.entites:remove(entity)
+        end
+    end
+
+    local changed_entities = self.changed_entities
+    self.changed_entities = list()
+
+    return changed_entities:foreach(handle_entity)
 end
 
-local function add_entity(self, entity)
-    self._entities:add(entity)
-    return entity_updated(self, entity)
+local implementation = {}
+
+function implementation.event(self, event_key, ...)
+    local unpack = unpack
+
+    local function pack_args(args, first, ...)
+        if first == nil then return args end
+        return {first, ...}
+    end
+
+    local function handle_system(system, args)
+        local f = system[event_key]
+        if not f then return end
+        -- Make sure pools are up to date before fetching them
+        self:resolve_changed_entities()
+        return pack_args(
+            args,
+            f(self, self:get_pool(system), unpack(args))
+        )
+    end
+
+    local function should_stop(args)
+        return List.head(args) == nw.ecs.constants.block
+    end
+
+    local args = {...}
+    for i = self.system_stack:size(), 1, -1 do
+        local systems = self.system_stack[i] do
+            for _, system in ipairs(systems) do
+                args = handle_system(system, args)
+                if should_stop(args) then return end
+            end
+        end
+    end
 end
 
-local function push(self, systems)
-    -- TODO: CHeck for duplicate systems
-    table.insert(self._system_stack, systems)
-    return self
+function implementation.push(self, systems)
+
+    self:resolve_changed_entities()
+    self.system_stack = self.system_stack:push(systems)
+
+    local function handle_system_and_entity(system, entity)
+        local pool = self:get_pool(system)
+        local is_there = pool[entity]
+        local should_be_there = system.entity_filter(entity)
+        if not (not is_there and should_be_there) then return end
+        pool:add(entity)
+        call_if_exists(system.on_entity_added, self, entity)
+    end
+
+    local function handle_entity(entity)
+        List.foreach(systems, handle_system_and_entity, entity)
+    end
+
+    List.foreach(self.entities, handle_entity)
+
+    List.foreach(
+        sytems,
+        function(system)
+            call_if_exists(system.on_pushed, self, self:pool(system))
+        end
+    )
 end
 
-local function pop(self)
-    table.remove(self._system_stack, #systems)
-    return self
+function implementation.pop(self)
+    local next_stack, systems = self.system_stack:pop()
+    if not systems then return end
+
+    self:resolve_changed_entities()
+    self.system_stack = next_stack
+
+    local function handle_system(system)
+        local pool = self:get_pool(system)
+        self:clear_pool(system)
+        call_if_exists(system.on_poped, self, pool)
+
+        local empty_past = {}
+        for _, entity in ipairs(pool) do
+            call_if_exists(system.on_entity_removed, self, entity, empty_past)
+        end
+    end
+
+    List.foeach(systems, handle_system)
 end
 
-local function move(self, systems)
-    return self:pop():push(systems)
+function implementation.move(self, system)
+    implementation.pop(self)
+    implementation.push(self, systems)
 end
 
-local actions_to_declare = {
-    push=push, pop=pop, move=move, entity_updated=entity_updated,
-    remove_entity=remove_entity, add_entity=add_entity,
-    event=invoke_event
-}
-
-for name, action in pairs(actions_to_declare) do
+for name, func in pairs(implementation) do
     world[name] = function(self, ...)
-        table.insert(self._queue, {action, ...})
-        return self:spin()
+        return self.event_queue(func, self, ...)
     end
 end
 
------------------------------------------
-
-function world:__call(...) return self:event(...) end
-
-return create
+return world.create
