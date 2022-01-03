@@ -119,4 +119,15 @@ function dictionary:__add(...)
     return self:fuse(...)
 end
 
+function dictionary:size()
+    local size = 0
+    for _, _ in pairs(self) do size = size + 1 end
+    return size
+end
+
+function dictionary:empty()
+    for _, _ in pairs(self) do return false end
+    return true
+end
+
 return dictionary

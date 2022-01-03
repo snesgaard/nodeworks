@@ -161,7 +161,7 @@ function list:filter(f, ...)
   local ret = list.create()
   for i = 1, #self do
     local val = self[i]
-    ret[#ret + 1] = f(val, ...) and val or nil
+    if f(val, ...) then table.insert(ret, val) end
   end
   return ret
 end
@@ -299,5 +299,7 @@ function list:print()
     print(self)
     return self
 end
+
+function list:empty() return self:size() == 0 end
 
 return list

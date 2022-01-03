@@ -16,14 +16,14 @@ end
 function stack:pop()
     local next_stack = self:copy()
     table.remove(next_stack)
-    return next_stack
+    return next_stack, self:peek()
 end
 
 function stack:move(value)
     local next_stack = self:copy()
     table.remove(next_stack)
     table.insert(next_stack, value)
-    return next_stack
+    return next_stack, self:peek()
 end
 
 function stack:peek() return self[#self] end
