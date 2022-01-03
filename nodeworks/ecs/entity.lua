@@ -7,6 +7,7 @@ function entity.create(world, tag)
             world = world,
             tag = tag,
             dead = false,
+            changed = false,
             past = dict()
         },
         entity
@@ -22,11 +23,13 @@ end
 
 function entity:set_past(component, value)
     self.past[component] = self.past[component] or value
+    self.changed = true
     return self
 end
 
 function entity:pop_past()
-    if self.past:empty() then return self.past end
+    if not self.changed then return self.past end
+    self.changed = false
     local p = self.past
     self.past = dict()
     return p
@@ -66,7 +69,7 @@ function entity:destroy()
 end
 
 function entity:has_changed()
-    return self.dead or not self.prev_value:empty()
+    return self.dead or self.changed
 end
 
 function entity:assemble(assemblage, ...)
