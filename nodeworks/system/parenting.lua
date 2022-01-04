@@ -17,31 +17,32 @@ end
 
 local system = nw.ecs.system(nw.component.parent)
 
-function system:on_entity_added(entity)
+function system.on_entity_added(world, entity)
     adopt(entity[nw.component.parent], entity)
 end
 
-function system:on_entity_updated(entity, pool, component, prev_parent)
-    if component == nw.component.parent then
-        orphan(prev_parent, entity)
-        adopt(entity[nw.component.parent], entity)
+function system.on_entity_changed(world, entity, prev_state)
+    local prev_parent = prev_state[nw.component.parent]
+    local next_parent = entity[nw.component.parent]
+    if prev_parent then orphan(prev_parent, entity) end
+    if next_parent then adopt(next_parent, entity) end
+end
+
+function system.on_entity_removed(world, entity, prev_state)
+    local parent = entity[nw.component.parent] or prev_state[nw.component.parent]
+    if parent then
+        orphan(parent, entity)
     end
 end
 
-function system:on_entity_removed(entity, pool, component, prev_parent)
-    if component == nw.component.parent then
-        orphan(prev_parent, child)
-    else
-        orphan(entity[nw.component.parent], entity)
-    end
-end
-
+--[[ Refactor with an explicit destruction component
 function system:on_entity_destroyed(entity)
     for _, child in ipairs(entity[children_component] or {}) do
         orphan(entity, child)
         child:destroy()
     end
 end
+]]--
 
 function system.children(entity) return entity[children_component] or list() end
 

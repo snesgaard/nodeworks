@@ -29,5 +29,3 @@ require "test.system.root_motion"
 require "test.system.collision_contact"
 require "test.system.animation"
 require "test.system.parenting"
---[[
-]]
