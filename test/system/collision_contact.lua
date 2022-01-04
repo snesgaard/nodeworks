@@ -1,13 +1,20 @@
 local nw = require "nodeworks"
 local T = nw.third.knife.test
 
+local function monitor() return true end
+
+local monitor_system = nw.ecs.system()
+
+function monitor_system.on_contact_begin(world, pool)
+    world:singleton():set(monitor)
+end
+
 T("collision_contact", function(T)
     local world = nw.ecs.world{
         nw.system.collision,
-        nw.system.collision_contact
+        nw.system.collision_contact,
+        monitor_system
     }
-
-    world.on_event = on_event_test()
 
     local bump_world = nw.third.bump.newWorld()
 
@@ -23,13 +30,15 @@ T("collision_contact", function(T)
         + {nw.component.bump_world, bump_world}
         + {nw.component.body}
 
+    world:resolve_changed_entities()
+
     T("simple_contact", function(T)
         nw.system.collision.move(entity, 0, 100)
-        T:assert(world.on_event:has("on_contact_begin"))
+        T:assert(world:singleton():get(monitor))
     end)
 
     T("simple_contact_none", function(T)
         nw.system.collision.move(entity, 0, 50)
-        T:assert(not world.on_event:has("on_contact_begin"))
+        T:assert(not world:singleton():get(monitor))
     end)
 end)

@@ -26,8 +26,8 @@ require "test.ecs.world"
 require "test.system.motion"
 require "test.system.collision"
 require "test.system.root_motion"
---[[
 require "test.system.collision_contact"
+--[[
 require "test.system.animation"
 require "test.system.parenting"
 ]]

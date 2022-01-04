@@ -39,17 +39,17 @@ local function update_entity(world, entity)
     end
 end
 
-function system:on_collision(collisions)
+function system.on_collision(world, pool, collisions)
     for _, colinfo in ipairs(collisions) do
         local item = colinfo.item
         local other = colinfo.other
-        register_collision(self.world, item, other, colinfo)
-        register_collision(self.world, other, item, colinfo)
+        register_collision(world, item, other, colinfo)
+        register_collision(world, other, item, colinfo)
     end
 end
 
-function system:update(dt)
-    List.foreach(self.pool, function(entity) update_entity(self.world, entity) end)
+function system.update(world, pool, dt)
+    List.foreach(pool, function(entity) update_entity(world, entity) end)
 end
 
 return system
