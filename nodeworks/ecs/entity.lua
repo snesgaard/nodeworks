@@ -47,7 +47,7 @@ end
 
 function entity:set(component, ...)
     local prev_value = self[component]
-    local next_value = evaluate_component(component)
+    local next_value = evaluate_component(component, ...)
     self:set_past(component, prev_value)
     self[component] = next_value
     return self:notify_change()
@@ -75,6 +75,18 @@ end
 function entity:assemble(assemblage, ...)
     assemblage(self, ...)
     return self
+end
+
+function entity:ensure(component, ...)
+    if not self:has(component) then self:set(component, ...) end
+    return self:get(component)
+end
+
+function entity:has(component) return self[component] ~= nil end
+
+function entity:map(component, func, ...)
+    if not self:has(component) then return self end
+    return self:set(component, func(self:get(component), ...))
 end
 
 function entity:__add(args) return self:set(unpack(args)) end

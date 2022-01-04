@@ -5,5 +5,6 @@ return {
   assemblage = require(... .. ".assemblage"),
   system = require(... .. ".system"),
   pool = require(... .. ".pool"),
-  event = require(... .. ".event")
+  event = require(... .. ".event"),
+  constants = require(... .. ".constants")
 }

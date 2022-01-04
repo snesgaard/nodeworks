@@ -52,4 +52,11 @@ function pool:foreach(...)
     return List.foreach(self, ...)
 end
 
+function pool:empty()
+    for _, _ in pairs(self) do return false end
+    return true
+end
+
+function pool:size() return #self end
+
 return pool.create

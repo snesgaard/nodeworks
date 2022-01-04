@@ -25,6 +25,11 @@ T("entity", function(T)
         T:assert(b:get(components.b) == components.b())
     end)
 
+    T("ensure", function(T)
+        T:assert(b:ensure(components.a, 22) == 22)
+        T:assert(b:ensure(components.a, 30) == 22)
+    end)
+
     T("changed", function(T)
         T:assert(a:has_changed())
         local past = a:pop_past()

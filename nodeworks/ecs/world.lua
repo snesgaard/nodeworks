@@ -9,7 +9,7 @@ function world.create()
             entities = nw.ecs.pool(),
             system_stack = stack(),
             pools = dict(),
-            changed_entities = list(),
+            changed_entities = nw.ecs.pool(),
             event_queue = event_queue()
         },
         world
@@ -19,12 +19,12 @@ end
 local function call_if_exists(f, ...) if f then return f(...) end end
 
 function world:notify_change(entity)
-    table.insert(changed_entities, entity)
+    self.changed_entities:add(entity)
     return self
 end
 
 function world:entity(tag)
-    return nw.ecs.entity(world, tag)
+    return nw.ecs.entity(self, tag)
 end
 
 function world:singleton()
@@ -33,6 +33,18 @@ function world:singleton()
     end
 
     return self.singleton_entity
+end
+
+function world:get_pool(system)
+    if not self.pools[system] then
+        self.pools[system] = nw.ecs.pool()
+    end
+    return self.pools[system]
+end
+
+function world:clear_pool(system)
+    self.pools[system] = nil
+    return self
 end
 
 function world:resolve_changed_entities()
@@ -70,15 +82,15 @@ function world:resolve_changed_entities()
         local past = entity:pop_past()
         if not entity:is_dead() then
             self.entities:add(entity)
-            system_stack:foreach(List.foreach, handle_change, entity, past)
+            self.system_stack:foreach(List.foreach, handle_change, entity, past)
         else
-            system_stack:foreach(List.foreach, handle_dead, entity, past)
+            self.system_stack:foreach(List.foreach, handle_dead, entity, past)
             self.entites:remove(entity)
         end
     end
 
     local changed_entities = self.changed_entities
-    self.changed_entities = list()
+    self.changed_entities = nw.ecs.pool()
 
     return changed_entities:foreach(handle_entity)
 end
@@ -95,7 +107,7 @@ function implementation.event(self, event_key, ...)
 
     local function handle_system(system, args)
         local f = system[event_key]
-        if not f then return end
+        if not f then return args end
         -- Make sure pools are up to date before fetching them
         self:resolve_changed_entities()
         return pack_args(
@@ -140,9 +152,9 @@ function implementation.push(self, systems)
     List.foreach(self.entities, handle_entity)
 
     List.foreach(
-        sytems,
+        systems,
         function(system)
-            call_if_exists(system.on_pushed, self, self:pool(system))
+            call_if_exists(system.on_pushed, self, self:get_pool(system))
         end
     )
 end
@@ -165,7 +177,7 @@ function implementation.pop(self)
         end
     end
 
-    List.foeach(systems, handle_system)
+    List.foreach(systems, handle_system)
 end
 
 function implementation.move(self, system)
@@ -178,5 +190,7 @@ for name, func in pairs(implementation) do
         return self.event_queue(func, self, ...)
     end
 end
+
+function world:__call(...) return self:event(...) end
 
 return world.create
