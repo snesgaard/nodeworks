@@ -121,12 +121,12 @@ local animation_system =  nw.ecs.system(
     nw.component.sprite
 )
 
-function animation_system:update(dt)
-    for _, entity in ipairs(self.pool) do
+function animation_system.update(world, pool, dt)
+    for _, entity in ipairs(pool) do
         local prev_frame, next_frame = update_animation(entity, dt)
         update_sprite(entity)
         broadcast_event(
-            self.world, entity, prev_frame, next_frame,
+            world, entity, prev_frame, next_frame,
             entity[nw.component.animation_state][nw.component.animation_args].id
         )
     end

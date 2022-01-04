@@ -8,7 +8,9 @@ T("Animation", function(T)
         + {nw.component.sprite}
         + {nw.component.animation_state}
 
+    world:resolve_changed_entities()
+
     T("System members", function(T)
-        T:assert(#world:context(nw.system.animation).pool == 1)
+        T:assert(#world:get_pool(nw.system.animation) == 1)
     end)
 end)
