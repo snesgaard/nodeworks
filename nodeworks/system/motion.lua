@@ -12,7 +12,7 @@ local function update_entity(entity, dt)
     local d = entity[nw.component.drag] or 0
 
     v = v + (g - v * d) * dt
-    entity:update(nw.component.velocity, v:unpack())
+    entity:set(nw.component.velocity, v:unpack())
 
     if v.x ~= 0 or v.y ~= 0 then
         p = p + v * dt
@@ -20,11 +20,11 @@ local function update_entity(entity, dt)
     end
 end
 
-function system:update(dt)
-    List.foreach(self.pool, update_entity, dt)
+function system.update(world, pool, dt)
+    List.foreach(pool, update_entity, dt)
 end
 
-function system:on_collision(collision_info)
+function system.on_collision(world, pool, collision_info)
 
     List.foreach(collision_info, function(info)
         if not self.pool[info.item] then return end
@@ -44,7 +44,7 @@ function system:on_collision(collision_info)
             vx = math.max(0, vx)
         end
 
-        info.item:update(nw.component.velocity, vx, vy)
+        info.item:set(nw.component.velocity, vx, vy)
     end)
 end
 

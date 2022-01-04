@@ -2,15 +2,17 @@ local nw = require "nodeworks"
 local T = nw.third.knife.test
 
 T("motion", function(T)
-    local world = nw.ecs.world{nw.system.motion}
+    local world = nw.ecs.world()
 
     local entity = nw.ecs.entity(world)
         + {nw.component.position, 0, 0}
         + {nw.component.velocity, 100, 0}
         + {nw.component.gravity, 10, 0}
 
+    world:push{nw.system.motion}
+
     T("system members", function(T)
-        T:assert(#world:context(nw.system.motion).pool == 1)
+        T:assert(#world:get_pool(nw.system.motion) == 1)
     end)
 
     local p = entity % nw.component.position
