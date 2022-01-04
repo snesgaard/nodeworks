@@ -25,6 +25,12 @@ function world:notify_change(entity)
     return self
 end
 
+function world:load_entities(func, ...)
+    local entities = func(self, ...)
+    self.event_queue(self.resolve_changed_entities, self)
+    return entities
+end
+
 function world:entity(tag)
     return nw.ecs.entity(self, tag)
 end
