@@ -3,8 +3,8 @@ local nw = require "nodeworks"
 local world = {}
 world.__index = world
 
-function world.create()
-    return setmetatable(
+function world.create(systems)
+    local w = setmetatable(
         {
             entities = nw.ecs.pool(),
             system_stack = stack(),
@@ -14,6 +14,8 @@ function world.create()
         },
         world
     )
+    if systems then w:push(systems) end
+    return w
 end
 
 local function call_if_exists(f, ...) if f then return f(...) end end
