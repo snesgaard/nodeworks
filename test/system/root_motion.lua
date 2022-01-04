@@ -8,8 +8,10 @@ T("root_motion", function(T)
         + {nw.component.root_motion}
         + {nw.component.position, 0, 0}
 
+    world:resolve_changed_entities()
+
     T("system members", function(T)
-        local pool = world:context(nw.system.root_motion).pool
+        local pool = world:get_pool(nw.system.root_motion)
         T:assert(#pool == 1)
     end)
 
