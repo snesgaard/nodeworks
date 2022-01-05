@@ -15,8 +15,10 @@ T("parenting", function(T)
     local grand_child = nw.ecs.entity(world)
         + {nw.component.parent, child}
 
+    world:resolve_changed_entities()
+
     T("system members", function(T)
-        local pool = world:context(nw.system.parenting).pool
+        local pool = world:get_pool(nw.system.parenting)
         T:assert(#pool == 3)
     end)
 

@@ -61,11 +61,7 @@ end
 
 function list:erase(index)
   local ret = list.create(unpack(self))
-  index = index or #ret
-  local val = ret[index]
-  for i = index, #ret do
-    ret[i] = ret[i + 1]
-  end
+  table.remove(ret, index)
   return ret
 end
 
@@ -165,7 +161,7 @@ function list:filter(f, ...)
   local ret = list.create()
   for i = 1, #self do
     local val = self[i]
-    ret[#ret + 1] = f(val, ...) and val or nil
+    if f(val, ...) then table.insert(ret, val) end
   end
   return ret
 end
@@ -303,5 +299,7 @@ function list:print()
     print(self)
     return self
 end
+
+function list:empty() return self:size() == 0 end
 
 return list

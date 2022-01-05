@@ -4,8 +4,8 @@ local root_motion_system = nw.ecs.system(
     nw.component.root_motion, nw.component.position
 )
 
-function root_motion_system:on_next_frame(entity, prev_frame, next_frame)
-    if not self.pool[entity] then return end
+function root_motion_system.on_next_frame(world, pool, entity, prev_frame, next_frame)
+    if not pool[entity] then return end
 
     local next_body = next_frame.slices.body
     local prev_body = prev_frame.slices.body

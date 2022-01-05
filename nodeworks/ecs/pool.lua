@@ -17,8 +17,8 @@ end
 function pool:add(entity)
     if self[entity] then return false end
 
-    local index = #self + 1
-    self[index] = entity
+    table.insert(self, entity)
+    local index = #self
     self[entity] = index
 
     return true
@@ -43,15 +43,20 @@ function pool:remove(entity)
     if not index then return false end
 
     self[entity] = nil
-    local size = #self
-
-    for i = index, size do
-        local e = self[i + 1]
-        if e then self[e] = i end
-        self[i] = e
-    end
+    table.remove(self, index)
 
     return true
 end
+
+function pool:foreach(...)
+    return List.foreach(self, ...)
+end
+
+function pool:empty()
+    for _, _ in pairs(self) do return false end
+    return true
+end
+
+function pool:size() return #self end
 
 return pool.create

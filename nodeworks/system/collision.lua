@@ -1,6 +1,8 @@
 local nw = require "nodeworks"
 
-local system = nw.ecs.system(nw.component.hitbox, nw.component.bump_world, nw.component.position)
+local system = nw.ecs.system(
+    nw.component.hitbox, nw.component.bump_world, nw.component.position
+)
 
 local function cross_filter() return "cross" end
 
@@ -80,7 +82,7 @@ end
 
 system.get_world_hitbox = world_hitbox
 
-function system:on_entity_added(entity)
+function system.on_entity_added(world, entity)
     local hb = entity % nw.component.hitbox
     local bump_world = entity % nw.component.bump_world
     local world_hb = world_hitbox(entity)
@@ -89,8 +91,8 @@ function system:on_entity_added(entity)
     move(entity, 0, 0, cross_filter)
 end
 
-function system:on_entity_removed(entity, pool, component, prev_value)
-    local bump_world = component == nw.component.bump_world and prev_value or (entity % nw.component.bump_world)
+function system.on_entity_removed(world, entity, past_values)
+    local bump_world = (entity % nw.component.bump_world) or past_values[nw.component.bump_world]
     if bump_world:hasItem(entity) then bump_world:remove(entity) end
 end
 

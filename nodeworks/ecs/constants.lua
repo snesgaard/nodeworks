@@ -1,0 +1,5 @@
+return {
+    block = {},
+    stop = {},
+    interrupt = {},
+}

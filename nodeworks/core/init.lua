@@ -10,9 +10,12 @@ Dictionary = require(BASE ..  ".dictionary")
 Frame = require(BASE .. ".frame")
 require(BASE .. ".functional")
 List = require(BASE .. ".list")
+Pool = require(BASE .. ".pool")
+Stack = require(BASE .. ".stack")
 Mat3 = require(BASE .. ".mat3")
 Spatial = require(BASE .. ".spatial")
 Transform = require(BASE .. ".transform")
+EventQueue = require(BASE .. ".event_queue")
 vec2 = require(BASE .. ".vec2")
 particles = require(BASE .. ".particles")
 ease = require(BASE .. ".ease")
@@ -30,7 +33,10 @@ function clear_atlas(path)
     atlas_cache[path] = nil
 end
 
+event_queue = EventQueue.create
 color = Color.create
+stack = Stack.create
+pool = Pool.create
 dict = Dictionary.create
 list = List.create
 mat3 = Mat3.create

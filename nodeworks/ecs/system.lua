@@ -5,14 +5,18 @@ function system.from_components(...)
     local components = {...}
 
     local function f(entity)
-        return {pool = entity:has(unpack(components))}
+        for _, c in ipairs(components) do
+            if not entity:has(c) then return false end
+        end
+
+        return true
     end
 
     return system.from_function(f)
 end
 
 function system.from_function(func)
-    return {__pool_filter=func}
+    return {entity_filter=func}
 end
 
 function system:__call(...)
