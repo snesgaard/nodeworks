@@ -91,7 +91,6 @@ end
 
 system["input_released"] = function(world, pool, input)
     for _, entity in ipairs(pool) do
-        print(entity)
         local buffer = entity % nw.component.input_buffer
         add_to_buffer(buffer, input, "released")
         world("input_buffer_update", entity, input, "released")
@@ -101,10 +100,13 @@ end
 system["update"] = function(world, pool, dt)
     for _, entity in ipairs(pool) do
         local buffer = entity % nw.component.input_buffer
-        print(dict(buffer))
         update_buffer(buffer, dt)
         pop(entity, system.MAX_AGE)
     end
+end
+
+system["on_pushed"] = function(world, pool)
+    world:singleton():ensure(nw.component.input_buffer)
 end
 
 ----

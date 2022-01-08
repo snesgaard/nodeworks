@@ -12,7 +12,8 @@ T("input_buffer", function(T)
 
     T("members", function(T)
         local pool = world:get_pool(input_buffer)
-        T:assert(#pool == 1)
+        -- Two single an input buffer is also pushed to the world singleton
+        T:assert(#pool == 2)
     end)
 
     T("input_released", function(T)
