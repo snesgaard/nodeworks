@@ -14,6 +14,14 @@ function entity.create(world, tag)
     )
 end
 
+function entity:__tostring()
+    if self.tag then
+        return string.format("entity[%s]", self.tag)
+    else
+        return "entity"
+    end
+end
+
 function entity:is_dead() return self.dead end
 
 function entity:notify_change()

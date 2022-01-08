@@ -219,4 +219,6 @@ components.action = action
 
 function components.root_motion() return true end
 
+function components.input_buffer() return {} end
+
 return components
