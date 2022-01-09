@@ -41,7 +41,7 @@ local function evaluate_component(component, ...)
     elseif type(component) == "table" then
         return component.create(...)
     else
-        errorf("Unsupported type %s", str(type(component)))
+        errorf("Unsupported type %s", tostring(type(component)))
     end
 end
 
@@ -54,6 +54,8 @@ function entity:set(component, ...)
 end
 
 function entity:get(component) return self[component] end
+
+function entity:check(component) return self[component] or component() end
 
 function entity:remove(component)
     local prev_value = self[component]

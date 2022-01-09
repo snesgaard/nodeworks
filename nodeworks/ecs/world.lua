@@ -62,16 +62,17 @@ function world:resolve_changed_entities()
         local pool = self:get_pool(system)
         local is_there = pool[entity]
         local should_be_there = system.entity_filter(entity)
+        print(is_there, should_be_there)
 
         if not is_there and not should_be_there then return end
 
         if not is_there and should_be_there then
             pool:add(entity)
-            call_if_exists(system.on_entity_added, self, entity)
+            call_if_exists(system.on_entity_added, self, entity, pool)
         elseif is_there and should_be_there then
-            call_if_exists(system.on_entity_changed, self, entity, past)
+            call_if_exists(system.on_entity_changed, self, entity, past, pool)
         else
-            call_if_exists(system.on_entity_removed, self, entity, past)
+            call_if_exists(system.on_entity_removed, self, entity, past, pool)
             pool:remove(entity)
         end
     end
