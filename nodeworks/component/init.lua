@@ -269,4 +269,6 @@ function components.priority(priority) return priority or 0 end
 
 ----------------------
 
+function components.input_buffer() return {} end
+
 return components
