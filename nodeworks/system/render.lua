@@ -91,7 +91,6 @@ local function push_transforms(entity)
 end
 
 local function push_state(entity)
-    push_transforms(entity)
     set_color(entity)
     set_shader(entity)
     set_blend_mode(entity)
