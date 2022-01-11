@@ -11,6 +11,8 @@ function layer_system.on_entity_changed(world, entity, past_data)
     local prev_layer = past_data[nw.component.layer]
     local next_layer = entity[nw.component.layer]
 
+    if not prev_layer then return end
+
     prev_layer:ensure(nw.component.layer):remove(entity)
     next_layer:ensure(nw.component.layer):add(entity)
 end

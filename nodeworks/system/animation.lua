@@ -9,8 +9,8 @@ end
 
 local function set_frame(entity, frame_index)
     local frame = get_frame(entity, frame_index)
-    entity[nw.component.animation_state]:update(nw.component.index, frame_index)
-    entity[nw.component.animation_state]:update(nw.component.timer, frame.dt)
+    entity[nw.component.animation_state]:set(nw.component.index, frame_index)
+    entity[nw.component.animation_state]:set(nw.component.timer, frame.dt)
 end
 
 local function get_current_frame(entity)
@@ -35,7 +35,7 @@ local function update_animation(entity, dt)
     if not should_be_updated(entity) then return end
     if not state[nw.component.timer]:update(dt) then return end
     local prev_frame = get_current_frame(entity)
-    state:update(nw.component.index, state[nw.component.index] + 1)
+    state:set(nw.component.index, state[nw.component.index] + 1)
 
     if state[nw.component.index] > #state[nw.component.frame_sequence] then
         if state[nw.component.animation_args].once then
@@ -43,24 +43,24 @@ local function update_animation(entity, dt)
             return prev_frame
         end
 
-        state:update(nw.component.index, 1)
+        state:set(nw.component.index, 1)
     end
 
     local frame = get_current_frame(entity)
-    state:update(nw.component.timer, frame.dt)
+    state:set(nw.component.timer, frame.dt)
     return prev_frame, frame
 end
 
 local function update_sprite(entity)
-    local sprite = entity[nw.component.sprite]
     local frame = get_current_frame(entity)
 
     if not frame then return end
 
-    sprite:update(nw.component.image, frame.image, frame.quad)
-    sprite[nw.component.draw_args].ox = -frame.offset.x
-    sprite[nw.component.draw_args].oy = -frame.offset.y
-    sprite:update(nw.component.slices, frame.slices)
+    entity
+        :set(nw.component.image, frame.image)
+        :set(nw.component.quad, frame.quad)
+        :set(nw.component.origin, -frame.offset)
+        :set(nw.component.slices, frame.slices)
 end
 
 local function format_event_begin(event)
@@ -116,10 +116,7 @@ local function handle_event(world, entity, event_key, ...)
 end
 
 --- System Logic ---
-local animation_system =  nw.ecs.system(
-    nw.component.animation_state,
-    nw.component.sprite
-)
+local animation_system =  nw.ecs.system(nw.component.animation_state)
 
 function animation_system.update(world, pool, dt)
     for _, entity in ipairs(pool) do
@@ -150,8 +147,8 @@ function animation_system.play(entity, id, args)
 
     if sequence == state[nw.component.frame_sequence] and not args.interrupt then return prev_frame end
 
-    state:update(nw.component.frame_sequence, sequence)
-    state:update(nw.component.animation_args, true, args.once, args.mode, id)
+    state:set(nw.component.frame_sequence, sequence)
+    state:set(nw.component.animation_args, true, args.once, args.mode, id)
     set_frame(entity, 1)
     update_sprite(entity)
 
@@ -180,65 +177,7 @@ function animation_system.stop(entity)
     set_frame(entity, 1)
 end
 
-local function get_slice(entity, slice_name, body_slice, animation_tag, frame)
-    local frame = frame or 1
-    local map = entity[nw.component.animation_map]
-    if not map then return end
-    local frames = map[animation_tag]
-    if not frames then return end
-    local frame = frames[frame]
-    if not frame then return end
-    local slice = frame.slices[slice_name] or spatial()
-    local body = frame.slices[body_slice] or spatial()
-    if not body then return slice end
-
-    return slice:relative(body)
-end
-
-local function get_draw_args(entity)
-    local sprite = entity[nw.component.sprite]
-    if not sprite then return nw.component.draw_args() end
-    return sprite[nw.component.draw_args]
-end
-
-local function transform_slice(slice, position, sx, sy, mirror)
-    sx = sx or 1
-    sy = sy or sx
-    if mirror then sx = -sx end
-
-    local x, y = position:unpack()
-    return slice:scale(sx, sy):sanitize():move(x, y)
-end
-
-function animation_system.transform_slice(entity, slice)
-    if not slice or not entity then return end
-    local draw_args = get_draw_args(entity)
-    return transform_slice(
-        slice,
-        entity[nw.component.position] or nw.component.position(),
-        draw_args.sx, draw_args.sy,
-        entity[nw.component.mirror]
-    )
-end
-
-function animation_system.get_slice(entity, slice_name, body_slice, animation_tag, frame)
-    local base_slice = get_slice(entity, slice_name, body_slice, animation_tag, frame) or spatial()
-    local draw_args = get_draw_args(entity)
-    return transform_slice(
-        base_slice,
-        entity[nw.component.position] or nw.component.position(),
-        draw_args.sx, draw_args.sy,
-        entity[nw.component.mirror]
-    )
-end
-
-function animation_system.get_base_slice(entity, slice_name, body_slice, animation_tag, frame)
-    local base_slice = get_slice(entity, slice_name, body_slice, animation_tag, frame) or spatial()
-    local draw_args = get_draw_args(entity)
-    return transform_slice(base_slice, vec2(), draw_args.sx, draw_args.sy, entity[nw.component.mirror])
-end
-
-function is_paused(entity)
+function animation_system.is_paused(entity)
     return not entity
         [nw.component.animation_state]
         [nw.component.animation_args]

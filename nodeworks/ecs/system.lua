@@ -3,7 +3,6 @@ system.__index = system
 
 function system.from_components(...)
     local components = {...}
-
     local function f(entity)
         for _, c in ipairs(components) do
             if not entity:has(c) then return false end

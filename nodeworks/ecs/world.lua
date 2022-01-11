@@ -62,7 +62,6 @@ function world:resolve_changed_entities()
         local pool = self:get_pool(system)
         local is_there = pool[entity]
         local should_be_there = system.entity_filter(entity)
-        print(is_there, should_be_there)
 
         if not is_there and not should_be_there then return end
 
@@ -87,7 +86,6 @@ function world:resolve_changed_entities()
 
     local function handle_entity(entity)
         if not entity:has_changed() then return end
-
         local past = entity:pop_past()
         if not entity:is_dead() then
             self.entities:add(entity)

@@ -7,9 +7,7 @@ local function render_context(w, h)
     return {canvas = gfx.newCanvas(w, h)}
 end
 
-local render_system = nw.ecs.system(
-    nw.component.layer_pool, nw.component.layer_type, nw.component.priority
-)
+local render_system = nw.ecs.system(nw.component.layer_type)
 
 function render_system.on_pushed(world, pool)
     world:singleton():set(render_context)
@@ -24,10 +22,6 @@ function render_system.on_resize(world, pool, width, height)
 end
 
 function render_system.on_entity_added(world, entity, pool)
-    local function cmp_layer_for_sort(a, b)
-        return (a % nw.component.priority) < (b % nw.component.priority)
-    end
-    pool:sort(cmp_layer_for_sort)
 end
 
 local function read_position(entity)
@@ -44,6 +38,15 @@ end
 
 local function read_rotation(entity)
     return (entity % nw.component.rotation) or 0
+end
+
+local function read_body_slice(entity)
+    local body_slice_name = entity % nw.component.body_slice
+    local slices = entity % nw.component.slices
+    if not body_slice_name or not slices then return 0, 0 end
+    local b = slices[body_slice_name]
+    if not b then return 0, 0 end
+    return b.x + b.w * 0.5, b.y + b.h
 end
 
 local function read_origin(entity)
@@ -73,7 +76,7 @@ end
 
 local function set_color(entity)
     local color = entity % nw.component.color
-    if color then gfx.setColor(color) end
+    if color then gfx.setColor(color[1], color[2], color[3], color[4]) end
 end
 
 local function set_blend_mode(entity)
@@ -99,8 +102,9 @@ local function draw_args(entity)
     local sx, sy = read_scale(entity)
     local r = read_rotation(entity)
     local ox, oy = read_origin(entity)
+    local bx, by = read_body_slice(entity)
 
-    return x, y, r, sx, sy, ox, oy
+    return x, y, r, sx, sy, ox + bx, oy + by
 end
 
 local drawers = {}
@@ -114,7 +118,7 @@ function drawers.image(entity)
     local quad = (entity % nw.component.quad)
 
     gfx.push("all")
-    set_shader(entity)
+    push_state(entity)
     if quad then
         gfx.draw(image, quad, draw_args(entity))
     else
@@ -176,32 +180,41 @@ end
 
 local layer_drawers = {}
 
-function layer_drawers.objectgroup(entity)
-    local drawable = entity % nw.component.drawable
-    if not drawable then return end
-    local f = drawers[drawable]
-    if not f then return end
-    f(entitiy)
+function layer_drawers.entitygroup(layer)
+    local pool = layer:ensure(nw.component.layer_pool)
+
+    List.foreach(pool, function(entity)
+        local drawable = entity % nw.component.drawable
+        if not drawable then return end
+        if entity % nw.component.hidden then return end
+        local f = drawers[drawable]
+        if not f then return end
+        f(entity)
+    end)
+end
+
+function layer_drawers.fill(layer)
+    gfx.clear(1, 1, 1)
 end
 
 
 function render_system.draw(world, pool)
-    local canvas = world:singleton() % render_context
+    local context = world:singleton() % render_context
 
     List.foreach(pool, function(layer)
         local type = layer % nw.component.layer_type
         local f = layer_drawers[type]
-        if f then return end
+        if not f then return end
 
         gfx.push("all")
-        gfx.setCanvas(canvas)
+        gfx.setCanvas(context.canvas)
         gfx.clear(layer % nw.component.clear_color)
         f(layer)
         gfx.pop()
 
         gfx.push("all")
         push_state(layer)
-        gfx.draw(layer, draw_args(entity))
+        gfx.draw(context.canvas, draw_args(layer))
         gfx.pop()
     end)
 end
