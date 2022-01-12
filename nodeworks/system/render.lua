@@ -149,7 +149,8 @@ function drawers.circle(entity)
     gfx.push("all")
     push_state(entity)
     push_transforms(entity)
-    gfx.circle(draw_mode, circle, 0, 0, radius, segments)
+    local ox, oy = read_origin(entity)
+    gfx.circle(draw_mode, ox, oy, radius, segments)
     gfx.pop()
 end
 
