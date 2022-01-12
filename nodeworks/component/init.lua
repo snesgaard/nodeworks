@@ -114,6 +114,18 @@ function components.position(x, y)
     return vec2(x, y)
 end
 
+function components.scale(sx, sy)
+    if type(sx) == "table" then sx, sy = sx:unpack() end
+    return vec2(sx, sy)
+end
+
+function components.rotation(r) return r end
+
+function components.origin(ox, oy)
+    if type(ox) == "table" then ox, oy = ox:unpack() end
+    return vec2(ox, oy)
+end
+
 function components.velocity(x, y) return vec2(x, y) end
 
 function components.gravity(x, y) return vec2(x, y) end
@@ -218,6 +230,44 @@ function action:args() return unpack(self._args) end
 components.action = action
 
 function components.root_motion() return true end
+
+-- GRAPHICS COMPONENTS --
+
+function components.layer(layer) return layer end
+
+function components.layer_pool() return nw.ecs.pool() end
+
+function components.layer_type(type) return type end
+
+function components.drawable(type) return type end
+
+function components.polygon(poly) return poly end
+
+function components.draw_mode(mode) return mode end
+
+function components.mesh(mesh) return mesh end
+
+function components.radius(r)  return r end
+
+function components.segments(s) return s end
+
+function components.rectangle(shape) return shape end
+
+function components.quad(quad) return quad end
+
+function components.image(image) return image end
+
+function components.blend_mode(blend_mode) return blend_mode end
+
+function components.color(r, g, b, a) return  {r, g, b, a} end
+
+function components.shader(shader) return shader end
+
+function components.shader_uniforms(uniforms) return uniforms end
+
+function components.priority(priority) return priority or 0 end
+
+----------------------
 
 function components.input_buffer() return {} end
 

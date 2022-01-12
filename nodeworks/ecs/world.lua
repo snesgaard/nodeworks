@@ -67,11 +67,11 @@ function world:resolve_changed_entities()
 
         if not is_there and should_be_there then
             pool:add(entity)
-            call_if_exists(system.on_entity_added, self, entity)
+            call_if_exists(system.on_entity_added, self, entity, pool)
         elseif is_there and should_be_there then
-            call_if_exists(system.on_entity_changed, self, entity, past)
+            call_if_exists(system.on_entity_changed, self, entity, past, pool)
         else
-            call_if_exists(system.on_entity_removed, self, entity, past)
+            call_if_exists(system.on_entity_removed, self, entity, past, pool)
             pool:remove(entity)
         end
     end
@@ -86,7 +86,6 @@ function world:resolve_changed_entities()
 
     local function handle_entity(entity)
         if not entity:has_changed() then return end
-
         local past = entity:pop_past()
         if not entity:is_dead() then
             self.entities:add(entity)
