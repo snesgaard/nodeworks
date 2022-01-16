@@ -1,0 +1,21 @@
+T("graph", function(T)
+    local g = nw.nodegui.graph()
+
+    g:link("foo", "bar")
+    g:link("bar", "baz")
+    g:link("foo", "binge")
+
+    T("test_parents", function(T)
+        T:assert(g:parent("bar") == "foo")
+        T:assert(g:parent("baz") == "bar")
+        T:assert(g:parent("binge") == "foo")
+        T:assert(g:parent("foo") == nil)
+    end)
+
+    T("test_children", function(T)
+        T:assert(#g:children("foo") == 2)
+        T:assert(#g:children("bar") == 1)
+        T:assert(g:children("baz") == nil)
+        T:assert(g:children("binge") == nil)
+    end)
+end)
