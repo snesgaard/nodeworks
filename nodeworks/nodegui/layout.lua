@@ -71,12 +71,29 @@ function layout:down(w, h)
     return self:size(w, h)
 end
 
-function layout:set(shape) self.shape = shape end
+function layout:set_shape(shape) self.shape = shape end
+
+function layout:set(x, y, w, h)
+    self.shape.x = x
+    self.shape.y = y
+    self.shape.w = w
+    self.shape.h = h
+    return self
+end
 
 function layout:get()
-    return clone_shape(self.shape)
+    return spatial(self.shape.x, self.shape.y, self.shape.w, self.shape.h)
 end
 
 function layout:peek() return self.shape end
+
+function layout:expand(margin_x, margin_y)
+    margin_y = margin_y or margin_x
+    self.shape.x = self.shape.x - margin_x / 2
+    self.shape.y = self.shape.y - margin_y / 2
+    self.shape.w = self.shape.w + margin_x
+    self.shape.h = self.shape.h + margin_y
+    return self
+end
 
 return layout.create

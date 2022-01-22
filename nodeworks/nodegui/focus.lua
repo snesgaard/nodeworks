@@ -24,10 +24,18 @@ end
 
 function focus:push(id) table.insert(self, id) end
 
+function focus:request(pusher_id, id)
+    if self:peek() ~= pusher_id then return end
+
+    return self:push(id)
+end
+
 function focus:pop()
     local id = self:peek()
     table.remove(self)
     return id
 end
+
+function focus:empty() return self:size() == 0 end
 
 return focus.create

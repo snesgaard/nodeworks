@@ -183,18 +183,20 @@ local layer_drawers = {}
 function layer_drawers.entitygroup(layer)
     local pool = layer:ensure(nw.component.layer_pool)
 
-    List.foreach(pool, function(entity)
-        local drawable = entity % nw.component.drawable
-        if not drawable then return end
-        if entity % nw.component.hidden then return end
-        local f = drawers[drawable]
-        if not f then return end
-        f(entity)
-    end)
+    List.foreach(pool, render_system.draw_entity)
 end
 
 function layer_drawers.fill(layer)
     gfx.clear(1, 1, 1)
+end
+
+function render_system.draw_entity(entity)
+    local drawable = entity % nw.component.drawable
+    if not drawable then return end
+    if entity % nw.component.hidden then return end
+    local f = drawers[drawable]
+    if not f then return end
+    f(entity)
 end
 
 
