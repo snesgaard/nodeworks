@@ -76,7 +76,9 @@ end
 
 local function set_color(entity)
     local color = entity % nw.component.color
-    if color then gfx.setColor(color[1], color[2], color[3], color[4]) end
+    if color then
+        gfx.setColor(color[1], color[2], color[3], color[4])
+    end
 end
 
 local function set_blend_mode(entity)
@@ -178,6 +180,38 @@ function drawers.polygon(entity)
     gfx.pop()
 end
 
+local function compute_vertical_offset(valign, font, h)
+    if valign == "top" then
+		return 0
+	elseif valign == "bottom" then
+		return h - font:getHeight()
+    else
+        return (h - font:getHeight()) / 2
+	end
+end
+
+local function get_vertical_offset(entity, shape)
+    local valign = entity % nw.component.valign
+
+    return compute_vertical_offset(valign, gfx.getFont(), shape.h)
+end
+
+function drawers.text(entity)
+    local text = entity % nw.component.text
+    local shape = entity % nw.component.rectangle
+
+    if not text or not shape then return end
+
+    local align = entity % nw.component.align
+
+    gfx.push("all")
+    push_state(entity)
+    push_transforms(entity)
+    local dy = get_vertical_offset(entity, shape)
+    gfx.printf(text, shape.x, shape.y + dy, shape.w, align)
+    gfx.pop()
+end
+
 local layer_drawers = {}
 
 function layer_drawers.entitygroup(layer)
@@ -208,11 +242,17 @@ function render_system.draw(world, pool)
 
         gfx.push("all")
         gfx.setCanvas(context.canvas)
-        gfx.clear(layer % nw.component.clear_color)
+        local clear_color = layer % nw.component.clear_color
+        if clear_color then
+            gfx.clear(clear_color[1], clear_color[2], clear_color[3], clear_color[4])
+        else
+            gfx.clear(0, 0, 0, 0)
+        end
         f(layer)
         gfx.pop()
 
         gfx.push("all")
+        gfx.setColor(1, 1, 1)
         push_state(layer)
         gfx.draw(context.canvas, draw_args(layer))
         gfx.pop()

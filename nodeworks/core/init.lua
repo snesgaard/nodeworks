@@ -6,6 +6,7 @@ gfx = love.graphics
 require(BASE .. ".functional")
 Atlas = require(BASE .. ".atlas")
 Color = require(BASE .. ".color")
+HSV = require(BASE .. ".hsv")
 Dictionary = require(BASE ..  ".dictionary")
 Frame = require(BASE .. ".frame")
 require(BASE .. ".functional")
@@ -43,6 +44,7 @@ mat3 = Mat3.create
 spatial = Spatial.create
 transform = Transform.create
 atlas = Atlas.create
+hsv = HSV
 
 function reload(p)
     package.loaded[p] = nil
