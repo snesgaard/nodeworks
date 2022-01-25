@@ -8,7 +8,7 @@ function love.load()
     menu_items = {"foo", "bar", "baz"}
 
     menu_entity2 = world:entity()
-        :set(nw.component.position, 200, 100)
+        :set(nw.component.position, 150, 100)
 
     local base_color = hsv.from_rgb(0.8, 0.4, 0.2)
     style = {}
