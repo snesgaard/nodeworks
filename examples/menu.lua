@@ -3,8 +3,7 @@ local nw = require "nodeworks"
 function love.load()
     world = nw.ecs.world{
         nw.system.input_buffer,
-        nw.system.render,
-        nw.system.delegate
+        nw.system.render
     }
 
     menu_entity = world:entity()
@@ -12,7 +11,7 @@ function love.load()
     menu_items = {"foo", "bar", "baz"}
 
     menu_entity2 = world:entity()
-        :set(nw.component.position, 100, 100)
+        :set(nw.component.position, 200, 100)
     menu_items2 = {"dead", "beef", "yup"}
 
     local base_color = hsv.from_rgb(0.8, 0.4, 0.2)
@@ -20,10 +19,14 @@ function love.load()
 
 end
 
-function love.update(dt)
-    if nw.ui.menu(menu_entity, menu_items, style) then
-        nw.ui.menu(menu_entity2, menu_items2, style)
+local function item_callback(item)
+    if item == "foo" then
+        return nw.ui.menu(menu_entity2, menu_items2)
     end
+end
+
+function love.update(dt)
+    local action, target = nw.ui.menu(menu_entity, menu_items, item_callback)
 
     world("update", dt)
 end

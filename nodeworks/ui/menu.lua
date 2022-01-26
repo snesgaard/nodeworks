@@ -122,14 +122,21 @@ local function update_state(menu, items)
     end
 end
 
-return function(menu, items, style)
-    --local state = update_state(menu, items)
-    nw.ui.register_input_handler(menu.world, update_state, menu, items)
-    local state = menu:ensure(menu_state_component)
+local function handle_return(menu, items, ...)
+    update_state(menu, items)
+    return ...
+end
+
+return function(menu, items, cb, style)
     local layout = build_layout(menu, items, style)
     render_layout(menu, items, layout, style)
 
-    if state.select and state.index then
-        return items[state.index]
+    local state = menu:ensure(menu_state_component)
+
+    if state.select and state.index and type(cb) == "function" then
+        local item = items[state.index]
+        return handle_return(menu, items, cb(item))
     end
+
+    return handle_return(menu, items)
 end
