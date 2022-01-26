@@ -225,6 +225,10 @@ function layer_drawers.entitygroup(layer)
         if not f then return end
         f(entity)
     end)
+
+    if layer[nw.component.flush_on_draw] then
+        layer:set(nw.component.layer_pool)
+    end
 end
 
 function layer_drawers.fill(layer)

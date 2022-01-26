@@ -278,8 +278,16 @@ function components.align(align) return align end
 
 function components.valign(valign) return valign end
 
+function components.flush_on_draw(do_it)
+    return do_it or do_it == nil
+end
+
 ----------------------
 
 function components.input_buffer() return {} end
+
+function components.delegate_queue() return {} end
+
+function components.delegate_order(order) return order end
 
 return components

@@ -70,13 +70,8 @@ end
 local function render_layout(menu, items, layout, style)
     local style = style or {}
 
-    menu
-        :set(nw.component.layer_type, "entitygroup")
-        :set(nw.component.layer_pool)
-
-    local pool = menu:get(nw.component.layer_pool)
+    local pool = nw.ui.layer_pool(menu.world)
     local state = menu:ensure(menu_state_component)
-
 
     pool:add(render_main_shape(layout.menu_shape, style))
 
@@ -125,12 +120,12 @@ local function update_state(menu, items)
         local down = nw.system.input_buffer.is_pressed(input, "down") ~= nil
         state.index = menu_step(state.index, up, down, #items)
     end
-
-    return state
 end
 
 return function(menu, items, style)
-    local state = update_state(menu, items)
+    --local state = update_state(menu, items)
+    nw.ui.register_input_handler(menu.world, update_state, menu, items)
+    local state = menu:ensure(menu_state_component)
     local layout = build_layout(menu, items, style)
     render_layout(menu, items, layout, style)
 
