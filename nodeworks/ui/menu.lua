@@ -4,9 +4,9 @@ local function menu_state_component()
     return {select = false}
 end
 
-local function build_layout(menu, items, style)
-    local style = style or {}
-    local pos = menu:ensure(nw.component.position)
+local function build_layout(core, id, items)
+    local style = core.style or {}
+    local pos = core:state(id):ensure(nw.component.position)
     local w, h = (style.menu_item_size or vec2(150, 20)):unpack()
     local outer_margin = style.outer_menu_margin or vec2(10, 10)
     local item_margin = style.item_margin or 10
@@ -67,11 +67,11 @@ local function render_text(text, shape, style)
         :set(nw.component.align, "center")
 end
 
-local function render_layout(menu, items, layout, style)
+local function render_layout(core, id, items, layout, style)
     local style = style or {}
 
-    local pool = nw.ui.layer_pool(menu.world)
-    local state = menu:ensure(menu_state_component)
+    local pool = core:layer_pool()
+    local state = core:state(id):ensure(menu_state_component)
 
     pool:add(render_main_shape(layout.menu_shape, style))
 
@@ -103,9 +103,9 @@ local function menu_step(index, up, down, count)
     end
 end
 
-local function update_state(menu, items)
-    local state = menu:ensure(menu_state_component)
-    local input = menu.world:singleton()
+local function update_state(core, id, items)
+    local state = core:state(id):ensure(menu_state_component)
+    local input = core.world:singleton()
 
     if state.select then
         local cancel = nw.system.input_buffer.is_pressed(input, "backspace") ~= nil
@@ -122,21 +122,21 @@ local function update_state(menu, items)
     end
 end
 
-local function handle_return(menu, items, ...)
-    update_state(menu, items)
+local function handle_return(core, id, items, ...)
+    update_state(core, id, items)
     return ...
 end
 
-return function(menu, items, cb, style)
-    local layout = build_layout(menu, items, style)
-    render_layout(menu, items, layout, style)
+return function(core, id, items, cb, ...)
+    local layout = build_layout(core, id, items, style)
+    render_layout(core, id, items, layout)
 
-    local state = menu:ensure(menu_state_component)
+    local state = core:state(id):ensure(menu_state_component)
 
     if state.select and state.index and type(cb) == "function" then
         local item = items[state.index]
-        return handle_return(menu, items, cb(item))
+        return handle_return(core, id, items, cb(core, item, ...))
     end
 
-    return handle_return(menu, items)
+    return handle_return(core, id, items)
 end

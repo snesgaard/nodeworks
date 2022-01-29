@@ -17,16 +17,20 @@ function love.load()
     local base_color = hsv.from_rgb(0.8, 0.4, 0.2)
     style = {}
 
+    ui = nw.ui(world)
+
 end
 
-local function item_callback(item)
+local function item_callback(core, item)
     if item == "foo" then
-        return nw.ui.menu(menu_entity2, menu_items2)
+        ui:state("submenu"):ensure(nw.component.position, 200, 50)
+        return core:menu("submenu", menu_items2)
     end
 end
 
 function love.update(dt)
-    nw.ui.menu(menu_entity, menu_items, item_callback)
+    ui:state("main_menu"):ensure(nw.component.position, 150, 50)
+    ui:menu("main_menu", menu_items, item_callback)
     world("update", dt)
 end
 
