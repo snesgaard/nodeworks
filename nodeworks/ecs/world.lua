@@ -141,7 +141,7 @@ end
 function implementation.push(self, systems)
 
     self:resolve_changed_entities()
-    self.system_stack = self.system_stack:push(systems)
+    self.system_stack:push(systems)
 
     local function handle_system_and_entity(system, entity)
         local pool = self:get_pool(system)
@@ -167,11 +167,10 @@ function implementation.push(self, systems)
 end
 
 function implementation.pop(self)
-    local next_stack, systems = self.system_stack:pop()
+    local systems = self.system_stack:pop()
     if not systems then return end
 
     self:resolve_changed_entities()
-    self.system_stack = next_stack
 
     local function handle_system(system)
         local pool = self:get_pool(system)

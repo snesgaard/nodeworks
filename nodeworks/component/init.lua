@@ -259,7 +259,10 @@ function components.image(image) return image end
 
 function components.blend_mode(blend_mode) return blend_mode end
 
-function components.color(r, g, b, a) return  {r, g, b, a} end
+function components.color(r, g, b, a)
+    if type(r) == "table" then return r end
+    return  {r, g, b, a}
+end
 
 function components.shader(shader) return shader end
 
@@ -267,8 +270,24 @@ function components.shader_uniforms(uniforms) return uniforms end
 
 function components.priority(priority) return priority or 0 end
 
+function components.text(text) return text end
+
+function components.font(font) return font end
+
+function components.align(align) return align end
+
+function components.valign(valign) return valign end
+
+function components.flush_on_draw(do_it)
+    return do_it or do_it == nil
+end
+
 ----------------------
 
 function components.input_buffer() return {} end
+
+function components.delegate_queue() return {} end
+
+function components.delegate_order(order) return order end
 
 return components

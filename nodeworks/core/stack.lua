@@ -8,22 +8,20 @@ end
 function stack:copy() return stack.create(unpack(self)) end
 
 function stack:push(value)
-    local next_stack = self:copy()
-    table.insert(next_stack, value)
-    return next_stack
+    table.insert(self, value)
+    return self
 end
 
 function stack:pop()
-    local next_stack = self:copy()
-    table.remove(next_stack)
-    return next_stack, self:peek()
+    local value = self:peek()
+    table.remove(self)
+    return value
 end
 
 function stack:move(value)
-    local next_stack = self:copy()
-    table.remove(next_stack)
-    table.insert(next_stack, value)
-    return next_stack, self:peek()
+    local v = self:pop()
+    self:push(value)
+    return v
 end
 
 function stack:peek() return self[#self] end

@@ -3,9 +3,11 @@ local T = nw.third.knife.test
 
 T("stack", function(T)
     local s1 = stack(1, 2, 3)
-    local s2 = s1:push(4)
-    local s3 = s1:pop()
-    local s4 = s1:move(5)
+    local s2 = s1:copy():push(4)
+    local s3 = s1:copy()
+    local s4 = s1:copy()
+    s4:move(5)
+    s3:pop()
 
     T("members", function(T)
         T:assert(s1:size() == 3)
@@ -20,7 +22,6 @@ T("stack", function(T)
         T:assert(s3:peek() == 2)
         T:assert(s4:peek() == 5)
     end)
-
 
     T("foreach", function(T)
         local counter = 0
