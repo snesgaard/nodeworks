@@ -26,8 +26,7 @@ local function item_callback(item)
 end
 
 function love.update(dt)
-    local action, target = nw.ui.menu(menu_entity, menu_items, item_callback)
-
+    nw.ui.menu(menu_entity, menu_items, item_callback)
     world("update", dt)
 end
 
