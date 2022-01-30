@@ -62,8 +62,12 @@ function timer.create(duration, time)
 end
 
 function timer:update(dt)
-    self.time = self.time - dt
+    if self.time > 0 then self.time = self.time - dt end
     return self:done()
+end
+
+function timer:overshoot()
+    return math.max(0, -self.time)
 end
 
 function timer:reset()
