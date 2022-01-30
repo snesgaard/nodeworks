@@ -23,13 +23,13 @@ end
 
 local function item_callback(core, item)
     if item == "foo" then
-        ui:state("submenu"):ensure(nw.component.position, 200, 50)
+        ui:position("submenu", 200, 50)
         return core:menu("submenu", menu_items2)
     end
 end
 
 function love.update(dt)
-    ui:state("main_menu"):ensure(nw.component.position, 150, 50)
+    ui:position("main_menu", 150, 50)
     ui:menu("main_menu", menu_items, item_callback)
     world("update", dt)
 end

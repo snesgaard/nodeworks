@@ -24,6 +24,11 @@ function ui:state(id)
     return w
 end
 
+function ui:position(id, x, y)
+    self:state(id):set(nw.component.position, x, y)
+    return self
+end
+
 ui.menu = require(BASE .. ".menu")
 
 return function(world, style)
