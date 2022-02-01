@@ -18,6 +18,11 @@ function world.create(systems)
     return w
 end
 
+function world:set_cosmos(cosmos)
+    self.cosmos = cosmos
+    return self
+end
+
 local function call_if_exists(f, ...) if f then return f(...) end end
 
 function world:notify_change(entity)
