@@ -14,7 +14,7 @@ function event_queue:pop()
     return q
 end
 
-function event_queue:spin()
+function event_queue:spin(init_f, ...)
     if self.spinning then return self end
 
     self.spinning = true
@@ -37,6 +37,8 @@ function event_queue:spin()
         end
     end
 
+    if init_f then init_f(...) end
+
     handle_queue()
 
     self.spinning = false
@@ -50,7 +52,11 @@ function event_queue:add_without_spin(f, ...)
 end
 
 function event_queue:add(f, ...)
-    return self:add_without_spin(f, ...):spin()
+    if self.spinning then
+        return self:add_without_spin(f, ...)
+    else
+        return self:spin(f, ...)
+    end
 end
 
 function event_queue:__call(...) return self:add(...) end
