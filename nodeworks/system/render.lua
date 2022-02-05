@@ -238,7 +238,6 @@ end
 
 function render_system.draw(world, pool)
     local context = world:singleton() % render_context
-
     List.foreach(pool, function(layer)
         local type = layer % nw.component.layer_type
         local f = layer_drawers[type]

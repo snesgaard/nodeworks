@@ -1,23 +1,27 @@
 local nw = require "nodeworks"
 local T = nw.third.knife.test
 
-T("motion", function(T)
-    local world = nw.ecs.world()
+local scene = {}
 
-    local entity = nw.ecs.entity(world)
+function scene.on_push(ctx)
+    ctx.entity = ctx:entity()
         + {nw.component.position, 0, 0}
         + {nw.component.velocity, 100, 0}
         + {nw.component.gravity, 10, 0}
+end
 
-    world:push{nw.system.motion}
+T("motion", function(T)
+    local world = nw.ecs.world{nw.system.motion}
+    world:push(scene)
+    local ctx = world:find(scene)
 
     T("system members", function(T)
-        T:assert(#world:get_pool(nw.system.motion) == 1)
+        T:assert(#ctx.pools[nw.system.motion] == 1)
     end)
 
-    local p = entity % nw.component.position
-    local v = entity % nw.component.velocity
-    local g = entity % nw.component.gravity
+    local p = ctx.entity % nw.component.position
+    local v = ctx.entity % nw.component.velocity
+    local g = ctx.entity % nw.component.gravity
 
     T("simple_move", function(T)
         local dt = 0.5
@@ -27,8 +31,8 @@ T("motion", function(T)
 
         world("update", dt)
 
-        local position = entity % nw.component.position
-        local velocity = entity % nw.component.velocity
+        local position = ctx.entity % nw.component.position
+        local velocity = ctx.entity % nw.component.velocity
 
         T:assert(isclose(expected_position.x, position.x))
         T:assert(isclose(expected_position.y, position.y))
@@ -44,8 +48,8 @@ T("motion", function(T)
 
         world("update", dt)
 
-        local position = entity % nw.component.position
-        local velocity = entity % nw.component.velocity
+        local position = ctx.entity % nw.component.position
+        local velocity = ctx.entity % nw.component.velocity
 
         T:assert(isclose(expected_position.x, position.x))
         T:assert(isclose(expected_position.y, position.y))

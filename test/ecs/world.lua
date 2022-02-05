@@ -45,67 +45,60 @@ function system_b.add(world, pool, value)
 
 end
 
-T("ecs.world", function(T)
-    world = nw.ecs.world()
+local scene = {}
 
-    local a = world:entity()
+function scene.on_push(ctx)
+    ctx.a = ctx:entity()
         :set(components.a)
         :set(components.b)
 
-    local b = world:entity()
+    ctx.b = ctx:entity()
         :set(components.b)
+end
+
+T("ecs.world", function(T)
+    local world = nw.ecs.world{system_a, system_b}
+    world:push(scene)
+    local ctx = world:find(scene)
 
     T("spawn entity", function(T)
-        T:assert(#world.changed_entities == 2)
+        -- needs to be 3 because of the spawned entties and the singleton
+        T:assert(#ctx.dirty_entities == 3)
 
-        world:resolve_changed_entities()
+        ctx:handle_dirty()
 
-        T:assert(#world.changed_entities == 0)
-        T:assert(#world.entities == 2)
+        T:assert(#ctx.dirty_entities == 0)
+        T:assert(#ctx.entities == 3)
 
-        b:set(components.a)
+        ctx.b:set(components.a)
 
-        T:assert(#world.changed_entities == 1)
-        T:assert(#world.entities == 2)
+        T:assert(#ctx.dirty_entities == 1)
+        T:assert(#ctx.entities == 3)
 
-        world:resolve_changed_entities()
+        ctx:handle_dirty()
 
-        T:assert(#world.changed_entities == 0)
-        T:assert(#world.entities == 2)
+        T:assert(#ctx.dirty_entities == 0)
+        T:assert(#ctx.entities == 3)
     end)
 
-    world:resolve_changed_entities()
-    local system_group = {system_a, system_b}
-    world:push(system_group)
+    ctx:handle_dirty()
 
     T("push", function(T)
-        T:assert(world.system_stack:size() == 1)
-        T:assert(world.system_stack[1] == system_group)
+        T:assert(ctx.pools[system_a]:size() == 1)
+        T:assert(ctx.pools[system_b]:size() == 2)
 
-        T:assert(world:get_pool(system_a):size() == 1)
-        T:assert(world:get_pool(system_b):size() == 2)
-
-        T:assert(world:singleton():has(components.was_pushed))
-        T:assert(world:singleton():get(components.was_pushed) == 1)
+        T:assert(ctx:singleton():has(components.was_pushed))
+        T:assert(ctx:singleton():get(components.was_pushed) == 1)
     end)
 
     T("pop", function(T)
         world:pop()
-        T:assert(world.system_stack:size() == 0)
-
-        T:assert(world:get_pool(system_a):size() == 0)
-        T:assert(world:get_pool(system_b):size() == 0)
-
-        T:assert(world:singleton():has(components.was_pushed))
-        T:assert(world:singleton():get(components.was_pushed) == 0)
-
-        world:pop()
+        T:assert(world.scene_stack:size() == 0)
     end)
 
     T("event", function(T)
         local value = 2
         world:event("add_with_repeat", value)
-        T:assert(a:get(components.a) == components.a() + value * 2)
+        T:assert(ctx.a:get(components.a) == components.a() + value * 2)
     end)
-
 end)

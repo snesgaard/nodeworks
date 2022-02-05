@@ -5,7 +5,7 @@ local function call_if_exists(f, ...)
 end
 
 local scene_context = {}
-scene_context.__index = {}
+scene_context.__index = scene_context
 
 function scene_context.create(world)
     return setmetatable(
@@ -18,6 +18,10 @@ function scene_context.create(world)
         scene_context
     )
 end
+
+function scene_context:event(...) return self.world:event(...) end
+
+function scene_context:__call(...) return self:event(...) end
 
 function scene_context:singleton()
     if not self.instance then self.instance = self:entity() end
@@ -72,7 +76,7 @@ end
 function scene_context:entity_pool_update(filter, pool, entity, past)
     local is_there = pool[entity]
     local f = get_filter(filter)
-    local should_be_there = filter(entity) and not entity:is_dead()
+    local should_be_there = f(entity) and not entity:is_dead()
 
     if not is_there and not should_be_there then return end
 
@@ -88,7 +92,7 @@ function scene_context:entity_pool_update(filter, pool, entity, past)
         call_if_exists(filter.on_entity_added, self, entity, pool)
     elseif should_be_there and is_there then
         call_if_exists(filter.on_entity_changed, self, entity, past, pool)
-    else not should_be_there and is_there then
+    elseif not should_be_there and is_there then
         call_if_exists(filter.on_entity_removed, self, entity, past, pool)
     end
 end
@@ -100,7 +104,7 @@ function scene_context:handle_dirty()
 
     self.dirty_entities = nw.ecs.pool()
 
-    for filter, pool in ipairs(self.pools) do
+    for filter, pool in pairs(self.pools) do
         for _, entity in ipairs(dirty) do
             local past = entity:pop_past()
             self:entity_pool_update(filter, pool, entity, past)
@@ -112,12 +116,31 @@ function scene_context:handle_dirty()
     end
 end
 
+function scene_context:on_push(systems)
+    for _, system in ipairs(systems) do
+        local pool = self:register_pool(system)
+        call_if_exists(system.on_pushed, self, pool)
+    end
+end
+
 function scene_context:on_pop()
-    for filter, _ in pairs(self.pools) do self:remove_pool(filter) end
+    -- TODO call on_poped here
+    for filter, pool in pairs(self.pools) do
+        self:remove_pool(filter)
+        if type(filter) == "table" then
+            call_if_exists(filter.on_poped, self, pool)
+        end
+    end
 end
 
 local world = {}
 world.__index = world
+
+function world:find(scene)
+    for i = self.scene_stack:size(), 1, -1 do
+        if self.scene_stack[i] == scene then return self.context_stack[i] end
+    end
+end
 
 local implementation = {}
 
@@ -132,13 +155,15 @@ function implementation:push(scene, ...)
     self.scene_stack:push(scene)
     self.context_stack:push(scene_context.create(self))
 
-    call_if_exists(scene.on_push, self.context_stack:peek(), ...)
+    local context = self.context_stack:peek()
+
+    call_if_exists(scene.on_push, context, ...)
+    context:on_push(self.systems)
 end
 
 function implementation:pop()
     local scene = self.scene_stack:pop()
     local context = self.context_stack:pop()
-
     if scene then call_if_exists(scene.on_pop, context) end
     context:on_pop()
 
@@ -156,17 +181,17 @@ function implementation:move(...)
 end
 
 function implementation:clear()
-    while self.scene_stack:size() > 0 then self:pop() end
+    while self.scene_stack:size() > 0 do self:pop() end
 end
 
-function implementation:invoke_event(event, ...)
-    for i = scene_stack:size(), 1, -1 do
-        local scene = scene_stack[i]
-        local context = scene_stack[i]
+function implementation:event(event, ...)
+    for i = self.scene_stack:size(), 1, -1 do
+        local scene = self.scene_stack[i]
+        local context = self.context_stack[i]
 
         context:handle_dirty()
 
-        for _, system in ipairs(systems) do
+        for _, system in ipairs(self.systems) do
             local f = system[event]
             if f then
                 local pool = context:register_pool(system)
@@ -174,26 +199,29 @@ function implementation:invoke_event(event, ...)
             end
         end
 
-        if call_if_exists(scene[event], ...) or call_if_exists(scene.block, event, ...) then
-            return
-        end
+        local event_call = call_if_exists(scene[event], context, ...)
+        local block_call = call_if_exists(scene.block, context, event, ...)
+        if event_call or block_call then return end
     end
 end
 
 for name, func in pairs(implementation) do
     world[name] = function(self, ...)
         self.event_queue(func, self, ...)
+        return self
     end
 end
+
+function world:__call(...) return self:event(...) end
 
 return function(systems)
     return setmetatable(
         {
-            systems = systems,
-            scene_stack = list(),
-            context_stack = list(),
+            systems = systems or {},
+            scene_stack = stack(),
+            context_stack = stack(),
             event_queue = event_queue()
-        }
+        },
         world
     )
 end
