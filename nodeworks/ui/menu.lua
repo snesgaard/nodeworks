@@ -133,10 +133,14 @@ return function(core, id, items, cb, ...)
 
     local state = core:state(id):ensure(menu_state_component)
 
+    local item = items[state.index]
     if state.select and state.index and type(cb) == "function" then
-        local item = items[state.index]
         return handle_return(core, id, items, cb(core, item, ...))
     end
 
-    return handle_return(core, id, items)
+    if state.select then
+        return handle_return(core, id, items, item)
+    else
+        return handle_return(core, id, items)
+    end
 end

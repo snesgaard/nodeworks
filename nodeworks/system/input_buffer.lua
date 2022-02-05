@@ -186,4 +186,9 @@ for _, key in pairs{"is_pressed", "is_released"} do
     end
 end
 
+function system.inherit(parent, child)
+    child[nw.component.input_buffer] = parent[nw.component.input_buffer]
+    child[input_history] = parent[input_history]
+end
+
 return system

@@ -6,5 +6,6 @@ return {
   system = require(... .. ".system"),
   pool = require(... .. ".pool"),
   event = require(... .. ".event"),
-  constants = require(... .. ".constants")
+  constants = require(... .. ".constants"),
+  scene = require(... .. ".scene")
 }

@@ -59,8 +59,25 @@ end
 function implementation:__call(...) return self:event(...) end
 
 for key, func in pairs(implementation) do
-    manager[key] = function(...)
+    manager[key] = function(self, ...)
         self.event_queue(func, self, ...)
+    end
+end
+
+function manager:setup_input(skip_quick_quit)
+    function love.keypressed(key, scancode, isrepeat)
+        if not skip_quick_quit and key == "escape" then
+            love.event.quit()
+        end
+        self("input_pressed", key)
+    end
+
+    function love.keyreleased(key)
+        self("input_released", key)
+    end
+
+    function love.update(dt)
+        self("update", dt)
     end
 end
 
