@@ -29,8 +29,8 @@ function scene_context:singleton()
     return self.instance
 end
 
-function scene_context:entity()
-    local e = nw.ecs.entity(self)
+function scene_context:entity(...)
+    local e = nw.ecs.entity(self, ...)
     self.entities:add(e)
     return e
 end
