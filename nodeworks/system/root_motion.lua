@@ -18,7 +18,6 @@ function root_motion_system.on_next_frame(world, pool, entity, prev_frame, next_
 
     local mirror = entity[nw.component.mirror]
     if mirror then motion.x = -motion.x end
-    --print(motion)
     nw.system.collision.move(entity, motion.x, motion.y)
 end
 

@@ -21,7 +21,7 @@ local function history_value(prev_value, event)
     if is_pressed(event) then
         return prev_value + 1
     elseif is_released(event) then
-        return prev_value - 1
+        return math.max(prev_value - 1, 0)
     else
         return prev_value
     end

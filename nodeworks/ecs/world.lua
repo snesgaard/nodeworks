@@ -1,202 +1,227 @@
 local nw = require "nodeworks"
 
-local world = {}
-world.__index = world
+local function call_if_exists(f, ...)
+    if f then return f(...) end
+end
 
-function world.create(systems)
-    local w = setmetatable(
+local scene_context = {}
+scene_context.__index = scene_context
+
+function scene_context.create(world)
+    return setmetatable(
         {
             entities = nw.ecs.pool(),
-            system_stack = stack(),
-            pools = dict(),
-            changed_entities = nw.ecs.pool(),
-            event_queue = event_queue()
+            pools = {},
+            dirty_entities = nw.ecs.pool(),
+            world = world
         },
-        world
+        scene_context
     )
-    if systems then w:push(systems) end
-    return w
 end
 
-local function call_if_exists(f, ...) if f then return f(...) end end
+function scene_context:event(...) return self.world:event(...) end
 
-function world:notify_change(entity)
-    self.changed_entities:add(entity)
-    return self
+function scene_context:__call(...) return self:event(...) end
+
+function scene_context:singleton()
+    if not self.instance then self.instance = self:entity() end
+
+    return self.instance
 end
 
-function world:load_entities(func, ...)
-    local entities = func(self, ...)
-    self.event_queue(self.resolve_changed_entities, self)
-    return entities
+function scene_context:entity(...)
+    local e = nw.ecs.entity(self, ...)
+    self.entities:add(e)
+    return e
 end
 
-function world:entity(tag)
-    return nw.ecs.entity(self, tag)
+function scene_context:notify_change(entity)
+    if self.entities[entity] then self.dirty_entities:add(entity) end
 end
 
-function world:singleton()
-    if not self.singleton_entity then
-        self.singleton_entity = self:entity("singleton")
+function scene_context:register_pool(filter)
+    if self.pools[filter] then return self.pools[filter] end
+
+    local pool = nw.ecs.pool()
+    self.pools[filter] = pool
+
+    for _, entity in ipairs(self.entities) do
+        self:entity_pool_update(filter, pool, entity)
     end
 
-    return self.singleton_entity
+    return pool
 end
 
-function world:get_pool(system)
-    if not self.pools[system] then
-        self.pools[system] = nw.ecs.pool()
+function scene_context:remove_pool(filter)
+    local pool = self.pools[filter]
+    self.pools[filter] = nil
+
+    if type(filter) ~= "table" then return end
+
+    for _, entity in ipairs(pool) do
+        call_if_exists(filter.on_entity_removed, entity, {}, pool)
     end
-    return self.pools[system]
 end
 
-function world:clear_pool(system)
-    self.pools[system] = nil
-    return self
-end
-
-function world:resolve_changed_entities()
-    if self.changed_entities:empty() then return end
-
-    local function handle_change(system, entity, past)
-        local pool = self:get_pool(system)
-        local is_there = pool[entity]
-        local should_be_there = system.entity_filter(entity)
-
-        if not is_there and not should_be_there then return end
-
-        if not is_there and should_be_there then
-            pool:add(entity)
-            call_if_exists(system.on_entity_added, self, entity, pool)
-        elseif is_there and should_be_there then
-            call_if_exists(system.on_entity_changed, self, entity, past, pool)
-        else
-            call_if_exists(system.on_entity_removed, self, entity, past, pool)
-            pool:remove(entity)
-        end
+local function get_filter(filter)
+    if type(filter) == "table" then
+        return filter.entity_filter
+    elseif type(filter) == "function" then
+        return filter
+    else
+        errorf("Unsupported type %s", type(filter))
     end
+end
 
-    local function handle_dead(system, entity, past)
-        local pool = self:get_pool(system)
-        if not pool[entity] then return end
+function scene_context:entity_pool_update(filter, pool, entity, past)
+    local is_there = pool[entity]
+    local f = get_filter(filter)
+    local should_be_there = f(entity) and not entity:is_dead()
 
-        call_if_exists(system.on_entity_removed, self, entity, past)
+    if not is_there and not should_be_there then return end
+
+    if should_be_there then
+        pool:add(entity)
+    else
         pool:remove(entity)
     end
 
-    local function handle_entity(entity)
-        if not entity:has_changed() then return end
-        local past = entity:pop_past()
-        if not entity:is_dead() then
-            self.entities:add(entity)
-            self.system_stack:foreach(List.foreach, handle_change, entity, past)
-        else
-            self.system_stack:foreach(List.foreach, handle_dead, entity, past)
-            self.entites:remove(entity)
+    if type(filter) ~= "table" then return end
+
+    if should_be_there and not is_there then
+        call_if_exists(filter.on_entity_added, self, entity, pool)
+    elseif should_be_there and is_there then
+        call_if_exists(filter.on_entity_changed, self, entity, past, pool)
+    elseif not should_be_there and is_there then
+        call_if_exists(filter.on_entity_removed, self, entity, past, pool)
+    end
+end
+
+function scene_context:handle_dirty()
+    local dirty = self.dirty_entities
+
+    if dirty:empty() then return end
+
+    self.dirty_entities = nw.ecs.pool()
+
+    for filter, pool in pairs(self.pools) do
+        for _, entity in ipairs(dirty) do
+            local past = entity:pop_past()
+            self:entity_pool_update(filter, pool, entity, past)
         end
     end
 
-    local changed_entities = self.changed_entities
-    self.changed_entities = nw.ecs.pool()
+    for _, entity in ipairs(dirty) do
+        if entity:is_dead() then self.entities:remove(entity) end
+    end
+end
 
-    return changed_entities:foreach(handle_entity)
+function scene_context:on_push(systems)
+    for _, system in ipairs(systems) do
+        local pool = self:register_pool(system)
+        call_if_exists(system.on_pushed, self, pool)
+    end
+end
+
+function scene_context:on_pop()
+    -- TODO call on_poped here
+    for filter, pool in pairs(self.pools) do
+        self:remove_pool(filter)
+        if type(filter) == "table" then
+            call_if_exists(filter.on_poped, self, pool)
+        end
+    end
+end
+
+local world = {}
+world.__index = world
+
+function world:find(scene)
+    for i = self.scene_stack:size(), 1, -1 do
+        if self.scene_stack[i] == scene then return self.context_stack[i] end
+    end
 end
 
 local implementation = {}
 
-function implementation.event(self, event_key, ...)
-    local unpack = unpack
+function implementation:push(scene, ...)
+    local prev_scene = self.scene_stack:peek()
+    local prev_context = self.context_stack:peek()
 
-    local function pack_args(args, first, ...)
-        if first == nil then return args end
-        return {first, ...}
+    if prev_scene then
+        call_if_exists(prev_scene.on_obscure, prev_context)
     end
 
-    local function handle_system(system, args)
-        local f = system[event_key]
-        if not f then return args end
-        -- Make sure pools are up to date before fetching them
-        self:resolve_changed_entities()
-        return pack_args(
-            args,
-            f(self, self:get_pool(system), unpack(args))
-        )
-    end
+    self.scene_stack:push(scene)
+    self.context_stack:push(scene_context.create(self))
 
-    local function should_stop(args)
-        return List.head(args) == nw.ecs.constants.block
-    end
+    local context = self.context_stack:peek()
 
-    local args = {...}
-    for i = self.system_stack:size(), 1, -1 do
-        local systems = self.system_stack[i] do
-            for _, system in ipairs(systems) do
-                args = handle_system(system, args)
-                if should_stop(args) then return end
+    call_if_exists(scene.on_push, context, ...)
+    context:on_push(self.systems)
+end
+
+function implementation:pop()
+    local scene = self.scene_stack:pop()
+    local context = self.context_stack:pop()
+    if scene then call_if_exists(scene.on_pop, context) end
+    context:on_pop()
+
+    local scene = self.scene_stack:peek()
+    local context = self.context_stack:peek()
+
+    if scene then
+        call_if_exists(scene.on_reveal, context)
+    end
+end
+
+function implementation:move(...)
+    self:pop()
+    self:push(...)
+end
+
+function implementation:clear()
+    while self.scene_stack:size() > 0 do self:pop() end
+end
+
+function implementation:event(event, ...)
+    for i = self.scene_stack:size(), 1, -1 do
+        local scene = self.scene_stack[i]
+        local context = self.context_stack[i]
+
+        context:handle_dirty()
+
+        for _, system in ipairs(self.systems) do
+            local f = system[event]
+            if f then
+                local pool = context:register_pool(system)
+                f(context, pool, ...)
             end
         end
+
+        local event_call = call_if_exists(scene[event], context, ...)
+        local block_call = call_if_exists(scene.block, context, event, ...)
+        if event_call or block_call then return end
     end
-end
-
-function implementation.push(self, systems)
-
-    self:resolve_changed_entities()
-    self.system_stack:push(systems)
-
-    local function handle_system_and_entity(system, entity)
-        local pool = self:get_pool(system)
-        local is_there = pool[entity]
-        local should_be_there = system.entity_filter(entity)
-        if not (not is_there and should_be_there) then return end
-        pool:add(entity)
-        call_if_exists(system.on_entity_added, self, entity)
-    end
-
-    local function handle_entity(entity)
-        List.foreach(systems, handle_system_and_entity, entity)
-    end
-
-    List.foreach(self.entities, handle_entity)
-
-    List.foreach(
-        systems,
-        function(system)
-            call_if_exists(system.on_pushed, self, self:get_pool(system))
-        end
-    )
-end
-
-function implementation.pop(self)
-    local systems = self.system_stack:pop()
-    if not systems then return end
-
-    self:resolve_changed_entities()
-
-    local function handle_system(system)
-        local pool = self:get_pool(system)
-        self:clear_pool(system)
-        call_if_exists(system.on_poped, self, pool)
-
-        local empty_past = {}
-        for _, entity in ipairs(pool) do
-            call_if_exists(system.on_entity_removed, self, entity, empty_past)
-        end
-    end
-
-    List.foreach(systems, handle_system)
-end
-
-function implementation.move(self, system)
-    implementation.pop(self)
-    implementation.push(self, systems)
 end
 
 for name, func in pairs(implementation) do
     world[name] = function(self, ...)
-        return self.event_queue(func, self, ...)
+        self.event_queue(func, self, ...)
+        return self
     end
 end
 
 function world:__call(...) return self:event(...) end
 
-return world.create
+return function(systems)
+    return setmetatable(
+        {
+            systems = systems or {},
+            scene_stack = stack(),
+            context_stack = stack(),
+            event_queue = event_queue()
+        },
+        world
+    )
+end

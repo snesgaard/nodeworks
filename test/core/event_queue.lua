@@ -10,6 +10,9 @@ T("event_queue", function(T)
     local function baz()
         foo = foo .. "baz"
     end
+    local function fee()
+        foo = foo .. "fee"
+    end
     local function append_to_foo(text)
         foo = foo .. text
     end
@@ -22,9 +25,10 @@ T("event_queue", function(T)
     end)
 
     T("recursive_spin", function(T)
-        local function bar_with_baz() eq:add(bar):add(baz) end
+        local function baz_with_fee() eq:add(baz):add(fee) end
+        local function bar_with_baz() eq:add(bar):add(baz_with_fee):add(baz) end
         eq(bar_with_baz)
-        T:assert(foo == "foobarbaz", foo)
+        T:assert(foo == "foobarbazfeebaz", foo)
     end)
 
     T("spin with args", function(T)

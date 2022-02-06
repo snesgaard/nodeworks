@@ -1,33 +1,36 @@
 local nw = require "nodeworks"
 local T = nw.third.knife.test
 
+local scene = {}
+
+function scene.on_push(ctx)
+    ctx.parent = ctx:entity()
+
+    ctx.child = ctx:entity()
+        + {nw.component.parent, ctx.parent}
+
+    ctx.other_child = ctx:entity()
+        + {nw.component.parent, ctx.parent}
+
+    ctx.grand_child = ctx:entity()
+        + {nw.component.parent, ctx.child}
+end
+
 T("parenting", function(T)
     local world = nw.ecs.world{nw.system.parenting}
-
-    local parent = nw.ecs.entity(world)
-
-    local child = nw.ecs.entity(world)
-        + {nw.component.parent, parent}
-
-    local other_child = nw.ecs.entity(world)
-        + {nw.component.parent, parent}
-
-    local grand_child = nw.ecs.entity(world)
-        + {nw.component.parent, child}
-
-    world:resolve_changed_entities()
+    local ctx = world:push(scene):find(scene)
 
     T("system members", function(T)
-        local pool = world:get_pool(nw.system.parenting)
+        local pool = ctx.pools[nw.system.parenting]
         T:assert(#pool == 3)
     end)
 
     T("children", function(T)
         local to_test = {
-            {parent, {child, other_child}},
-            {child, {grand_child}},
-            {other_child, {}},
-            {grand_child, {}}
+            {ctx.parent, {ctx.child, ctx.other_child}},
+            {ctx.child, {ctx.grand_child}},
+            {ctx.other_child, {}},
+            {ctx.grand_child, {}}
         }
 
         for index, item in ipairs(to_test) do
@@ -40,10 +43,10 @@ T("parenting", function(T)
 
     T("lineage", function(T)
         local to_test = {
-            {parent, {parent}},
-            {child, {child, parent}},
-            {grand_child, {grand_child, child, parent}},
-            {other_child, {other_child, parent}}
+            {ctx.parent, {ctx.parent}},
+            {ctx.child, {ctx.child, ctx.parent}},
+            {ctx.grand_child, {ctx.grand_child, ctx.child, ctx.parent}},
+            {ctx.other_child, {ctx.other_child, ctx.parent}}
         }
 
         for index, item in ipairs(to_test) do

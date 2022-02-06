@@ -1,24 +1,28 @@
 local nw = require "nodeworks"
 local T = nw.third.knife.test
 
-T("root_motion", function(T)
-    local world = nw.ecs.world{nw.system.root_motion}
+local scene = {}
 
-    local entity = nw.ecs.entity(world)
+function scene.on_push(ctx)
+    ctx.main = ctx:entity()
         + {nw.component.root_motion}
         + {nw.component.position, 0, 0}
+end
 
-    world:resolve_changed_entities()
+T("root_motion", function(T)
+    local world = nw.ecs.world{nw.system.root_motion}
+    world:push(scene)
+    local ctx = world:find(scene)
 
     T("system members", function(T)
-        local pool = world:get_pool(nw.system.root_motion)
+        local pool = ctx.pools[nw.system.root_motion]
         T:assert(#pool == 1)
     end)
 
     T("simple move", function(T)
         world(
             "on_next_frame",
-            entity,
+            ctx.main,
             {
                 slices = {
                     body = spatial(0, 0, 10, 10)
@@ -31,18 +35,18 @@ T("root_motion", function(T)
             }
         )
 
-        local pos = entity % nw.component.position
+        local pos = ctx.main % nw.component.position
         local expected_pos = vec2(10, 0)
         T:assert(isclose(pos.x, expected_pos.x))
         T:assert(isclose(pos.y, expected_pos.y))
     end)
 
-    entity = entity + {nw.component.mirror, true}
+    ctx.main = ctx.main + {nw.component.mirror, true}
 
     T("mirror move", function(T)
         world(
             "on_next_frame",
-            entity,
+            ctx.main,
             {
                 slices = {
                     body = spatial(0, 0, 10, 10)
@@ -55,7 +59,7 @@ T("root_motion", function(T)
             }
         )
 
-        local pos = entity % nw.component.position
+        local pos = ctx.main % nw.component.position
         local expected_pos = vec2(-10, 0)
         T:assert(isclose(pos.x, expected_pos.x))
         T:assert(isclose(pos.y, expected_pos.y))
