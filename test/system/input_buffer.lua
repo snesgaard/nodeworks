@@ -2,16 +2,19 @@ local nw = require "nodeworks"
 local input_buffer = nw.system.input_buffer
 local T = nw.third.knife.test
 
+local scene = {}
+
+function scene.on_push(ctx)
+    ctx.main = ctx:entity("buffer")
+        :set(nw.component.input_buffer)
+end
+
 T("input_buffer", function(T)
     local world = nw.ecs.world{input_buffer}
-
-    local entity = nw.ecs.entity(world, "buffer")
-        :set(nw.component.input_buffer)
-
-    world:resolve_changed_entities()
+    local ctx = world:push(scene):find(scene)
 
     T("members", function(T)
-        local pool = world:get_pool(input_buffer)
+        local pool = ctx.pools[input_buffer]
         -- Two single an input buffer is also pushed to the world singleton
         T:assert(#pool == 2)
     end)
