@@ -52,4 +52,27 @@ function input_remap.gamepadaxis(world, joystick, axis, value)
     world("input_axis", input, value)
 end
 
+function input_remap.is_down(entity, input)
+    local keyboard_map = entity % component.keyboard_map or {}
+    local gamepad_map = entity % component.gamepad_map or {}
+
+    for key, key_input in pairs(keyboard_map) do
+        if key_input == input and love.keyboard.isDown(key) then
+            return true
+        end
+    end
+
+    for button, button_input in pairs(gamepad_map) do
+        if button_input == input then
+            for _, joystick in ipairs(love.joystick.getJoysticks()) do
+                if joystick.isGamepadDown(button) then
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
 return input_remap
