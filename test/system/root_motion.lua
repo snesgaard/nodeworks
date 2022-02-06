@@ -37,7 +37,6 @@ T("root_motion", function(T)
 
         local pos = ctx.main % nw.component.position
         local expected_pos = vec2(10, 0)
-        print(pox, expected_pos)
         T:assert(isclose(pos.x, expected_pos.x))
         T:assert(isclose(pos.y, expected_pos.y))
     end)
