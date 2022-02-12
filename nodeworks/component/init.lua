@@ -294,4 +294,6 @@ function components.delegate_queue() return {} end
 
 function components.delegate_order(order) return order end
 
+function components.pushdown_automata() return stack() end
+
 return components
