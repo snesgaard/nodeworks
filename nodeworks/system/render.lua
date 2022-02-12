@@ -231,20 +231,34 @@ function layer_drawers.entitygroup(layer)
     end
 end
 
+function layer_drawers.tiled(layer, x, y)
+    local tiled_layer = layer % nw.component.tiled_layer
+    if not tiled_layer then return end
+    gfx.push("all")
+    tiled_layer:draw()
+    gfx.pop()
+end
+
 function layer_drawers.fill(layer)
     gfx.clear(1, 1, 1)
 end
 
 
-function render_system.draw(world, pool)
+function render_system.draw(world, pool, x, y)
     local context = world:singleton() % render_context
+    local pos = world:singleton():ensure(nw.component.position)
+    local scale = world:singleton():ensure(nw.component.scale)
+
     List.foreach(pool, function(layer)
         local type = layer % nw.component.layer_type
+        local parallax = layer:ensure(nw.component.parallax)
         local f = layer_drawers[type]
         if not f then return end
 
         gfx.push("all")
         gfx.setCanvas(context.canvas)
+        gfx.translate(math.floor(pos.x * parallax.x), math.floor(pos.y * parallax.y))
+        gfx.scale(scale.x, scale.y)
         local clear_color = layer % nw.component.clear_color
         if clear_color then
             gfx.clear(clear_color[1], clear_color[2], clear_color[3], clear_color[4])

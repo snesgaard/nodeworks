@@ -243,6 +243,8 @@ function components.layer_pool() return nw.ecs.pool() end
 
 function components.layer_type(type) return type end
 
+function components.tiled_layer(layer) return layer end
+
 function components.drawable(type) return type end
 
 function components.polygon(poly) return poly end
@@ -285,6 +287,8 @@ function components.valign(valign) return valign end
 function components.flush_on_draw(do_it)
     return do_it or do_it == nil
 end
+
+function components.parallax(sx, sy) return vec2(sx or 1, sy or 1) end
 
 ----------------------
 
