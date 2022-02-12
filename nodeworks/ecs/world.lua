@@ -196,6 +196,9 @@ function implementation:event(event, ...)
             if f then
                 local pool = context:register_pool(system)
                 f(context, pool, ...)
+            elseif system.all_event then
+                local pool = context:register_pool(system)
+                system.all_event(context, pool, event, ...)
             end
         end
 

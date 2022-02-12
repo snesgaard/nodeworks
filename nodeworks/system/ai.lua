@@ -1,6 +1,8 @@
-local function call_if_exists(f, ...) if f then return f(...) end
+local nw = require "nodeworks"
 
-local function ai_queue() return action_queue() end
+local function call_if_exists(f, ...) if f then return f(...) end end
+
+local function ai_queue() return event_queue() end
 
 local ai = nw.ecs.system(nw.component.pushdown_automata)
 
@@ -11,6 +13,8 @@ end
 function ai.on_poped(wolrd)
     world:singleton():remove(ai_queue)
 end
+
+local implementation = {}
 
 function implementation.push(entity, state, ...)
     local automata = entity:ensure(nw.component.pushdown_automata)
@@ -41,7 +45,7 @@ end
 
 function implementation.clear(entity)
     local automata = entity:ensure(nw.component.pushdown_automata)
-    while automata:size() > 0 do implementation.pop(entity)
+    while automata:size() > 0 do implementation.pop(entity) end
 end
 
 function implementation.event(pool, event, ...)
@@ -49,8 +53,8 @@ function implementation.event(pool, event, ...)
         local automata = entity:ensure(nw.component.pushdown_automata)
         for i = automata:size(), 1, -1 do
             local state = automata[i]
-            local call = call_if_exists(entity[state], entity, ...)
-            local block = call_if_exists(entity.block_event, entity, event, ...)
+            local call = call_if_exists(state[event], entity, ...)
+            local block = call_if_exists(state.block_event, entity, event, ...)
             if call or block then break end
         end
     end
