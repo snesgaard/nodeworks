@@ -196,12 +196,16 @@ function implementation:event(event, ...)
             if f then
                 local pool = context:register_pool(system)
                 f(context, pool, ...)
+            elseif system.all_event then
+                local pool = context:register_pool(system)
+                system.all_event(context, pool, event, ...)
             end
         end
 
         local event_call = call_if_exists(scene[event], context, ...)
-        local block_call = call_if_exists(scene.block, context, event, ...)
-        if event_call or block_call then return end
+        local generic_call = call_if_exists(scene.all_event, context, event, ...)
+        local block_call = call_if_exists(scene.block_event, context, event, ...)
+        if event_call or generic_call or block_call then return end
     end
 end
 
