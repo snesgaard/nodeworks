@@ -260,8 +260,8 @@ function render_system.draw(world, pool, x, y, sx, sy)
 
         gfx.push("all")
         gfx.setCanvas(context.canvas)
+        gfx.scale(sx, sy)
         gfx.translate(math.floor(x * parallax.x), math.floor(y * parallax.y))
-        gfx.scale(sx, sx)
         local clear_color = layer % nw.component.clear_color
         if clear_color then
             gfx.clear(clear_color[1], clear_color[2], clear_color[3], clear_color[4])
