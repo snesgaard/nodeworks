@@ -244,10 +244,13 @@ function layer_drawers.fill(layer)
 end
 
 
-function render_system.draw(world, pool, x, y)
+function render_system.draw(world, pool, x, y, sx, sy)
     local context = world:singleton() % render_context
-    local pos = world:singleton():ensure(nw.component.position)
-    local scale = world:singleton():ensure(nw.component.scale)
+
+    local x = x or 0
+    local y = y or 0
+    local sx = sx or 1
+    local sy = sy or 1
 
     List.foreach(pool, function(layer)
         local type = layer % nw.component.layer_type
@@ -257,8 +260,8 @@ function render_system.draw(world, pool, x, y)
 
         gfx.push("all")
         gfx.setCanvas(context.canvas)
-        gfx.translate(math.floor(pos.x * parallax.x), math.floor(pos.y * parallax.y))
-        gfx.scale(scale.x, scale.y)
+        gfx.translate(math.floor(x * parallax.x), math.floor(y * parallax.y))
+        gfx.scale(sx, sx)
         local clear_color = layer % nw.component.clear_color
         if clear_color then
             gfx.clear(clear_color[1], clear_color[2], clear_color[3], clear_color[4])
