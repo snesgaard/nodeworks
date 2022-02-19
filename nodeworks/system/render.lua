@@ -222,8 +222,11 @@ function layer_drawers.entitygroup(layer)
         if not drawable then return end
         if entity % nw.component.hidden then return end
         local f = drawers[drawable]
-        if not f then return end
-        f(entity)
+        if f then
+            f(entity)
+        elseif type(drawable) == "function" then
+            drawable(entity)
+        end
     end)
 
     if layer[nw.component.flush_on_draw] then
@@ -260,8 +263,8 @@ function render_system.draw(world, pool, x, y, sx, sy)
 
         gfx.push("all")
         gfx.setCanvas(context.canvas)
-        gfx.translate(math.floor(x * parallax.x), math.floor(y * parallax.y))
         gfx.scale(sx, sy)
+        gfx.translate(math.floor(x * parallax.x), math.floor(y * parallax.y))
         local clear_color = layer % nw.component.clear_color
         if clear_color then
             gfx.clear(clear_color[1], clear_color[2], clear_color[3], clear_color[4])
@@ -278,5 +281,10 @@ function render_system.draw(world, pool, x, y, sx, sy)
         gfx.pop()
     end)
 end
+
+render_system.push_state = push_state
+render_system.push_transforms = push_transforms
+render_system.draw_args = draw_args
+render_system.drawers = drawers
 
 return render_system

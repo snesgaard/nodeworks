@@ -218,7 +218,7 @@ function implementation:event(event, ...)
 end
 
 function implementation:reverse_event(event, ...)
-    local limit = 0
+    local limit = 1
     for i = self.scene_stack:size(), 1, -1 do
         local scene = self.scene_stack[i]
         local context = self.context_stack[i]
@@ -238,9 +238,6 @@ function implementation:reverse_event(event, ...)
         else
             context:invoke_event(event, ...)
         end
-
-        local block_call = call_if_exists(scene.block_event, context, event, ...)
-        if block_call then return end
     end
 end
 

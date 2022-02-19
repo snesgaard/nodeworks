@@ -58,7 +58,17 @@ local function render_outline(shape, style)
         :set(nw.component.color, color)
 end
 
-local function render_text(text, shape, style)
+local function read_text(item)
+    if type(item) == "table" then
+        return item[nw.component.text]
+    elseif type(item) == "string" then
+        return item
+    end
+end
+
+local function render_text(item, shape, style)
+    local text = read_text(item)
+
     return nw.ecs.entity()
         :set(nw.component.drawable, "text")
         :set(nw.component.rectangle, shape)
@@ -122,26 +132,15 @@ local function update_state(core, id, items)
     end
 end
 
-local function handle_return(core, id, items, ...)
-    update_state(core, id, items)
-    return ...
-end
-
-local function just_return(core, item)
-    return item
-end
-
-return function(core, id, items, cb, ...)
+return function(core, id, items)
     local layout = build_layout(core, id, items, style)
     render_layout(core, id, items, layout)
 
     local state = core:state(id):ensure(menu_state_component)
-    local cb = cb or just_return
 
-    if state.select and state.index and type(cb) == "function" then
-        local item = items[state.index]
-        return handle_return(core, id, items, cb(core, item, ...))
-    else
-        return update_state(core, id, items)
+    update_state(core, id, items)
+
+    if state.index then
+        return items[state.index], state.select
     end
 end
