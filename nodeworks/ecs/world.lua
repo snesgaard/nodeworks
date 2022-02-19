@@ -13,7 +13,7 @@ function scene_context.create(world)
             entities = nw.ecs.pool(),
             pools = {},
             dirty_entities = nw.ecs.pool(),
-            world = world
+            world = world,
         },
         scene_context
     )
@@ -22,6 +22,21 @@ end
 function scene_context:event(...) return self.world:event(...) end
 
 function scene_context:__call(...) return self:event(...) end
+
+function scene_context:invoke_event(event, ...)
+    self:handle_dirty()
+
+    for _, system in ipairs(self.world.systems) do
+        local f = system[event]
+        if f then
+            local pool = self:register_pool(system)
+            f(self, pool, ...)
+        elseif system.all_event then
+            local pool = self:register_pool(system)
+            system.all_event(self, pool, event, ...)
+        end
+    end
+end
 
 function scene_context:singleton()
     if not self.instance then self.instance = self:entity() end
@@ -189,23 +204,43 @@ function implementation:event(event, ...)
         local scene = self.scene_stack[i]
         local context = self.context_stack[i]
 
-        context:handle_dirty()
-
-        for _, system in ipairs(self.systems) do
-            local f = system[event]
-            if f then
-                local pool = context:register_pool(system)
-                f(context, pool, ...)
-            elseif system.all_event then
-                local pool = context:register_pool(system)
-                system.all_event(context, pool, event, ...)
-            end
+        if scene[event] then
+            scene[event](context, ...)
+        elseif scene.all_event then
+            scene.all_event(context, event, ...)
+        else
+            context:invoke_event(event, ...)
         end
 
-        local event_call = call_if_exists(scene[event], context, ...)
-        local generic_call = call_if_exists(scene.all_event, context, event, ...)
         local block_call = call_if_exists(scene.block_event, context, event, ...)
-        if event_call or generic_call or block_call then return end
+        if block_call then return end
+    end
+end
+
+function implementation:reverse_event(event, ...)
+    local limit = 0
+    for i = self.scene_stack:size(), 1, -1 do
+        local scene = self.scene_stack[i]
+        local context = self.context_stack[i]
+        limit = i
+        local block_call = call_if_exists(scene.block_event, context, event, ...)
+        if block_call then break end
+    end
+
+    for i = limit, self.scene_stack:size() do
+        local scene = self.scene_stack[i]
+        local context = self.context_stack[i]
+
+        if scene[event] then
+            scene[event](context, ...)
+        elseif scene.all_event then
+            scene.all_event(context, event, ...)
+        else
+            context:invoke_event(event, ...)
+        end
+
+        local block_call = call_if_exists(scene.block_event, context, event, ...)
+        if block_call then return end
     end
 end
 

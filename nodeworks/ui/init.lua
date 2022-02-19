@@ -29,8 +29,25 @@ function ui:position(id, x, y)
     return self
 end
 
+function ui:set_input(input_buffer)
+    self.input_buffer = input_buffer
+    return self
+end
+
+function ui:input()
+    return self.input_buffer or self.world:singleton()
+end
+
+function ui:set_style(style)
+    self.style = style
+    return self
+end
+
 ui.menu = require(BASE .. ".menu")
 
 return function(world, style)
-    return setmetatable({style = style, world = world, widget_state = {}}, ui)
+    return setmetatable(
+        {style = style, world = world, widget_state = {}},
+        ui
+    )
 end

@@ -1,7 +1,7 @@
 local nw = require "nodeworks"
 
 local core = {}
-core.__index = {}
+core.__index = core
 
 function core:register_api(name, func)
     self[name] = func
@@ -15,12 +15,15 @@ function core:state(id)
     return w
 end
 
-function core.set_style()
+function core:input()
+    return self.input_buffer or self.world:singleton()
+end
 
-return function(world)
+return function(world, input_buffer)
     return setmetatable(
         {
             world = world,
+            input_buffer = input_buffer or world:singleton(),
             widget_state = {}
         },
         core
