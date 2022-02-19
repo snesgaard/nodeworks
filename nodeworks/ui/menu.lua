@@ -105,7 +105,7 @@ end
 
 local function update_state(core, id, items)
     local state = core:state(id):ensure(menu_state_component)
-    local input = core.world:singleton()
+    local input = core:input()
 
     if state.select then
         local cancel = nw.system.input_buffer.is_pressed(input, "backspace") ~= nil
@@ -127,16 +127,21 @@ local function handle_return(core, id, items, ...)
     return ...
 end
 
+local function just_return(core, item)
+    return item
+end
+
 return function(core, id, items, cb, ...)
     local layout = build_layout(core, id, items, style)
     render_layout(core, id, items, layout)
 
     local state = core:state(id):ensure(menu_state_component)
+    local cb = cb or just_return
 
     if state.select and state.index and type(cb) == "function" then
         local item = items[state.index]
         return handle_return(core, id, items, cb(core, item, ...))
+    else
+        return update_state(core, id, items)
     end
-
-    return handle_return(core, id, items)
 end
