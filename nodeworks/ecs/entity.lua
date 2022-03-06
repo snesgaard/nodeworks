@@ -99,6 +99,8 @@ function entity:map(component, func, ...)
     return self:set(component, func(self:get(component), ...))
 end
 
+function entity:event(...) if self.world then self.world(...) end end
+
 function entity:__add(args) return self:set(unpack(args)) end
 
 function entity:__mod(component) return self:get(component) end
