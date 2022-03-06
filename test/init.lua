@@ -21,6 +21,7 @@ require "test.core.stack"
 require "test.core.pool"
 require "test.core.event_queue"
 
+require "test.ecs.pool"
 require "test.ecs.entity"
 require "test.ecs.system"
 require "test.ecs.world"

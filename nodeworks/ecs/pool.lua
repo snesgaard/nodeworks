@@ -45,6 +45,12 @@ function pool:remove(entity)
     self[entity] = nil
     table.remove(self, index)
 
+    -- Reset indices that are now invalid
+    for i = index, self:size() do
+        local entity = self[i]
+        if entity then self[entity] = i end
+    end
+
     return true
 end
 
