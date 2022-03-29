@@ -199,16 +199,20 @@ function implementation:clear()
     while self.scene_stack:size() > 0 do self:pop() end
 end
 
+local function call_event_on_scene(scene, context, event, ...)
+    if scene[event] then
+        return scene[event](context, ...)
+    elseif scene.all_event then
+        return scene.all_event(context, event, ...)
+    end
+end
+
 function implementation:event(event, ...)
     for i = self.scene_stack:size(), 1, -1 do
         local scene = self.scene_stack[i]
         local context = self.context_stack[i]
 
-        if scene[event] then
-            scene[event](context, ...)
-        elseif scene.all_event then
-            scene.all_event(context, event, ...)
-        else
+        if not call_event_on_scene(scene, context, event, ...) then
             context:invoke_event(event, ...)
         end
 
