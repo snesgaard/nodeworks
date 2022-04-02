@@ -176,7 +176,7 @@ function implementation:push(scene, ...)
     context:on_push(self.systems)
 end
 
-function implementation:pop()
+function implementation:pop(...)
     local scene = self.scene_stack:pop()
     local context = self.context_stack:pop()
     if scene then call_if_exists(scene.on_pop, context) end
@@ -186,7 +186,7 @@ function implementation:pop()
     local context = self.context_stack:peek()
 
     if scene then
-        call_if_exists(scene.on_reveal, context)
+        call_if_exists(scene.on_reveal, context, ...)
     end
 end
 
