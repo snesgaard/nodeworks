@@ -190,9 +190,19 @@ function implementation:pop(...)
     end
 end
 
-function implementation:move(...)
-    self:pop()
-    self:push(...)
+function implementation:move(scene, ...)
+    local scene = self.scene_stack:pop()
+    local context = self.context_stack:pop()
+    if scene then call_if_exists(scene.on_pop, context) end
+    if context then context:on_pop() end
+
+    self.scene_stack:push(scene)
+    self.context_stack:push(scene_context.create(self))
+
+    local context = self.context_stack:peek()
+
+    call_if_exists(scene.on_push, context, ...)
+    context:on_push(self.systems)
 end
 
 function implementation:clear()
