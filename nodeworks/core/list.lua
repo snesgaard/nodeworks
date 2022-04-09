@@ -125,12 +125,12 @@ function list:tap(f)
     return self
 end
 
-function list:reduce(f, seed)
+function list:reduce(f, seed, ...)
     local f = f or function(a, b) return a + b end
     local init = seed and 1 or 2
     seed = seed or self[1]
     for i = init, #self do
-    seed = f(seed, self[i])
+    seed = f(seed, self[i], ...)
     end
     return seed
 end
@@ -301,5 +301,19 @@ function list:print()
 end
 
 function list:empty() return self:size() == 0 end
+
+local function default_max_comp(a, b) return a < b end
+
+function list:max(comp, ...)
+    local comp = comp or default_max_comp
+    local init_value = self[1]
+    for i = 2, #self do
+        local next_value = self[i]
+        if comp(init_value, next_value, ...) then
+            init_value = next_value
+        end
+    end
+    return next_value
+end
 
 return list

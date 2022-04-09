@@ -1,3 +1,123 @@
+local nw = require "nodeworks"
+
+local pool_manager = {}
+pool_manager.__index = pool_manager
+
+function pool_manager.create()
+    return setmetatable(
+        {
+            entity_pools = {},
+            component_last_changed = {},
+            component_pools = {},
+            pool_last_changed = {},
+            last_change_index = 1,
+        },
+        pool_manager
+    )
+end
+
+local function recursive_pool_lookup(pool, component, ...)
+    if component == nil then return pool end
+    pool[component] = pool[component] or nw.ecs.pool()
+    return recursive_pool_lookup(pool[component], ...)
+end
+
+function pool_manager:get_entity_pool(...)
+    return recursive_pool_lookup(self.entity_pools, ...)
+end
+
+function pool_manager:get_component_pool(component)
+    self.component_pools[component] = self.component_pools[component] or nw.ecs.pool()
+    return self.component_pools[component]
+end
+
+function pool_manager:set_updated(component)
+    self.component_last_changed[component] = self.last_change_index
+    self.last_change_index = self.last_change_index + 1
+    return self
+end
+
+function pool_manager:notify_change(entity, component, prev_value, next_value)
+    local is_there = prev_value ~= nil
+    local should_be_there = next_value ~= nil
+
+    if is_there and not should_be_there then
+        self:get_component_pool(component):remove(entity)
+    elseif not is_there and should_be_there then
+        self:get_component_pool(component):add(entity)
+    end
+
+    if is_there ~= should_be_there then self:set_updated(component) end
+
+    return self
+end
+
+local function find_max_changed_reduce(current_max, component, self)
+    local next_changed = self.component_last_changed[component] or 0
+    return math.max(current_max, next_changed)
+end
+
+local intersection = {}
+
+function intersection.should_remove(entity, other_pools)
+    for _, pool in ipairs(other_pools) do
+        if not pool[entity] then return true end
+    end
+    return false
+end
+
+function intersection.should_add(entity, other_pools)
+    for _, pool in ipairs(other_pools) do
+        if not pool[entity] then return false end
+    end
+    return true
+end
+
+function intersection.sort_by_size(a, b)
+    return #a < #b
+end
+
+function intersection.compute(target_pool, other_pools)
+    -- TODO: Guard against empty other_pools
+    for i = #target_pool, 1, -1 do
+        local entity = target_pool[i]
+        if intersection.should_remove(entity, other_pools) then
+            target_pool:remove(entity)
+        end
+    end
+
+    table.sort(other_pools, intersection.sort_by_size)
+
+    for _, entity in ipairs(other_pools[1] or {}) do
+        if intersection.should_add(entity, other_pools) then
+            target_pool:add(entity)
+        end
+    end
+end
+
+function pool_manager:get_pool(...)
+    local components = list(...)
+    local pool = self:get_entity_pool(...)
+    local pool_last_changed = self.pool_last_changed[pool] or -1
+    local max_component_last_changed = components:reduce(
+        find_max_changed_reduce, 0, self
+    )
+    local needs_update = pool_last_changed < max_component_last_changed
+    if not needs_update then return pool end
+
+    local component_pools = components:map(
+        function(comp)
+            return self:get_component_pool(comp)
+        end
+    )
+
+    intersection.compute(pool, component_pools)
+
+    self.pool_last_changed[pool] = max_component_last_changed
+
+    return pool
+end
+
 local context = {}
 context.__index = context
 
@@ -21,6 +141,22 @@ function context:visit_event(event_key, func)
         if func(self, event:unpack()) then event:consume() end
     end
 end
+
+function context:sleep(duration)
+    local time_left = duration
+
+    while self.alive and time_left > 0 do
+        for _, event in ipairs(self:read_event("update")) do
+            local dt = unpack(event)
+            time_left = time_left - dt
+        end
+        coroutine.yield()
+    end
+end
+
+function context:pool(...) return self.world:pool(...) end
+
+function context:entity(...) return self.world:entity(...) end
 
 local event = {}
 event.__index = event
@@ -76,7 +212,9 @@ function world:read_event(reader, key)
 end
 
 function world:push(system, ...)
-    table.insert(self.systems, system)
+    if not self.systems:add(system) then return self end
+
+
     self.args[system] = {...}
     self.context[system] = context.create(self)
     self.coroutines[system] = coroutine.create(function(...)
@@ -118,7 +256,7 @@ function world:resolve()
         local ctx = self.context[system]
         local args = self.args[system]
         if not co or not ctx or not args then
-            table.remove(self.systems, i)
+            self.systems:remove(system)
             self.coroutines[system] = nil
             self.context[system] = nil
             self.args[system] = nil
@@ -128,11 +266,63 @@ function world:resolve()
     return self
 end
 
+function world:entity()
+    return nw.ecs.entity():set_world(self)
+end
+
+function world:notify_change(entity, component, prev_value, next_value)
+    self.pool_manager:notify_change(entity, component, prev_value, next_value)
+
+    if self.broadcast_change[component] then
+        self:emit(component, "changed", prev_value, next_value)
+    end
+
+    return self
+end
+
+function world:pool(...) return self.pool_manager:get_pool(...) end
+
+function world:fork(parent_system, child_system, ...)
+    if self.systems[child_system] then return false end
+
+    self:push(child_system, ...)
+
+    self.forks[parent_system] = self.forks[parent_system] or {}
+    table.insert(self.forks[parent_system], child_system)
+end
+
+function world:pop(system)
+    if not self.systems[system] then return end
+
+    local forks = self.forks[system] or {}
+
+    for _, forked_system in ipairs(forks) do
+        self:pop(forked_system)
+    end
+
+    local co = self.coroutines[system]
+    local ctx = self.context[system]
+    local args = self.args[system]
+
+    ctx.alive = false
+    if co and ctx then coroutine.resume(co, ctx) end
+
+    self.systems:remove(system)
+    self.coroutines[system] = nil
+    self.context[system] = nil
+    self.args[system] = nil
+
+    return self
+end
+
 return function()
     return setmetatable(
         {
+            pool_manager = pool_manager.create(),
+            broadcast_change = {},
             context = {},
-            systems = list(),
+            systems = nw.ecs.pool(),
+            forks = nw.ecs.pool(),
             coroutines = {},
             args = {},
             events = {}

@@ -45,11 +45,10 @@ function components.on_frame_changed(prev_frame, next_frame)
     return {prev_frame, next_frame}
 end
 
-components.sprite = nw.ecs.assemblage(
-    components.image, components.draw_args, components.body_slice,
-    components.slices, components.mirror, components.visible
-)
-
+function components.release_on_complete(v)
+    if v == nil then return true end
+    return v
+end
 
 ---
 
@@ -165,13 +164,6 @@ function components.animation_args(playing, once, mode, id)
         id=id
     }
 end
-
-components.animation_state = nw.ecs.assemblage(
-    components.timer,
-    components.frame_sequence,
-    components.index,
-    components.animation_args
-)
 
 ----------------------------------------
 

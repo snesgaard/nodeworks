@@ -1,6 +1,5 @@
 return {
-  --entity = require(... .. ".entity"),
-  --behavior = require(... .. ".behavior"),
+  entity = require(... .. ".entity"),
   world = require(... .. ".world"),
   --assemblage = require(... .. ".assemblage"),
   --system = require(... .. ".system"),

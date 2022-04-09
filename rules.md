@@ -300,3 +300,90 @@ end
 ```
 
 So basically the system will try to read the update event and advance all tween timers. This means that only at the 0th order pass will there be any update events.
+
+# Async/Promises
+
+At times it might be necessary for a system to spin off non-blocking work. Either persistent or otherwise. Let us say for instance that in the menu main we open a help menu, which does not block. Meaning both has to run at the same time.
+
+Another example could be resource loading.
+
+A classic way of handling such an issue is the async/promise model. Whatever needs doing is spun off in a thread (coroutine) and a promise object is returned to the caller. This object will eventually contain the results of the computation.
+
+```lua
+function count_to_ten(ctx, limit)
+  local counter = 0
+
+  while ctx.alive and counter <= limit do
+    for _, _  in ipairs(ctx:read_event("update")) do
+      counter = counter + 1
+    end
+  end
+
+  return counter
+end
+
+function system(ctx)
+  local number = 10
+  local promise = ctx:async(count_to_ten, number)
+
+  while ctx.alive and not promise:done() do
+    coroutine.yield()
+  end
+
+  if promise:done() then
+    local count = promise:result()
+    return count == number
+  else
+    promise:stop()
+  end
+end
+
+```
+
+# Entities
+While the event-loop of the ECS is something I would like to get away from, the entity component part is still good. The idea of composition is great, and adressing using the component constructors.
+
+An important part of ECS is the ability to query groups of entities with similar components. Referred to as pooling
+
+For instance a tween system would want query all entities with a tween component.
+
+A simple way of achieving pooling would be for the system to explicity request a certain pool. E.g.
+
+```lua
+
+function sprite_render_system(ctx)
+  local pool = ctx:pool{nw.component.sprite, nw.component.position}
+  while ctx.alive do
+    -- Drawing logic
+  end
+end
+```
+
+After this call the context creates a new pool instance which contains all entities with the specified components. This pool instance will live alongside the system, and be updated according to changes in the game entities state.
+
+Alternatively pools can be computed every time it is needed. This would eliminate the need for lifetime management, at the cost of more computation.
+
+## Component Tables
+
+While entities should have roughly the same interface (an object with setter and getter), it should not store any state itself. Instead it should be simultanuously ID and API for accessing tables where the data is actually stored.
+
+A component table is basically a table were all entities with a given component is stored, e.g. position. This way it is very easy to create and maintain entity pools, as we only have to check the specific component tables for matching entities.
+
+Alternatively entities can still store state, and the component tables simply keep track of which entities have what components. Would achieve the same, but keep open the posibility of local entities
+
+## Lifetime
+
+Entities are fundementally a fairly global data structure whose lifetimes are not necessarily tied to the system that spawned them.
+
+Entities can also be operated on by a large variety of systems, not just the one that spawned it.
+
+As such lifetime has be explicity managed via create, destroy.
+
+
+
+# TODO
+
+* [x] Events
+* [ ] Entities
+* [ ] Async/Promise
+* [ ] Drawing stack
