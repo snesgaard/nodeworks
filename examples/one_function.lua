@@ -29,6 +29,13 @@ local function draw_all_cards(ctx)
     draw_card(60, 250 + read_offset(ctx, "bottom_card"), "bottom_card" == ctx.selected)
 end
 
+local function move_card_to(ctx, card, x, y)
+    return ctx:entity()
+        :set(nw.component.tween)
+        :set(nw.component.position)
+
+end
+
 
 local function change_selection(ctx, from, to)
     local select_offset = -10

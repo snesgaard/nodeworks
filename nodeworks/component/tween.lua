@@ -69,11 +69,7 @@ end
 
 function tween:get_duration() return self.__duration end
 
-function tween:invoke_callback(...)
-    if self.__callback then self.__callback(...) end
-end
-
-return function(from, to, duration, callback)
+return function(from, to, duration, ease)
     return setmetatable(
         {
             __from = from,
@@ -82,7 +78,7 @@ return function(from, to, duration, callback)
             __duration = duration,
             __time = 0,
             __delay = 0,
-            __callback = callback
+            __ease = ease
         },
         tween
     )
