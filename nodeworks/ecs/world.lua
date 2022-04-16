@@ -124,6 +124,7 @@ context.__index = context
 function context.create(world)
     return setmetatable(
         {
+            layer=layer(),
             world=world,
             alive=true
         },
@@ -200,20 +201,33 @@ function world:has_events()
     return false
 end
 
+local function filter_consumed_or_observed_event(event, reader)
+    return not (event.consumed or event:observe(reader))
+end
+
 function world:read_event(reader, key)
     local event_queue = self.events[key] or CONSTANTS.EMPTY_LIST
 
-    for i = #event_queue, 1, -1 do
-        local e = event_queue[i]
-        if e.consumed or e:observe(reader) then table.remove(event_queue, i) end
+    if not event_queue then return CONSTANTS.EMPTY_LIST end
+
+    return List.filter(event_queue, filter_consumed_or_observed_event, reader)
+end
+
+function world:clean_events()
+    for key, queue in pairs(self.events) do
+        for i = #queue, 1, -1 do
+            local event = queue[i]
+            if event:observe(self) then table.remove(queue, i) end
+        end
+
+        if #queue == 0 then self.events[key] = nil end
     end
 
-    return event_queue
+    return self
 end
 
 function world:push(system, ...)
     if not self.systems:add(system) then return self end
-
 
     self.args[system] = {...}
     self.context[system] = context.create(self)
@@ -225,7 +239,8 @@ function world:push(system, ...)
 end
 
 function world:resolve()
-    while self:has_events() do
+    local loops = 0
+    while self:clean_events():has_events() do
         for _, system in ipairs(self.systems) do
             local co = self.coroutines[system]
             local ctx = self.context[system]
@@ -247,7 +262,7 @@ function world:resolve()
 
         -- Add self as "reader" for event. This is to make sure that unobserved
         -- events still get removed eventually
-        for key, _ in pairs(self.events) do self:read_event(self, key) end
+        loops = loops + 1
     end
 
     for i = #self.systems, 1, -1 do
@@ -313,6 +328,13 @@ function world:pop(system)
     self.args[system] = nil
 
     return self
+end
+
+function world:draw(layer_key)
+    for _, system in ipairs(self.systems) do
+        local ctx = self.context[system]
+        ctx.layer(layer_key):draw()
+    end
 end
 
 return function()

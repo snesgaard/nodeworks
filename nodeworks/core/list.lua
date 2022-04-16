@@ -35,6 +35,8 @@ function list:__add(l2)
     return self:concat(l2)
 end
 
+function list:copy() return list.create(unpack(self)) end
+
 function list:head() return self[1] end
 
 function list:tail() return self[#self] end

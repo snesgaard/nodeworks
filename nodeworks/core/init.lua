@@ -21,6 +21,7 @@ vec2 = require(BASE .. ".vec2")
 particles = require(BASE .. ".particles")
 ease = require(BASE .. ".ease")
 bump_debug = require(BASE .. ".bump_debug")
+layer = require(BASE .. ".layer")
 
 atlas_cache = {}
 function get_atlas(path)
