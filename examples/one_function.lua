@@ -23,10 +23,12 @@ local function system_b(ctx)
 
     ctx.layer("gui"):push()
     ctx.layer("gui"):add(draw_rectangle, ctx.rect_b)
+
     while ctx.alive and not change_system(ctx) do
         handle_mouse(ctx, ctx.rect_b)
-        coroutine.yield()
+        ctx:yield()
     end
+
     ctx.layer("gui"):pop()
 end
 
@@ -37,7 +39,7 @@ local function system_a(ctx)
     while ctx.alive do
         handle_mouse(ctx, ctx.rect_a)
         if change_system(ctx) then system_b(ctx) end
-        coroutine.yield()
+        ctx:yield()
     end
 end
 

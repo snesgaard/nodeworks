@@ -132,6 +132,10 @@ function context.create(world)
     )
 end
 
+function context:yield(...)
+    if self.alive then return coroutine.yield(...) end
+end
+
 function context:read_event(event_key)
     return self.world:read_event(self, event_key)
 end
