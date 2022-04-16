@@ -16,12 +16,12 @@ function layer:push()
     return self
 end
 
-function layer:pop()
+function layer:pop(ignore_error)
     local prev_state = self.stack:pop()
-    if not prev_state then
+    if not prev_state and not ignore_error then
         error("Tried to pop state, but there was none")
     end
-    self.state = prev_state
+    self.state = prev_state or list()
     return self
 end
 
@@ -57,6 +57,14 @@ function layer_manager:__call(key)
     local l = self[key]
     if not l then self[key] = layer.create() end
     return self[key]
+end
+
+function layer_manager:push()
+    for key, layer in pairs(self) do layer:push() end
+end
+
+function layer_manager:pop()
+    for key, layer in pairs(self) do layer:pop(true) end
 end
 
 function layer_manager:clear()
