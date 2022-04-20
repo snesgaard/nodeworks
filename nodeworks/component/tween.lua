@@ -69,6 +69,10 @@ end
 
 function tween:get_duration() return self.__duration end
 
+function tween:from() return self.__from end
+
+function tween:to() return self.__to end
+
 return function(from, to, duration, ease)
     return setmetatable(
         {
