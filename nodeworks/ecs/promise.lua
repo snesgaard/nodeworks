@@ -18,6 +18,9 @@ end
 function observable:process(event) return event end
 
 function observable:emit(event)
+    if type(event) ~= "table" then
+        errorf("Event must be of type table, but was %s", type(event))
+    end
     local next_event = self:process(event)
     if not next_event then return self end
 
@@ -97,11 +100,40 @@ end
 
 function reduce:get() return self.value end
 
+local map = setmetatable({}, observable)
+map.__index = map
+
+function map.create(func)
+    local obs = observable.create()
+    obs.func = func
+    return setmetatable(obs, map)
+end
+
+function map:process(event) return {self.func(unpack(event))} end
+
+local latest = setmetatable({}, observable)
+latest.__index = latest
+
+function latest.create()
+    local obs = observable.create()
+    return setmetatable(obs, latest)
+end
+
+function latest:process(event)
+    self.latest = event
+end
+
+function latest:peek()
+    if self.latest then return unpack(self.latest) end
+end
+
 -- Final methods for collection
 local chain_methods = {
     collect = collect,
     filter = filter,
-    reduce = reduce
+    reduce = reduce,
+    map = map,
+    latest = latest
 }
 
 for name, chain in pairs(chain_methods) do

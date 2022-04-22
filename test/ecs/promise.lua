@@ -65,14 +65,34 @@ T("promise", function(T)
         local b = nw.ecs.promise.observable()
         local c = a:merge(b):collect()
 
-        a:emit("a"):emit("a")
-        b:emit("b")
+        a:emit{"a"}:emit{"a"}
+        b:emit{"b"}
 
         local d = c:pop()
 
         T:assert(d:size() == 3)
-        T:assert(d[1] == "a")
-        T:assert(d[2] == "a")
-        T:assert(d[3] == "b")
+        T:assert(unpack(d[1]) == "a")
+        T:assert(unpack(d[2]) == "a")
+        T:assert(unpack(d[3]) == "b")
+    end)
+
+    T("latest", function(T)
+        local a = nw.ecs.promise.observable()
+        local b = a:latest()
+
+        a:emit{1}:emit{2}:emit{3}
+
+        T:assert(b:peek() == 3)
+    end)
+
+    T("map", function(T)
+        local a = nw.ecs.promise.observable()
+        local b = a:map(function(s) return s * 2 end):latest()
+
+        a:emit{3}
+        T:assert(b:peek() == 6)
+
+        a:emit{6}
+        T:assert(b:peek() == 12)
     end)
 end)
