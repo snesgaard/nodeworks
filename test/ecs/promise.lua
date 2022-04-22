@@ -59,4 +59,20 @@ T("promise", function(T)
         collectgarbage()
         T:assert(#child.parents == 1)
     end)
+
+    T("merge", function(T)
+        local a = nw.ecs.promise.observable()
+        local b = nw.ecs.promise.observable()
+        local c = a:merge(b):collect()
+
+        a:emit("a"):emit("a")
+        b:emit("b")
+
+        local d = c:pop()
+
+        T:assert(d:size() == 3)
+        T:assert(d[1] == "a")
+        T:assert(d[2] == "a")
+        T:assert(d[3] == "b")
+    end)
 end)

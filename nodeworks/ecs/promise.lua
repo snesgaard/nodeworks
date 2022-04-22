@@ -113,8 +113,24 @@ for name, chain in pairs(chain_methods) do
     end
 end
 
+function merge(...)
+    local obs = {...}
+    local echo = observable.create()
+
+    for _, o in ipairs(obs) do
+        echo:add_parent(o)
+        o:add_child(echo)
+    end
+
+    return echo
+end
+
+function observable:merge(...) return merge(self, ...) end
+
 return {
-    collect=collect.create
+    collect=collect.create,
+    merge=merge,
+    observable=observable.create
 }
 
 --[[
