@@ -51,9 +51,10 @@ local collect = setmetatable({}, observable)
 collect.__index = collect
 
 
-function collect.create()
+function collect.create(retain)
     local obs = observable.create()
     obs.data = list()
+    obs.retain = retain
     return setmetatable(obs, collect)
 end
 
@@ -69,6 +70,8 @@ function collect:pop()
 end
 
 function collect:peek() return self.data end
+
+function collect:clear() if not self.retain then self:pop() end end
 
 local filter = setmetatable({}, observable)
 filter.__index = filter
@@ -127,13 +130,27 @@ function latest:peek()
     if self.latest then return unpack(self.latest) end
 end
 
+local foreach = setmetatable({}, observable)
+foreach.__index = foreach
+
+function foreach.create(func)
+    local obs = observable.create()
+    return setmetatable(obs, foreach)
+end
+
+function foreach:process(event)
+    self.func(unpack(event))
+    return event
+end
+
 -- Final methods for collection
 local chain_methods = {
     collect = collect,
     filter = filter,
     reduce = reduce,
     map = map,
-    latest = latest
+    latest = latest,
+    foreach = foreach
 }
 
 for name, chain in pairs(chain_methods) do
