@@ -1,81 +1,121 @@
-local function raw_set(self, component, next_value)
-    local prev_value = self[component]
-    self[component] = next_value
-    if self.world then
-        self.world:notify_change(self, component, prev_value, next_value)
-    end
-    return self
-end
+local weak_table = {__mode = "kv"}
 
 local entity = {}
 entity.__index = entity
 
-function entity:has(component) return self[component] ~= nil end
-
-function entity:set(component, ...)
-    return raw_set(self, component, component(...))
+function entity.create(table, id)
+    return setmetatable({id=id or {}, table=table}, entity)
 end
 
-function entity:get(component) return self[component] end
+function entity:set(component, ...)
+    self.table:set(component, self.id, ...)
+    return self
+end
+
+function entity:has(component)
+    return self.table:has(component, self.id)
+end
+
+function entity:get(component)
+    return self.table:get(component, self.id)
+end
 
 function entity:ensure(component, ...)
-    if not self:has(component) then self:set(component, ...) end
-    return self:get(component)
+    return self.table:ensure(component, self.id, ...)
 end
 
 function entity:map(component, func, ...)
-    local value = self:get(component)
+    self.table:map(component, self.id, func, ...)
+    return self
+end
+
+function entity:remove(component)
+    self.table:remove(component, self.id)
+    return self
+end
+
+local entity_table = {}
+entity_table.__index = entity_table
+
+function entity_table.create()
+    return setmetatable(
+        {
+            components = {}
+        },
+        entity_table
+    )
+end
+
+function entity_table:entity(id)
+    return entity.create(self, id)
+end
+
+local function fetch_component(self, component)
+    local c = self.components[component]
+    if c then return c end
+    local c = setmetatable({}, weak_table)
+    self.components[component] = c
+    return c
+end
+
+local function raw_set_component(self, component, id, value)
+    local c = fetch_component(self, component)
+    c[id] = value
+    return self
+end
+
+function entity_table:set(component, id, ...)
+    return raw_set_component(self, component, id, component(...))
+end
+
+function entity_table:remove(component, id)
+    return raw_set_component(self, component, id)
+end
+
+function entity_table:get(component, id)
+    return fetch_component(self, component)[id]
+end
+
+function entity_table:has(component, id)
+    return self:get(component, id) ~= nil
+end
+
+function entity_table:map(component, id, func, ...)
+    local value = self:get(component, id)
+    if not value then return self end
     local next_value = func(value, ...)
-    return raw_set(self, component, next_value)
+    return raw_set_component(self, component, id, next_value)
 end
 
-function entity:visit(func, ...)
-    func(self, ...)
-    return self
+function entity_table:ensure(component, id, ...)
+    local value = self:get(component, id)
+    if value then return value end
+    local next_value = component(...)
+    raw_set_component(self, component, id, next_value)
+    return next_value
 end
 
-function entity:set_world(world)
-    local prev_world = self.world
-    local next_world = world
+function entity_table:pool(...)
+    local components = list(...)
+    local entity_count = {}
 
-    self.world = next_world
-
-    if prev_world then
-        for component, value in pairs(self) do
-            if type(component) ~= "string" then
-                prev_world:notify_change(self, component, value, nil)
-            end
+    for _, comp in ipairs(components) do
+        for entity, _ in pairs(fetch_component(self, comp)) do
+            entity_count[entity] = (entity_count[entity] or 0) + 1
         end
     end
 
-    if next_world then
-        for component, value in pairs(self) do
-            if type(component) ~= "string" then
-                next_world:notify_change(self, component, nil, value)
-            end
-        end
+    local result = list()
+
+    for entity, count in pairs(entity_count) do
+        if count == #components then table.insert(result, entity) end
     end
 
-    return self
+    return entity
 end
 
-function entity:destroy() return self:set_world(nil) end
-
-function entity:set_tag(tag)
-    self.tag = tag
-    return self
+function entity_table:table(component)
+    return fetch_component(self, component)
 end
 
-function entity:__tostring()
-    if self.tag then
-        return string.format("Entity[%s]", tostring(self.tag))
-    else
-        return "Entity"
-    end
-end
-
-function entity:__add(component, ...) return self:set(component, ...) end
-
-function entity:__mod(component) return self:get(component) end
-
-return function() return setmetatable({}, entity) end
+return entity_table.create
