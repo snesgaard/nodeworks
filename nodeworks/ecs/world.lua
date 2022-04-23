@@ -56,7 +56,7 @@ function context:parse_events(events)
     local did_something = false
 
     -- Iterate all observers
-    for event_key, obs in ipairs(self.observers) do
+    for event_key, obs in pairs(self.observers) do
         -- Check if there are any events avialable for this observer
         local e = events[event_key] or CONSTANTS.EMPTY_LIST
         -- Iterate the events
@@ -74,7 +74,7 @@ function context:parse_events(events)
 end
 
 function context:clear()
-    for _, obs in ipairs(self.observers) do obs:clear_chain() end
+    for _, obs in pairs(self.observers) do obs:clear_chain() end
     return self
 end
 
@@ -106,8 +106,8 @@ function world:push(system, ...)
 end
 
 function world:emit(event_key, ...)
-    events[event_key] = events[event_key] or {}
-    table.insert(events[event_key], {...})
+    self.events[event_key] = self.events[event_key] or list()
+    table.insert(self.events[event_key], {...})
     return self
 end
 

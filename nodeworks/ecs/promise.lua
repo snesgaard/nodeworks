@@ -123,11 +123,11 @@ function latest.create()
 end
 
 function latest:process(event)
-    self.latest = event
+    self.latest_event = event
 end
 
 function latest:peek()
-    if self.latest then return unpack(self.latest) end
+    if self.latest_event then return unpack(self.latest_event) end
 end
 
 local foreach = setmetatable({}, observable)
