@@ -3,8 +3,14 @@ local weak_table = {__mode = "kv"}
 local entity = {}
 entity.__index = entity
 
+
 function entity.create(table, id)
     return setmetatable({id=id or {}, table=table}, entity)
+end
+
+function entity:__tostring()
+    local id = tostring(self.id)
+    return string.format("Entity [%s]", id)
 end
 
 function entity:set(component, ...)
@@ -33,6 +39,8 @@ function entity:remove(component)
     self.table:remove(component, self.id)
     return self
 end
+
+function entity:__mod(component) return self:get(component) end
 
 local entity_table = {}
 entity_table.__index = entity_table
