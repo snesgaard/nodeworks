@@ -1,4 +1,4 @@
-local weak_table = {__mode = "kv"}
+local weak_table = {__mode = "k"}
 
 local entity = {}
 entity.__index = entity
