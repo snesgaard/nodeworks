@@ -24,7 +24,13 @@ function observable:emit(event)
     local next_event = self:process(event)
     if not next_event then return self end
 
-    for _, child in ipairs(self.children) do child:emit(next_event) end
+    -- NOTE(SNJE): pairs might not respect order of adding. Is necessary sadly
+    -- as when gc claims a child, it's entry is eimply left as nil, which
+    -- breaks ipairs.
+    --
+    -- Also note that this is only a problem for passive callbacks like foreach.
+    -- For sideffect-less observables the ordering doesn't matter.
+    for _, child in pairs(self.children) do child:emit(next_event) end
 
     return self
 end
@@ -42,7 +48,7 @@ end
 function observable:clear_chain()
     self:clear()
 
-    for _, child in ipairs(self.children) do child:clear_chain() end
+    for _, child in pairs(self.children) do child:clear_chain() end
 end
 
 function observable:clear() end
@@ -101,7 +107,12 @@ function reduce:process(event)
     self.value = self.func(self.value, unpack(event))
 end
 
-function reduce:get() return self.value end
+function reduce:peek() return self.value end
+
+function reduce:reset()
+    self.value = self.initial_value
+    return self
+end
 
 local map = setmetatable({}, observable)
 map.__index = map
