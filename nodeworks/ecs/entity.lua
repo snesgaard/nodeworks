@@ -40,6 +40,11 @@ function entity:remove(component)
     return self
 end
 
+function entity:assemble(func, ...)
+    func(self, ...)
+    return self
+end
+
 function entity:__mod(component) return self:get(component) end
 
 local entity_table = {}
