@@ -54,6 +54,10 @@ function Spatial:set(x, y, w, h)
     return Spatial.create(x or self.x, y or self.y, w or self.w, h or self.h)
 end
 
+function Spatial:point_inside(x, y)
+    return self.x <= x and x < self.x + self.w and self.y <= y and y <= self.y + self.h
+end
+
 function Spatial:scale(sx, sy)
     sx = sx or 1
     sy = sy or sx
