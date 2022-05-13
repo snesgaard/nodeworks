@@ -47,6 +47,12 @@ function list:random() return self[rng(#self)] end
 
 function list:read(i) return self[i or 1] end
 
+function list:set(index, value)
+    local ret = list.create(unpack(self))
+    ret[index] = value
+    return ret
+end
+
 function list:insert(val, index)
   local ret = list.create(unpack(self))
   if not index then
