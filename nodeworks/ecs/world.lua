@@ -1,4 +1,5 @@
 local nw = require "nodeworks"
+local debug = require  "debug"
 
 local weak_table = {__mode = "v"}
 
@@ -30,6 +31,7 @@ function context:resume()
     if self.co then
         local status, msg = coroutine.resume(self.co, self, unpack(self.args))
         if not status then
+            print(debug.traceback(self.co))
             error(msg)
         elseif msg == CONSTANTS.TERMINATE then
             self.co = nil
