@@ -130,4 +130,6 @@ function gui:tween(key)
     end
 end
 
+function gui:__call(...) return self:action(...) end
+
 return gui.create
