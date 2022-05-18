@@ -21,7 +21,8 @@ function tween_master.create()
     return setmetatable(
         {
             tweens = {},
-            threshold = 1
+            threshold = 1,
+            default_duration = 0.1
         },
         tween_master
     )
@@ -53,7 +54,7 @@ function tween_master:move_to(id, value, duration, ease)
     local sq_dist = compute_square_distance(to, value)
     if sq_dist < self.threshold * self.threshold then return t:value() end
 
-    self:set(id, t:value(), value, duration, ease)
+    self:set(id, t:value(), value, duration or self.default_duration, ease)
     return self:get(id)
 end
 
