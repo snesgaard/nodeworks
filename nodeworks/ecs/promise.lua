@@ -142,8 +142,9 @@ function map:process(event) return {self.func(unpack(event))} end
 local latest = setmetatable({}, observable)
 latest.__index = latest
 
-function latest.create(retain)
+function latest.create(init)
     local obs = observable.create()
+    obs.latest_event = init
     return setmetatable(obs, latest)
 end
 
@@ -161,6 +162,8 @@ function latest:pop()
     self.latest_event = nil
     return unpack(le)
 end
+
+function latest:empty() return self:peek() == nil end
 
 local foreach = setmetatable({}, observable)
 foreach.__index = foreach
