@@ -22,9 +22,7 @@ function observable:emit(event)
         errorf("Event must be of type table, but was %s", type(event))
     end
 
-    if event.consumed then return self end
-
-    local next_event, do_consume = self:process(event)
+    local next_event = self:process(event)
     if not next_event then return self end
 
     -- NOTE(SNJE): pairs might not respect order of adding. Is necessary sadly
@@ -33,12 +31,9 @@ function observable:emit(event)
     --
     -- Also note that this is only a problem for passive callbacks like foreach.
     -- For sideffect-less observables the ordering doesn't matter.
-    for _, child in pairs(self.children) do
-        local _, do_consume_next = child:emit(next_event)
-        next_event.consumed = next_event.consumed or do_consume_next
-    end
+    for _, child in pairs(self.children) do child:emit(next_event) end
 
-    return self, do_consume or next_event.consumed
+    return self
 end
 
 function observable:add_child(child)
@@ -129,7 +124,8 @@ function consume.create()
 end
 
 function consume:process(event)
-    return event, true
+    event.consumed = true
+    return event
 end
 
 local map = setmetatable({}, observable)
