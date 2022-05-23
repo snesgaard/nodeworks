@@ -135,12 +135,11 @@ end
 
 function list:reduce(f, seed, ...)
     local f = f or function(a, b) return a + b end
-    local init = seed and 1 or 2
-    seed = seed or self[1]
-    for i = init, #self do
-    seed = f(seed, self[i], ...)
-    end
-    return seed
+    local seed_is_nil = seed == nil
+    local init = seed_is_nil and 2 or 1
+    local value = seed_is_nil and self[1] or seed
+    for i = init, #self do value = f(value, self[i], ...) end
+    return value
 end
 
 function list:find(val)
