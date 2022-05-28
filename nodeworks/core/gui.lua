@@ -50,7 +50,7 @@ local function ease_frames(frames, index, time_in_frame, ease)
     return im_frame, false
 end
 
-local function find_frame(time, frames, once)
+local function find_frame(self, time, frames, once)
     local time = math.max(0, time)
     local total_animation_time = sum_frame_time(frames)
     local cycled_time = once and time or math.fmod(time, total_animation_time)
@@ -75,7 +75,7 @@ function im_animation:get(id)
     if not frames then return end
     local time = self.time[id] or 0
 
-    return find_frame(time, frames, self.once[id])
+    return find_frame(self, time, frames, self.once[id])
 end
 
 function im_animation:set_animation_state(id, frames, time, once)
@@ -91,12 +91,12 @@ function im_animation:play(id, frames)
         self:set_animation_state(id, frames)
     end
 
-    return self:get_frame(id)
+    return self:get(id)
 end
 
 function im_animation:ensure(id, frames)
     local prev_frames = self.frames[id]
-    if prev_frames then return self end
+    if prev_frames then return self:get(id) end
 
     return self:play(id, frames)
 end
@@ -257,6 +257,18 @@ function gui:tween(key)
         return t
     else
         return t
+    end
+end
+
+function gui:animation(id)
+    local id = id or "default"
+    local a = self.animations[id]
+    if not a then
+        local a = im_animation.create()
+        self.animations[id] = a
+        return a
+    else
+        return a
     end
 end
 
