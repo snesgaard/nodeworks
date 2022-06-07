@@ -66,7 +66,11 @@ function collect.create(retain)
 end
 
 function collect:process(event)
-    table.insert(self.data, event)
+    if #event == 1 then
+        table.insert(self.data, unpack(event))
+    else
+        table.insert(self.data, event)
+    end
     return event
 end
 
@@ -90,7 +94,8 @@ function filter.create(func)
 end
 
 function filter:process(event)
-    if self.func(unpack(event)) then return event end
+    local func = self.func or identity
+    if func(unpack(event)) then return event end
 end
 
 local reduce = setmetatable({}, observable)
@@ -150,6 +155,7 @@ end
 
 function latest:process(event)
     self.latest_event = event
+    return event
 end
 
 function latest:peek()

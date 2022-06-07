@@ -97,14 +97,17 @@ function world.create()
         {
             events = {},
             context = {},
+            queue = event_queue()
         },
         world
     )
 end
 
+
 function world:push(system, ...)
-    local ctx = context.create(self, system, ...):resume()
+    local ctx = context.create(self, system, ...)
     table.insert(self.context, ctx)
+    return ctx:resume()
 end
 
 function world:emit(event_key, ...)
