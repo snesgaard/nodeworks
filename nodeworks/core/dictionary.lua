@@ -75,7 +75,7 @@ end
 function dictionary:map(f)
   local ret = dictionary.create()
   for key, val in pairs(self) do
-    ret[key] = f(val)
+    ret[key] = f(key, val)
   end
   return ret
 end
