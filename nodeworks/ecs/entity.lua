@@ -45,6 +45,8 @@ function entity:assemble(func, ...)
     return self
 end
 
+function entity:world() return self.table end
+
 function entity:__mod(component) return self:get(component) end
 
 local entity_table = {}
@@ -89,15 +91,18 @@ function entity_table:get(component, id)
     return fetch_component(self, component)[id]
 end
 
+function entity_table:get_component_table(component)
+    return fetch_component(self, component)
+end
+
 function entity_table:has(component, id)
     return self:get(component, id) ~= nil
 end
 
 function entity_table:map(component, id, func, ...)
-    local value = self:get(component, id)
+    local value = self:ensure(component, id)
     if not value then return self end
-    local next_value = func(value, ...)
-    return raw_set_component(self, component, id, next_value)
+    return raw_set_component(self, component, id, func(value, ...))
 end
 
 function entity_table:ensure(component, id, ...)
@@ -106,6 +111,21 @@ function entity_table:ensure(component, id, ...)
     local next_value = component(...)
     raw_set_component(self, component, id, next_value)
     return next_value
+end
+
+function entity_table:destroy(id)
+    local values_destroyed = dict()
+
+    for component, values in pairs(self.components) do
+        values_destroyed[id] = values[id]
+        self:remove(component, id)
+    end
+
+    if self.on_entity_destroyed then
+        self.on_entity_destroyed(id, values_destroyed)
+    end
+
+    return values_destroyed
 end
 
 function entity_table:pool(...)
