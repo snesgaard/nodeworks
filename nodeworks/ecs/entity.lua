@@ -54,10 +54,11 @@ function entity:__mod(component) return self:get(component) end
 local entity_table = {}
 entity_table.__index = entity_table
 
-function entity_table.create()
+function entity_table.create(strong_tables)
     return setmetatable(
         {
-            components = {}
+            components = {},
+            strong_tables = strong_tables
         },
         entity_table
     )
@@ -70,7 +71,8 @@ end
 local function fetch_component(self, component)
     local c = self.components[component]
     if c then return c end
-    local c = setmetatable({}, weak_table)
+    local c = {}
+    if not self.strong_tables then setmetatable({}, weak_table) end
     self.components[component] = c
     return c
 end
@@ -119,7 +121,7 @@ function entity_table:destroy(id)
     local values_destroyed = dict()
 
     for component, values in pairs(self.components) do
-        values_destroyed[id] = values[id]
+        values_destroyed[component] = values[id]
         self:remove(component, id)
     end
 
@@ -153,4 +155,4 @@ function entity_table:table(component)
     return fetch_component(self, component)
 end
 
-return entity_table.create
+return entity_table
