@@ -47,6 +47,8 @@ end
 
 function entity:world() return self.table end
 
+function entity:destroy() return self:world():destroy(self.id) end
+
 function entity:__mod(component) return self:get(component) end
 
 local entity_table = {}
