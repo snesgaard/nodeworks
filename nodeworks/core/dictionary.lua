@@ -55,12 +55,12 @@ function dictionary:to_keyvalue()
 end
 
 function dictionary:values()
-    local _, values = self:to_keyvalue()
+    local _, values = dictionary.to_keyvalue(self)
     return values
 end
 
 function dictionary:keys()
-    local keys, values = self:to_keyvalue()
+    local keys, values = dictionary.to_keyvalue(self)
     return keys
 end
 
