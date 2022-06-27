@@ -22,6 +22,7 @@ particles = require(BASE .. ".particles")
 ease = require(BASE .. ".ease")
 bump_debug = require(BASE .. ".bump_debug")
 layer = require(BASE .. ".layer")
+imtween = require(BASE .. ".imtween")
 gui = require(BASE .. ".gui")
 
 atlas_cache = {}
