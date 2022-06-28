@@ -103,6 +103,7 @@ end
 
 function world:pop_events()
     local e = self.events
+    if #e <= 0 then return e end
     self.events = list()
     return e
 end
@@ -124,6 +125,7 @@ function world:spin()
 
     while not events:empty() do
         local event = events:head()
+
         for _, ctx in ipairs(self.context) do
             if ctx:parse_single_event(event.key, event.data) then
                 ctx:resume()
@@ -131,7 +133,9 @@ function world:spin()
             end
         end
 
-        events = self:pop_events() + events:body()
+        local next_events = self:pop_events()
+        events = events:body()
+        if #next_events > 0 then events = next_events + events:body() end
     end
 
     self:remove_dead_systems()
