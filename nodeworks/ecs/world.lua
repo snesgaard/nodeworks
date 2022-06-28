@@ -54,25 +54,11 @@ function context:emit(...)
     return self
 end
 
-function context:parse_events(events)
-    local did_something = false
-
-    -- Iterate all observers
-    for event_key, obs in pairs(self.observers) do
-        -- Check if there are any events avialable for this observer
-        local e = events[event_key] or CONSTANTS.EMPTY_LIST
-        -- Iterate the events
-        for _, event in ipairs(e) do
-            -- If event is not consumed then emit it into the observer
-            -- Also set the did_something flag to signal something changed
-            if not event.consumed then
-                did_something = true
-                obs:emit(event)
-            end
-        end
-    end
-
-    return did_something
+function context:parse_single_event(event_key, event_data)
+    local obs = self.observers[event_key]
+    if not obs or event_data.consumed then return false end
+    obs:emit(event_data)
+    return true
 end
 
 function context:clear()
@@ -95,7 +81,7 @@ world.__index = world
 function world.create()
     return setmetatable(
         {
-            events = {},
+            events = list(),
             context = {},
             queue = event_queue()
         },
@@ -111,14 +97,13 @@ function world:push(system, ...)
 end
 
 function world:emit(event_key, ...)
-    self.events[event_key] = self.events[event_key] or list()
-    table.insert(self.events[event_key], {...})
+    table.insert(self.events, {key = event_key, data = {...}})
     return self
 end
 
 function world:pop_events()
     local e = self.events
-    self.events = {}
+    self.events = list()
     return e
 end
 
@@ -135,15 +120,18 @@ function world:remove_dead_systems()
 end
 
 function world:spin()
-    while self:has_events() do
-        local events = self:pop_events()
+    local events = self:pop_events()
 
+    while not events:empty() do
+        local event = events:head()
         for _, ctx in ipairs(self.context) do
-            if ctx:is_alive() and ctx:parse_events(events) then
+            if ctx:parse_single_event(event.key, event.data) then
                 ctx:resume()
                 ctx:clear()
             end
         end
+
+        events = self:pop_events() + events:body()
     end
 
     self:remove_dead_systems()
