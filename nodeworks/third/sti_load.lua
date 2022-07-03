@@ -52,6 +52,11 @@ end
 
 local function handle_object_layer(sti_map, layer, object_load, ...)
     local entities = {}
+
+    layer.visible = false
+
+    print(dict(layer))
+
     for _, object in ipairs(layer.objects) do
         local entity = object_load(sti_map, layer, object, ...)
         if entity then table.insert(entities, entity) end

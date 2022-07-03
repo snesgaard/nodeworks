@@ -75,6 +75,18 @@ function context:yield(...)
     if self.alive then return coroutine.yield(...) end
 end
 
+function context:clear_all_but_this()
+    local world = self.world
+
+    for _, ctx in ipairs(world.contect) do
+        ctx:kill()
+    end
+
+    world:remove_dead_systems()
+
+    return self
+end
+
 local world = {}
 world.__index = world
 
