@@ -41,7 +41,8 @@ end
 
 function frame:draw(...)
     local origin, x, y, r, sx, sy = self:args(...)
-    local c = origin:center()
+    local slice_to_pos = frame.slice_to_pos or Spatial.center
+    local c = slice_to_pos(origin)
     if self.quad then
         gfx.draw(
             self.image, self.quad, x, y, r, sx, sy,
