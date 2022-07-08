@@ -105,7 +105,7 @@ end
 
 function entity_table:map(component, id, func, ...)
     local value = self:ensure(component, id)
-    if not value then return self end
+    if value == nil then return self end
     return raw_set_component(self, component, id, func(value, ...))
 end
 
