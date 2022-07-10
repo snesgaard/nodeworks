@@ -155,4 +155,6 @@ function world:spin()
     return self
 end
 
-return world.create
+world.Context = context
+
+return world

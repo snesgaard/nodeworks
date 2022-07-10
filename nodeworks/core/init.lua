@@ -23,6 +23,7 @@ ease = require(BASE .. ".ease")
 bump_debug = require(BASE .. ".bump_debug")
 layer = require(BASE .. ".layer")
 imtween = require(BASE .. ".imtween")
+im_animation = require(BASE .. ".imanimation")
 gui = require(BASE .. ".gui")
 
 atlas_cache = {}

@@ -1,6 +1,9 @@
+local World = require(... .. ".world")
+
 return {
   entity = require(... .. ".entity"),
-  world = require(... .. ".world"),
+  world = World.create,
+  World = World,
   --assemblage = require(... .. ".assemblage"),
   --system = require(... .. ".system"),
   pool = require(... .. ".pool"),
