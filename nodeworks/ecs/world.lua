@@ -75,11 +75,11 @@ function context:yield(...)
     if self.alive then return coroutine.yield(...) end
 end
 
-function context:clear_all_but_this()
+function context:kill_all_but_this()
     local world = self.world
 
-    for _, ctx in ipairs(world.contect) do
-        ctx:kill()
+    for _, ctx in ipairs(world.context) do
+        if ctx ~= self then ctx:kill() end
     end
 
     world:remove_dead_systems()
