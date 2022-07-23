@@ -78,6 +78,15 @@ function im_animation:get(id)
     return find_frame(self, time, frames, self.once[id])
 end
 
+function im_animation:done(id)
+    if not self.once[id] then return false end
+    local frames = self.frames[id]
+    if not frames then return true end
+    local full_time = sum_frame_time(frames)
+    local time = self.time[id] or 0
+    return full_time <= time
+end
+
 function im_animation:set_animation_state(id, frames, time, once)
     self.frames[id] = frames
     self.time[id] = time or 0
@@ -108,7 +117,7 @@ function im_animation:play_once(id, frames)
         self:set_animation_state(id, frames, nil, true)
     end
 
-    return self:get_frame(id)
+    return self:get(id)
 end
 
 function im_animation:stop(id)
