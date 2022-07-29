@@ -93,7 +93,7 @@ function gfx.hex2color(hex)
     	 table.insert(splitToRGB, tonumber(hex:sub(x, x + 1), 16) / 255.0) --convert hexes to dec
     	 if splitToRGB[# splitToRGB] < 0 then slpitToRGB[# splitToRGB] = 0 end --prevents negative values
     end
-    return list(unpack(splitToRGB))
+    return Color.create(unpack(splitToRGB))
 end
 
 function add(a, b) return a + b end
