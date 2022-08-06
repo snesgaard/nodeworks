@@ -1,5 +1,0 @@
-return {
-    block = {},
-    stop = {},
-    interrupt = {},
-}

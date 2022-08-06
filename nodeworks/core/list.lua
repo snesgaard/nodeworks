@@ -35,6 +35,8 @@ function list:__add(l2)
     return self:concat(l2)
 end
 
+function list:copy() return list.create(unpack(self)) end
+
 function list:head() return self[1] end
 
 function list:tail() return self[#self] end
@@ -44,6 +46,12 @@ function list:body() return self:sub(2) end
 function list:random() return self[rng(#self)] end
 
 function list:read(i) return self[i or 1] end
+
+function list:set(index, value)
+    local ret = list.create(unpack(self))
+    ret[index] = value
+    return ret
+end
 
 function list:insert(val, index)
   local ret = list.create(unpack(self))
@@ -125,14 +133,13 @@ function list:tap(f)
     return self
 end
 
-function list:reduce(f, seed)
+function list:reduce(f, seed, ...)
     local f = f or function(a, b) return a + b end
-    local init = seed and 1 or 2
-    seed = seed or self[1]
-    for i = init, #self do
-    seed = f(seed, self[i])
-    end
-    return seed
+    local seed_is_nil = seed == nil
+    local init = seed_is_nil and 2 or 1
+    local value = seed_is_nil and self[1] or seed
+    for i = init, #self do value = f(value, self[i], ...) end
+    return value
 end
 
 function list:find(val)
@@ -301,5 +308,19 @@ function list:print()
 end
 
 function list:empty() return self:size() == 0 end
+
+local function default_max_comp(a, b) return a < b end
+
+function list:max(comp, ...)
+    local comp = comp or default_max_comp
+    local init_value = self[1]
+    for i = 2, #self do
+        local next_value = self[i]
+        if comp(init_value, next_value, ...) then
+            init_value = next_value
+        end
+    end
+    return next_value
+end
 
 return list

@@ -1,108 +1,158 @@
+local weak_table = {__mode = "k"}
+
 local entity = {}
 entity.__index = entity
 
-function entity.create(world, tag)
-    return setmetatable(
-        {
-            world = world,
-            tag = tag,
-            dead = false,
-            changed = false,
-            past = dict()
-        },
-        entity
-    )
+
+function entity.create(table, id)
+    return setmetatable({id=id or {}, table=table}, entity)
 end
 
 function entity:__tostring()
-    if self.tag then
-        return string.format("entity[%s]", self.tag)
-    else
-        return "entity"
-    end
-end
-
-function entity:is_dead() return self.dead end
-
-function entity:notify_change()
-    if self.world and not self.dead then self.world:notify_change(self) end
-    return self
-end
-
-function entity:set_past(component, value)
-    self.past[component] = self.past[component] or value
-    self.changed = true
-    return self
-end
-
-function entity:pop_past()
-    if not self.changed then return self.past end
-    self.changed = false
-    local p = self.past
-    self.past = dict()
-    return p
-end
-
-local function evaluate_component(component, ...)
-    if type(component) == "function" then
-        return component(...)
-    elseif type(component) == "table" then
-        return component.create(...)
-    else
-        errorf("Unsupported type %s", tostring(type(component)))
-    end
+    local id = tostring(self.id)
+    return string.format("Entity [%s]", id)
 end
 
 function entity:set(component, ...)
-    local prev_value = self[component]
-    local next_value = evaluate_component(component, ...)
-    self:set_past(component, prev_value)
-    self[component] = next_value
-    return self:notify_change()
-end
-
-function entity:get(component) return self[component] end
-
-function entity:check(component) return self[component] or component() end
-
-function entity:remove(component)
-    local prev_value = self[component]
-    if not prev_value then return self end
-    self:set_past(component, prev_value)
-    self[component] = nil
-    return self:notify_change()
-end
-
-function entity:destroy()
-    self.dead = true
-    return self:notify_change()
-end
-
-function entity:has_changed()
-    return self.dead or self.changed
-end
-
-function entity:assemble(assemblage, ...)
-    assemblage(self, ...)
+    self.table:set(component, self.id, ...)
     return self
 end
 
-function entity:ensure(component, ...)
-    if not self:has(component) then self:set(component, ...) end
-    return self:get(component)
+function entity:has(component)
+    return self.table:has(component, self.id)
 end
 
-function entity:has(component) return self[component] ~= nil end
+function entity:get(component)
+    return self.table:get(component, self.id)
+end
+
+function entity:ensure(component, ...)
+    return self.table:ensure(component, self.id, ...)
+end
 
 function entity:map(component, func, ...)
-    if not self:has(component) then return self end
-    return self:set(component, func(self:get(component), ...))
+    self.table:map(component, self.id, func, ...)
+    return self
 end
 
-function entity:event(...) if self.world then self.world(...) end end
+function entity:remove(component)
+    self.table:remove(component, self.id)
+    return self
+end
 
-function entity:__add(args) return self:set(unpack(args)) end
+function entity:assemble(func, ...)
+    func(self, ...)
+    return self
+end
+
+function entity:world() return self.table end
+
+function entity:destroy() return self:world():destroy(self.id) end
 
 function entity:__mod(component) return self:get(component) end
 
-return entity.create
+local entity_table = {}
+entity_table.__index = entity_table
+
+function entity_table.create(strong_tables)
+    return setmetatable(
+        {
+            components = {},
+            strong_tables = strong_tables
+        },
+        entity_table
+    )
+end
+
+function entity_table:entity(id)
+    return entity.create(self, id)
+end
+
+local function fetch_component(self, component)
+    local c = self.components[component]
+    if c then return c end
+    local c = {}
+    if not self.strong_tables then setmetatable({}, weak_table) end
+    self.components[component] = c
+    return c
+end
+
+local function raw_set_component(self, component, id, value)
+    local c = fetch_component(self, component)
+    c[id] = value
+    return self
+end
+
+function entity_table:set(component, id, ...)
+    return raw_set_component(self, component, id, component(...))
+end
+
+function entity_table:remove(component, id)
+    return raw_set_component(self, component, id)
+end
+
+function entity_table:get(component, id)
+    return fetch_component(self, component)[id]
+end
+
+function entity_table:get_component_table(component)
+    return fetch_component(self, component)
+end
+
+function entity_table:has(component, id)
+    return self:get(component, id) ~= nil
+end
+
+function entity_table:map(component, id, func, ...)
+    local value = self:ensure(component, id)
+    if value == nil then return self end
+    return raw_set_component(self, component, id, func(value, ...))
+end
+
+function entity_table:ensure(component, id, ...)
+    local value = self:get(component, id)
+    if value then return value end
+    local next_value = component(...)
+    raw_set_component(self, component, id, next_value)
+    return next_value
+end
+
+function entity_table:destroy(id)
+    local values_destroyed = dict()
+
+    for component, values in pairs(self.components) do
+        values_destroyed[component] = values[id]
+        self:remove(component, id)
+    end
+
+    if self.on_entity_destroyed then
+        self.on_entity_destroyed(id, values_destroyed)
+    end
+
+    return values_destroyed
+end
+
+function entity_table:pool(...)
+    local components = list(...)
+    local entity_count = {}
+
+    for _, comp in ipairs(components) do
+        for entity, _ in pairs(fetch_component(self, comp)) do
+            entity_count[entity] = (entity_count[entity] or 0) + 1
+        end
+    end
+
+    local result = list()
+
+    for entity, count in pairs(entity_count) do
+        if count == #components then table.insert(result, entity) end
+    end
+
+    return entity
+end
+
+function entity_table:table(component)
+    return fetch_component(self, component)
+end
+
+return entity_table

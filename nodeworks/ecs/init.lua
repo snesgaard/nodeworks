@@ -1,10 +1,11 @@
+local World = require(... .. ".world")
+
 return {
   entity = require(... .. ".entity"),
-  behavior = require(... .. ".behavior"),
-  world = require(... .. ".world"),
-  assemblage = require(... .. ".assemblage"),
-  system = require(... .. ".system"),
+  world = World.create,
+  World = World,
+  --assemblage = require(... .. ".assemblage"),
+  --system = require(... .. ".system"),
   pool = require(... .. ".pool"),
-  event = require(... .. ".event"),
-  constants = require(... .. ".constants")
+  promise = require(... .. ".promise")
 }

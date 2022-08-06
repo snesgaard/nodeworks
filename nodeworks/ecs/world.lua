@@ -1,277 +1,175 @@
 local nw = require "nodeworks"
+local debug = require  "debug"
 
-local function call_if_exists(f, ...)
-    if f then return f(...) end
-end
+local weak_table = {__mode = "v"}
 
-local scene_context = {}
-scene_context.__index = scene_context
+local CONSTANTS = {EMPTY_LIST = {}, TERMINATE = {}}
 
-function scene_context.create(world)
+local context = {}
+context.__index = context
+
+function context.create(world, system, ...)
     return setmetatable(
         {
-            entities = nw.ecs.pool(),
-            pools = {},
-            dirty_entities = nw.ecs.pool(),
+            co = coroutine.create(
+                function(...)
+                    system(...)
+                    coroutine.yield(CONSTANTS.TERMINATE)
+                end
+            ),
+            args = {...},
+            system = system,
             world = world,
+            observers = setmetatable({}, weak_table), -- Needs to be weakly reference
+            alive = true
         },
-        scene_context
+        context
     )
 end
 
-function scene_context:event(...) return self.world:event(...) end
+function context:__call(...) return self.world:ensure(...) end
 
-function scene_context:__call(...) return self:event(...) end
-
-function scene_context:invoke_event(event, ...)
-    self:handle_dirty()
-
-    for _, system in ipairs(self.world.systems) do
-        local f = system[event]
-        if f then
-            local pool = self:register_pool(system)
-            f(self, pool, ...)
-        elseif system.all_event then
-            local pool = self:register_pool(system)
-            system.all_event(self, pool, event, ...)
-        end
-    end
-end
-
-function scene_context:singleton()
-    if not self.instance then self.instance = self:entity() end
-
-    return self.instance
-end
-
-function scene_context:entity(...)
-    local e = nw.ecs.entity(self, ...)
-    self.entities:add(e)
-    return e
-end
-
-function scene_context:notify_change(entity)
-    if self.entities[entity] then self.dirty_entities:add(entity) end
-end
-
-function scene_context:register_pool(filter)
-    if self.pools[filter] then return self.pools[filter] end
-
-    local pool = nw.ecs.pool()
-    self.pools[filter] = pool
-
-    for _, entity in ipairs(self.entities) do
-        self:entity_pool_update(filter, pool, entity)
-    end
-
-    return pool
-end
-
-function scene_context:remove_pool(filter)
-    local pool = self.pools[filter]
-    self.pools[filter] = nil
-
-    if type(filter) ~= "table" then return end
-
-    for _, entity in ipairs(pool) do
-        call_if_exists(filter.on_entity_removed, entity, {}, pool)
-    end
-end
-
-local function get_filter(filter)
-    if type(filter) == "table" then
-        return filter.entity_filter
-    elseif type(filter) == "function" then
-        return filter
-    else
-        errorf("Unsupported type %s", type(filter))
-    end
-end
-
-function scene_context:entity_pool_update(filter, pool, entity, past)
-    local is_there = pool[entity]
-    local f = get_filter(filter)
-    local should_be_there = f(entity) and not entity:is_dead()
-
-    if not is_there and not should_be_there then return end
-
-    if should_be_there then
-        pool:add(entity)
-    else
-        pool:remove(entity)
-    end
-
-    if type(filter) ~= "table" then return end
-
-    if should_be_there and not is_there then
-        call_if_exists(filter.on_entity_added, self, entity, pool)
-    elseif should_be_there and is_there then
-        call_if_exists(filter.on_entity_changed, self, entity, past, pool)
-    elseif not should_be_there and is_there then
-        call_if_exists(filter.on_entity_removed, self, entity, past, pool)
-    end
-end
-
-function scene_context:handle_dirty()
-    local dirty = self.dirty_entities
-
-    if dirty:empty() then return end
-
-    self.dirty_entities = nw.ecs.pool()
-
-    for filter, pool in pairs(self.pools) do
-        for _, entity in ipairs(dirty) do
-            local past = entity:pop_past()
-            self:entity_pool_update(filter, pool, entity, past)
+function context:resume()
+    if self.co then
+        local status, msg = coroutine.resume(self.co, self, unpack(self.args))
+        if not status then
+            print(debug.traceback(self.co))
+            error(msg)
+        elseif msg == CONSTANTS.TERMINATE then
+            self.co = nil
+            self.alive = false
         end
     end
 
-    for _, entity in ipairs(dirty) do
-        if entity:is_dead() then self.entities:remove(entity) end
-    end
+    return self
 end
 
-function scene_context:on_push(systems)
-    for _, system in ipairs(systems) do
-        local pool = self:register_pool(system)
-        call_if_exists(system.on_pushed, self, pool)
-    end
+function context:is_alive() return self.alive end
+
+function context:listen(event)
+    self.observers[event] = self.observers[event] or nw.ecs.promise.observable()
+    return self.observers[event]
 end
 
-function scene_context:on_pop()
-    -- TODO call on_poped here
-    for filter, pool in pairs(self.pools) do
-        self:remove_pool(filter)
-        if type(filter) == "table" then
-            call_if_exists(filter.on_poped, self, pool)
-        end
+function context:emit(...)
+    self.world:emit(...)
+    return self
+end
+
+function context:parse_single_event(event_key, event_data)
+    local obs = self.observers[event_key]
+    if not obs or event_data.consumed then return false end
+    obs:emit(event_data)
+    return true
+end
+
+function context:clear()
+    for _, obs in pairs(self.observers) do obs:clear_chain() end
+    return self
+end
+
+function context:kill()
+    self.alive = false
+    return self:resume()
+end
+
+function context:yield(...)
+    if self.alive then return coroutine.yield(...) end
+end
+
+function context:kill_all_but_this()
+    local world = self.world
+
+    for _, ctx in ipairs(world.context) do
+        if ctx ~= self then ctx:kill() end
     end
+
+    world:remove_dead_systems()
+
+    return self
 end
 
 local world = {}
 world.__index = world
 
-function world:find(scene)
-    for i = self.scene_stack:size(), 1, -1 do
-        if self.scene_stack[i] == scene then return self.context_stack[i] end
-    end
-end
-
-local implementation = {}
-
-function implementation:push(scene, ...)
-    local prev_scene = self.scene_stack:peek()
-    local prev_context = self.context_stack:peek()
-
-    if prev_scene then
-        call_if_exists(prev_scene.on_obscure, prev_context)
-    end
-
-    self.scene_stack:push(scene)
-    self.context_stack:push(scene_context.create(self))
-
-    local context = self.context_stack:peek()
-
-    call_if_exists(scene.on_push, context, ...)
-    context:on_push(self.systems)
-end
-
-function implementation:pop(...)
-    local scene = self.scene_stack:pop()
-    local context = self.context_stack:pop()
-    if scene then call_if_exists(scene.on_pop, context) end
-    context:on_pop()
-
-    local scene = self.scene_stack:peek()
-    local context = self.context_stack:peek()
-
-    if scene then
-        call_if_exists(scene.on_reveal, context, ...)
-    end
-end
-
-function implementation:move(next_scene, ...)
-    local scene = self.scene_stack:pop()
-    local context = self.context_stack:pop()
-    if scene then call_if_exists(scene.on_pop, context) end
-    if context then context:on_pop() end
-
-    self.scene_stack:push(next_scene)
-    self.context_stack:push(scene_context.create(self))
-
-    local context = self.context_stack:peek()
-
-    call_if_exists(next_scene.on_push, context, ...)
-    context:on_push(self.systems)
-end
-
-function implementation:clear()
-    while self.scene_stack:size() > 0 do implementation.pop(self) end
-end
-
-local function call_event_on_scene(scene, context, event, ...)
-    if scene[event] then
-        return scene[event](context, ...)
-    elseif scene.all_event then
-        return scene.all_event(context, event, ...)
-    end
-end
-
-function implementation:event(event, ...)
-    for i = self.scene_stack:size(), 1, -1 do
-        local scene = self.scene_stack[i]
-        local context = self.context_stack[i]
-
-        if not call_event_on_scene(scene, context, event, ...) then
-            context:invoke_event(event, ...)
-        end
-
-        local block_call = call_if_exists(scene.block_event, context, event, ...)
-        if block_call then return end
-    end
-end
-
-function implementation:reverse_event(event, ...)
-    local limit = 1
-    for i = self.scene_stack:size(), 1, -1 do
-        local scene = self.scene_stack[i]
-        local context = self.context_stack[i]
-        limit = i
-        local block_call = call_if_exists(scene.block_event, context, event, ...)
-        if block_call then break end
-    end
-
-    for i = limit, self.scene_stack:size() do
-        local scene = self.scene_stack[i]
-        local context = self.context_stack[i]
-
-        if scene[event] then
-            scene[event](context, ...)
-        elseif scene.all_event then
-            scene.all_event(context, event, ...)
-        else
-            context:invoke_event(event, ...)
-        end
-    end
-end
-
-for name, func in pairs(implementation) do
-    world[name] = function(self, ...)
-        self.event_queue(func, self, ...)
-        return self
-    end
-end
-
-function world:__call(...) return self:event(...) end
-
-return function(systems)
+function world.create()
     return setmetatable(
         {
-            systems = systems or {},
-            scene_stack = stack(),
-            context_stack = stack(),
-            event_queue = event_queue()
+            events = list(),
+            context = {},
+            queue = event_queue()
         },
         world
     )
 end
+
+
+function world:push(system, ...)
+    local ctx = context.create(self, system, ...)
+    table.insert(self.context, ctx)
+    return ctx:resume()
+end
+
+function world:emit(event_key, ...)
+    table.insert(self.events, {key = event_key, data = {...}})
+    return self
+end
+
+function world:pop_events()
+    local e = self.events
+    if #e <= 0 then return e end
+    self.events = list()
+    return e
+end
+
+function world:has_events()
+    for _, _ in pairs(self.events) do return true end
+    return false
+end
+
+function world:remove_dead_systems()
+    for i = #self.context, 1, -1 do
+        local ctx = self.context[i]
+        if not ctx:is_alive() then table.remove(self.context, i) end
+    end
+end
+
+function world:spin()
+    local events = self:pop_events()
+
+    while not events:empty() do
+        local event = events:head()
+
+        for _, ctx in ipairs(self.context) do
+            if ctx:parse_single_event(event.key, event.data) then
+                ctx:resume()
+                ctx:clear()
+            end
+        end
+
+        local next_events = self:pop_events()
+        events = events:body()
+        if #next_events > 0 then events = next_events + events:body() end
+    end
+
+    self:remove_dead_systems()
+
+    return self
+end
+
+function world:find(system)
+    local ctx = List.filter(
+        self.context, function(c) return c.system == system end
+    )
+    return ctx:unpack()
+end
+
+function world:ensure(system, ...)
+    local ctx = world:find(system)
+    if ctx then return ctx end
+    return self:push(system, ...)
+end
+
+world.Context = context
+
+return world

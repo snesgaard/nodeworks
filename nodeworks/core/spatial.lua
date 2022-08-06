@@ -29,6 +29,32 @@ function Spatial.__sub(s1, s2)
     )
 end
 
+function Spatial.__mul(s1, s2)
+    if type(s1) == "table" and type(s2) == "table" then
+        return Spatial.create(
+            s1.x * s2.x, s1.y * s2.y, s1.w * s2.w, s1.h * s2.h
+        )
+    elseif type(s1) == "table" and type(s2) == "number" then
+        return Spatial.create(s1.x * s2, s1.y * s2, s1.w * s2, s1.h * s2)
+    else
+        errorf("Unsupported types %s and %s", type(s1), type(s2))
+    end
+end
+
+function Spatial.__div(s1, s2)
+    if type(s1) == "table" and type(s2) == "table" then
+        return Spatial.create(
+            s1.x / s2.x, s1.y / s2.y, s1.w / s2.w, s1.h / s2.h
+        )
+    elseif type(s1) == "table" and type(s2) == "number" then
+        return Spatial.create(s1.x / s2, s1.y / s2, s1.w / s2, s1.h / s2)
+    else
+        errorf("Unsupported types %s and %s", type(s1), type(s2))
+    end
+end
+
+
+
 function Spatial:sanitize()
     return Spatial.create(
         self.w > 0 and self.x or self.x + self.w,
@@ -66,6 +92,10 @@ end
 function Spatial:set(x, y, w, h)
     -- Uility for use with stack api
     return Spatial.create(x or self.x, y or self.y, w or self.w, h or self.h)
+end
+
+function Spatial:point_inside(x, y)
+    return self.x <= x and x < self.x + self.w and self.y <= y and y <= self.y + self.h
 end
 
 function Spatial:scale(sx, sy)

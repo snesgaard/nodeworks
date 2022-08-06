@@ -31,7 +31,7 @@ function tween:update(dt)
     local time_spent = self.__time - prev_time
     local time_left = dt - time_spent
 
-    return self:value(), time_left
+    return time_left
 end
 
 function tween:value(time)
@@ -69,7 +69,11 @@ end
 
 function tween:get_duration() return self.__duration end
 
-return function(from, to, duration)
+function tween:from() return self.__from end
+
+function tween:to() return self.__to end
+
+return function(from, to, duration, ease)
     return setmetatable(
         {
             __from = from,
@@ -78,6 +82,7 @@ return function(from, to, duration)
             __duration = duration,
             __time = 0,
             __delay = 0,
+            __ease = ease
         },
         tween
     )

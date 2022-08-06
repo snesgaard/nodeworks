@@ -21,6 +21,10 @@ vec2 = require(BASE .. ".vec2")
 particles = require(BASE .. ".particles")
 ease = require(BASE .. ".ease")
 bump_debug = require(BASE .. ".bump_debug")
+layer = require(BASE .. ".layer")
+imtween = require(BASE .. ".imtween")
+im_animation = require(BASE .. ".imanimation")
+gui = require(BASE .. ".gui")
 
 atlas_cache = {}
 function get_atlas(path)
@@ -89,7 +93,7 @@ function gfx.hex2color(hex)
     	 table.insert(splitToRGB, tonumber(hex:sub(x, x + 1), 16) / 255.0) --convert hexes to dec
     	 if splitToRGB[# splitToRGB] < 0 then slpitToRGB[# splitToRGB] = 0 end --prevents negative values
     end
-    return list(unpack(splitToRGB))
+    return Color.create(unpack(splitToRGB))
 end
 
 function add(a, b) return a + b end
@@ -137,4 +141,29 @@ function math.atan2(x, y)
     else
         return 0
     end
+end
+
+function class()
+    local c = {}
+    c.__index = c
+    return c
+end
+
+function decorate(dst, src)
+    for key, value in pairs(src) do
+        local is_function = type(value) == "function"
+        if is_function then
+            if not dst[key] then
+                dst[key] = value
+            else
+                errorf("Tried to decorate key %s to table, but was already set", key)
+            end
+        end
+    end
+end
+
+function inherit(c, this)
+    local i = setmetatable(this or {}, c)
+    i.__index = i
+    return i
 end

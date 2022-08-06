@@ -6,5 +6,6 @@ return {
     },
     bump = require(PATH .. ".bump.bump"),
     json = require(PATH .. ".json"),
-    sti = require(PATH .. ".Simple-Tiled-Implementation.sti")
+    sti = require(PATH .. ".Simple-Tiled-Implementation.sti"),
+    sti_parse = require(PATH .. ".sti_load")
 }
