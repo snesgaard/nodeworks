@@ -7,14 +7,17 @@ on:
     branches: [ $default-branch ]
   workflow_dispatch:
     branches: [ $default-branch ]
+  pull_request:
+    branches:
+      - master
 
 jobs:
-  build:
+  unit_tests:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Checkout submodules
       run: git submodule update --init --recursive
 
