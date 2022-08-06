@@ -49,7 +49,7 @@ T("tween", function(T)
             :as(nw.component.position)
             :entity(hook)
             :warp_to(vec2(0, 0))
-            :move_to(vec2(150, 150), 1)
+            :move_to(vec2(150, 150), 1, ease.linear)
 
         T:assert(isclose(
             hook:get(nw.component.position).x, 0
