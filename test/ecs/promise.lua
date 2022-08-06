@@ -31,7 +31,7 @@ T("promise", function(T)
     local reduce = filter:reduce(function(v) return v + 1 end, 0)
 
     T("reduce", function(T)
-        T:assert(reduce:get() == 0)
+        T:assert(reduce:peek() == 0)
 
         collect
             :emit{1}
@@ -39,7 +39,7 @@ T("promise", function(T)
             :emit{6}
             :emit{7}
 
-        T:assert(reduce:get() == 2)
+        T:assert(reduce:peek() == 2)
     end)
 
     T("garbage_child", function(T)
@@ -71,9 +71,9 @@ T("promise", function(T)
         local d = c:pop()
 
         T:assert(d:size() == 3)
-        T:assert(unpack(d[1]) == "a")
-        T:assert(unpack(d[2]) == "a")
-        T:assert(unpack(d[3]) == "b")
+        T:assert(d[1] == "a")
+        T:assert(d[2] == "a")
+        T:assert(d[3] == "b")
     end)
 
     T("latest", function(T)
