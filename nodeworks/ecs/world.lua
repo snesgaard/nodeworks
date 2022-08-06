@@ -27,6 +27,8 @@ function context.create(world, system, ...)
     )
 end
 
+function context:__call(...) return self.world:ensure(...) end
+
 function context:resume()
     if self.co then
         local status, msg = coroutine.resume(self.co, self, unpack(self.args))
@@ -153,6 +155,19 @@ function world:spin()
     self:remove_dead_systems()
 
     return self
+end
+
+function world:find(system)
+    local ctx = List.filter(
+        self.context, function(c) return c.system == system end
+    )
+    return ctx:unpack()
+end
+
+function world:ensure(system, ...)
+    local ctx = world:find(system)
+    if ctx then return ctx end
+    return self:push(system, ...)
 end
 
 world.Context = context

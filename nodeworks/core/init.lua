@@ -142,3 +142,28 @@ function math.atan2(x, y)
         return 0
     end
 end
+
+function class()
+    local c = {}
+    c.__index = c
+    return c
+end
+
+function decorate(dst, src)
+    for key, value in pairs(src) do
+        local is_function = type(value) == "function"
+        if is_function then
+            if not dst[key] then
+                dst[key] = value
+            else
+                errorf("Tried to decorate key %s to table, but was already set", key)
+            end
+        end
+    end
+end
+
+function inherit(c, this)
+    local i = setmetatable(this or {}, c)
+    i.__index = i
+    return i
+end

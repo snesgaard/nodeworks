@@ -1,77 +1,187 @@
 local nw = require "nodeworks"
 local T = nw.third.knife.test
+local collision = nw.system.collision
 
-local scene = {}
+local function table_equal(a, b)
+    for key, a_value in pairs(a) do
+        if b[key] ~= a_value then return false end
+    end
 
-function scene.on_push(ctx, bump_world)
-    ctx.main = ctx:entity("entity")
-        + {nw.component.position, 0, 0}
-        + {nw.component.hitbox, 0, 0, 10, 10}
-        + {nw.component.bump_world, bump_world}
-        + {nw.component.body}
-
-    ctx.box = ctx:entity("box")
-        + {nw.component.position, 0, 100}
-        + {nw.component.hitbox, 0, 0, 10, 10}
-        + {nw.component.bump_world, bump_world}
-        + {nw.component.body}
-
-    ctx.cross_box = ctx:entity("cross")
-        + {nw.component.position, 100, 0}
-        + {nw.component.hitbox, 0, 0, 10, 10}
-        + {nw.component.bump_world, bump_world}
+    return true
 end
 
-T("Collision", function(T)
-    local world = nw.ecs.world{nw.system.collision}
+T("collision", function(T)
+    local world = nw.ecs.world()
+    local ecs_world = nw.ecs.entity.create()
     local bump_world = nw.third.bump.newWorld()
 
-    world:push(scene, bump_world)
+    local hitbox = spatial(0, 0, 100, 100)
+    local x, y = 10, 20
 
-    local ctx = world:find(scene)
+    T("assemble", function(T)
+        local entity = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                x, y, hitbox, bump_world
+            )
 
-    T("System population", function(T)
-        local pool = ctx.pools[nw.system.collision]
-        T:assert(#pool == 3)
+        T:assert(entity:has(nw.component.hitbox))
+        T:assert(entity:has(nw.component.position))
+        T:assert(entity:has(nw.component.bump_world))
+
+        T:assert(table_equal(entity:get(nw.component.hitbox), hitbox))
+        T:assert(table_equal(entity:get(nw.component.position), vec2(x, y)))
+        T:assert(entity:get(nw.component.bump_world) == bump_world)
     end)
-    T("bump population", function(T)
-        T:assert(bump_world:hasItem(ctx.main))
-        T:assert(bump_world:hasItem(ctx.box))
-        T:assert(bump_world:hasItem(ctx.cross_box))
+
+    T("move", function(T)
+        local entity = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                x, y, hitbox, bump_world
+            )
+
+        local ax, ay, cols = collision():move(entity, 10, 20)
+
+        T:assert(ax == 10)
+        T:assert(ay == 20)
+        T:assert(#cols == 0)
+        T:assert(table_equal(entity:get(nw.component.position), vec2(20, 40)))
     end)
-    T("Test relative motion (collision)", function(T)
-        local dx, dy, cols = nw.system.collision.move(ctx.main, 0, 200)
-        T:assert(dx == 0)
-        T:assert(dy == 90)
+
+    T("move_to", function(T)
+        local entity = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                x, y, hitbox, bump_world
+            )
+
+        local ax, ay, cols = collision():move_to(entity, 20, 40)
+
+        T:assert(ax == 20)
+        T:assert(ay == 40)
+        T:assert(#cols == 0)
+        T:assert(table_equal(entity:get(nw.component.position), vec2(20, 40)))
+    end)
+
+    T("move_with_collision", function(T)
+        local entity = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                x, y, hitbox, bump_world
+            )
+        local block = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                x, 200, hitbox, bump_world
+            )
+
+        local ax, ay, cols = collision():move_to(entity, x, 400)
+
+        T:assert(ax == x)
+        T:assert(ay ~= 400)
         T:assert(#cols == 1)
     end)
-    T("Test relative motion (no collision)", function(T)
-        local dx, dy, cols = nw.system.collision.move(ctx.main, 0, 50)
-        T:assert(dx == 0)
-        T:assert(dy == 50)
+
+    T("move_with_cross", function(T)
+        local entity = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                x, y, hitbox, bump_world
+            )
+        local block = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                x, 200, hitbox, bump_world
+            )
+
+        local ax, ay, cols = collision():move_to(
+            entity, x, 400,
+            function() return "cross" end
+        )
+
+        T:assert(ax == x)
+        T:assert(ay == 400)
+        T:assert(#cols == 1)
+    end)
+
+    T("move_with_ignore", function(T)
+        local entity = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                x, y, hitbox, bump_world
+            )
+        local block = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                x, 200, hitbox, bump_world
+            )
+
+        local ax, ay, cols = collision():move_to(
+            entity, x, 400,
+            function() return false end
+        )
+
+        T:assert(ax == x)
+        T:assert(ay == 400)
         T:assert(#cols == 0)
     end)
-    T("Test absolute motion (no collision)", function(T)
-        local x, y, cols = nw.system.collision.move_to(ctx.main, 0, 50)
-        T:assert(x == 0)
-        T:assert(y == 50)
-        T:assert(#cols == 0)
+
+    T("move_body", function(T)
+        local entity = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                x, y, hitbox, bump_world
+            )
+
+        local ax, ay, colinfo = collision():move_body_to(entity, 20, 30)
+
+        T:assert(#colinfo == 0)
+        T:assert(table_equal(
+            entity:get(nw.component.hitbox),
+            spatial(20, 30, hitbox.w, hitbox.h)
+        ))
     end)
-    T("Test absolute motion", function(T)
-        local x, y, cols = nw.system.collision.move_to(ctx.main, 0, 200)
-        T:assert(x == 0)
-        T:assert(y == 90)
-        T:assert(#cols == 1)
+
+    local function test_system(ctx)
+        ctx.moved = ctx:listen("moved"):latest()
+        ctx.collision = ctx:listen("collision"):latest()
+        while ctx:is_alive() do ctx:yield() end
+    end
+
+    T("events_moved", function(T)
+        local ctx = world:push(test_system)
+
+        local entity = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                x, y, hitbox, bump_world
+            )
+
+        local ax, ay, cols = collision(ctx):move(entity, 10, 20)
+
+        world:spin()
+        T:assert(ctx.moved:peek() == entity)
     end)
-    T("Cross motion", function(T)
-        local x, y, cols = nw.system.collision.move_to(ctx.main, 200, 0)
-        T:assert(x == 200)
-        T:assert(y == 0)
-        T:assert(#cols == 1)
-    end)
-    T("Remove entity", function(T)
-        ctx.main:remove(nw.component.bump_world)
-        ctx:handle_dirty()
-        T:assert(not bump_world:hasItem(ctx.main))
+
+    T("events_collision", function(T)
+        local ctx = world:push(test_system)
+
+        local entity = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                x, y, hitbox, bump_world
+            )
+        local block = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                x, 200, hitbox, bump_world
+            )
+
+        local ax, ay, cols = collision(ctx):move(entity, 0, 300)
+
+        world:spin()
+        T:assert(ctx.moved:peek() == entity)
+        T:assert(ctx.collision:peek().item == entity.id)
     end)
 end)
