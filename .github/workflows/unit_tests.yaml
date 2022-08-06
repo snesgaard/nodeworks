@@ -8,8 +8,7 @@ on:
   workflow_dispatch:
     branches: [ $default-branch ]
   pull_request:
-    branches:
-      - master
+    types: [opened, reopened]
 
 jobs:
   unit_tests:
