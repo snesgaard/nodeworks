@@ -63,6 +63,13 @@ function Spatial:sanitize()
     )
 end
 
+function Spatial:is_point_inside(x, y)
+    return self.x <= x
+            and x <= self.x + self.w
+            and self.y <= y
+            and y <= self.y + self.h
+end
+
 function Spatial:copy()
     return Spatial.create(self.x, self.y, self.w, self.h)
 end
@@ -73,6 +80,13 @@ end
 
 function Spatial:size()
     return vec2(self.w, self.h)
+end
+
+function Spatial:floor()
+    return Spatial.create(
+        math.floor(self.x), math.floor(self.y),
+        math.floor(self.w), math.floor(self.h)
+    )
 end
 
 function Spatial:set(x, y, w, h)

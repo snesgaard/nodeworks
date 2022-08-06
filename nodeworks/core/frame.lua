@@ -29,6 +29,11 @@ function frame:get_dt()
     return self.dt or 0
 end
 
+function frame:size()
+    local x, y, w, h = self.quad:getViewport()
+    return w, h
+end
+
 function frame:args(origin, x, y, ...)
     if type(origin) ~= "string" then
         return self:args("", origin, x, y, ...)
