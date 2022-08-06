@@ -58,14 +58,19 @@ function entity_table.create(strong_tables)
     return setmetatable(
         {
             components = {},
-            strong_tables = strong_tables
+            strong_tables = strong_tables,
+            stored_entities = {}
         },
         entity_table
     )
 end
 
 function entity_table:entity(id)
-    return entity.create(self, id)
+    local id = id or {}
+    if not self.stored_entities[id] then
+        self.stored_entities[id] = entity.create(self, id)
+    end
+    return self.stored_entities[id]
 end
 
 local function fetch_component(self, component)
@@ -128,6 +133,8 @@ function entity_table:destroy(id)
     if self.on_entity_destroyed then
         self.on_entity_destroyed(id, values_destroyed)
     end
+
+    self.stored_entities[id] = nil
 
     return values_destroyed
 end

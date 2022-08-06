@@ -165,7 +165,7 @@ function world:find(system)
 end
 
 function world:ensure(system, ...)
-    local ctx = world:find(system)
+    local ctx = self:find(system)
     if ctx then return ctx end
     return self:push(system, ...)
 end

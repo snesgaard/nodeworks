@@ -2,14 +2,6 @@ local nw = require "nodeworks"
 local T = nw.third.knife.test
 local collision = nw.system.collision
 
-local function table_equal(a, b)
-    for key, a_value in pairs(a) do
-        if b[key] ~= a_value then return false end
-    end
-
-    return true
-end
-
 T("collision", function(T)
     local world = nw.ecs.world()
     local ecs_world = nw.ecs.entity.create()
