@@ -11,7 +11,25 @@ tween(ctx)
 ]]--
 
 
+local TweenEntity = class()
 
+function TweenEntity.create(master, entity)
+    return setmetatable({master=master, entity=entity}, TweenEntity)
+end
+
+local mapped_apis = {
+    "get", "has", "ensure", "move_to", "warp_to", "assign",
+    "set", "done"
+}
+
+for _, name in ipairs(mapped_apis) do
+    TweenEntity[name] = function(self, ...)
+        local f = self.master[name]
+        if not f then return self end
+        f(self.master, self.entity, ...)
+        return self
+    end
+end
 
 local weak_table = {__mode = "k"}
 
@@ -36,7 +54,9 @@ end
 function TweenComponent.create(component)
     local this = setmetatable(
         {
-            entities=setmetatable({}, weak_table), default_duration = 0.1,
+            entities=setmetatable({}, weak_table),
+            entity_assign=setmetatable({}, weak_table),
+            default_duration = 0.1,
             component=component
         },
         TweenComponent
@@ -52,7 +72,13 @@ function TweenComponent:update(dt)
         local tween = entity:get(self.signature)
         if tween then
             tween:update(dt)
-            entity:set(self.component, tween:value())
+            local assign = self.entity_assign[entity]
+            local value = tween:value()
+            if assign then
+                assign(entity, value)
+            else
+                entity:set(self.component, tween:value())
+            end
         end
     end
 end
@@ -102,7 +128,13 @@ end
 
 function TweenComponent:set(entity, from, to, duration, ease)
     self.entities[entity] = to
+    self.entity_assign[entity] = nil
     entity:set(self.signature, from, to, duration, ease)
+    return self
+end
+
+function TweenComponent:assign(entity, assign)
+    self.entity_assign[entity] = assign
     return self
 end
 
@@ -110,6 +142,10 @@ function TweenComponent:done(entity)
     local t = entity:get(self.signature)
     if not t then return true end
     return t:is_done()
+end
+
+function TweenComponent:entity(entity)
+    return TweenEntity.create(self, entity)
 end
 
 local function system(ctx, tween_master)

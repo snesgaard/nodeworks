@@ -42,7 +42,31 @@ T("tween", function(T)
         T:assert(isclose(p.y, 10))
     end)
 
-    T("ensure", function(T)
-        tween(world):as(nw.component.position):ensure(entity, vec2(20, 30), 1)
+    T("fancy", function(T)
+        local hook = ecs_world:entity()
+
+        local t = tween(world)
+            :as(nw.component.position)
+            :entity(hook)
+            :warp_to(vec2(0, 0))
+            :move_to(vec2(150, 150), 1)
+
+        T:assert(isclose(
+            hook:get(nw.component.position).x, 0
+        ))
+        T:assert(isclose(
+            hook:get(nw.component.position).y, 0
+        ))
+
+        world:emit("update", 1):spin()
+
+        T:assert(isclose(
+            hook:get(nw.component.position).x, 150
+        ))
+        T:assert(isclose(
+            hook:get(nw.component.position).y, 150
+        ))
+
+        T:assert(t:done())
     end)
 end)
