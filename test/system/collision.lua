@@ -175,6 +175,7 @@ T("collision", function(T)
         world:spin()
         T:assert(ctx.moved:peek() == entity)
         T:assert(ctx.collision:peek().item == entity.id)
+        T:assert(ctx.collision:peek().ecs_world == entity:world())
     end)
 
     T("cleanup", function(T)

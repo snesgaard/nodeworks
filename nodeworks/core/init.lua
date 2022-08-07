@@ -168,5 +168,9 @@ end
 function inherit(c, this)
     local i = setmetatable(this or {}, c)
     i.__index = i
+
+    function i:class() return i end
+    function i:superclass() return c end
+
     return i
 end

@@ -42,8 +42,16 @@ end
 
 local Collision = class()
 
-function Collision.create(world)
-    return setmetatable({world = world}, Collision)
+function Collision.create()
+    return setmetatable({}, Collision)
+end
+
+function Collision:on_moved(entity, real_dx, real_dy, collision_infos)
+
+end
+
+function Collision:on_collision(entity, collision_infos)
+
 end
 
 function Collision:perform_bump_move(bump_world, entity, dx, dy, filter)
@@ -61,13 +69,10 @@ function Collision:perform_bump_move(bump_world, entity, dx, dy, filter)
     )
     local real_dx, real_dy = ax - x, ay - y
 
-    if self.world then self.world:emit("moved", entity, real_dx, real_dy) end
+    self:on_moved(entity, real_dx, real_dy, collision_infos)
 
     if #col_info > 0 then
-        for _, ci in ipairs(col_info) do
-            ci.ecs_world = entity:world()
-            if self.world then self.world:emit("collision", ci) end
-        end
+        self:on_collision(entity, col_info)
     end
 
     return real_dx, real_dy, col_info
@@ -193,11 +198,30 @@ function assemble.init_entity(entity, x, y, hitbox, bump_world)
     default_instance:warp_to(entity, x, y)
 end
 
+local WorldCollision = inherit(Collision)
+
+function WorldCollision.create(world)
+    local this = Collision.create()
+    this.world = world
+    return setmetatable(this, WorldCollision)
+end
+
+function WorldCollision:on_moved(entity, dx, dy)
+    self.world:emit("moved", entity, dx, dy)
+end
+
+function WorldCollision:on_collision(entity, collision_infos)
+    for _, col_info in ipairs(collision_infos) do
+        col_info.ecs_world = entity:world()
+        self.world:emit("collision", col_info)
+    end
+end
+
 return function(ctx)
     if not ctx then return default_instance end
 
     local world = ctx.world or ctx
-    world[Collision] = world[Collision] or Collision.create(world)
+    world[Collision] = world[Collision] or WorldCollision.create(world)
     return world[Collision]
 end
 
