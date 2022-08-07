@@ -86,11 +86,15 @@ function TweenComponent:update(dt)
     local dt = dt or 0
     for entity, _ in pairs(self.entities) do
         local tween = entity:get(self.signature)
+
         if tween then
             tween:update(dt)
             local assign = self.entity_assign[entity]
             local value = tween:value()
             if assign then assign(entity, value) end
+        else
+            self.entities[entity] = nil
+            self.entity_assign[entity] = nil
         end
     end
 
