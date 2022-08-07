@@ -77,4 +77,17 @@ T("tween", function(T)
 
         T:assert(t:done())
     end)
+
+    T("destroy_on_completion", function(T)
+        local t = tween(world)
+            :as(nw.component.position)
+            :entity(ecs_world:entity())
+            :warp_to(vec2(0, 0))
+            :move_to(vec2(100, 100), 1, ease.linear)
+            :destroy_on_completion()
+
+        T:assert(ecs_world:entity(t.entity.id) == t.entity)
+        tween(world):update(1, ecs_world)
+        T:assert(ecs_world:entity(t.entity.id) ~= t.entity)
+    end)
 end)

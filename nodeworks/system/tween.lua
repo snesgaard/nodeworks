@@ -42,6 +42,11 @@ function TweenEntity:assign_to_component()
     return self:assign(assign_to_component)
 end
 
+function TweenEntity:destroy_on_completion()
+    self.entity:set(nw.component.release_on_complete, true)
+    return self
+end
+
 local mapped_apis = {
     "ensure", "ensure_from_component", "move_to", "warp_to",
     "set", "done"
@@ -117,6 +122,15 @@ function TweenComponent:update(dt, ...)
                 self.on_tween_updated(entity, tween:value(), self.component)
             end
             self:do_assign(entity, tween)
+        end
+
+        for id, tween in pairs(ecs_world:table(self.signature)) do
+            local release_on_complete = ecs_world:get(
+                nw.component.release_on_complete, id
+            )
+            if release_on_complete and tween:is_done() then
+                ecs_world:destroy(id)
+            end
         end
     end
 
