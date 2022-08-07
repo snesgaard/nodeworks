@@ -18,7 +18,7 @@ function TweenEntity.create(master, entity)
 end
 
 local mapped_apis = {
-    "get", "has", "ensure", "move_to", "warp_to", "assign",
+    "ensure", "move_to", "warp_to", "assign",
     "set", "done"
 }
 
@@ -29,6 +29,21 @@ for _, name in ipairs(mapped_apis) do
         f(self.master, self.entity, ...)
         return self
     end
+end
+
+local return_apis = {"get", "has"}
+
+for _, name in ipairs(return_apis) do
+    TweenEntity[name] = function(self, ...)
+        local f = self.master[name]
+        if not f then return self end
+        return f(self.master, self.entity, ...)
+    end
+end
+
+function TweenEntity:update()
+    self.master:update()
+    return self
 end
 
 local weak_table = {__mode = "k"}
@@ -68,19 +83,18 @@ function TweenComponent.create(component)
 end
 
 function TweenComponent:update(dt)
+    local dt = dt or 0
     for entity, _ in pairs(self.entities) do
         local tween = entity:get(self.signature)
         if tween then
             tween:update(dt)
             local assign = self.entity_assign[entity]
             local value = tween:value()
-            if assign then
-                assign(entity, value)
-            else
-                entity:set(self.component, tween:value())
-            end
+            if assign then assign(entity, value) end
         end
     end
+
+    return self
 end
 
 function TweenComponent:get(entity)
@@ -96,19 +110,8 @@ function TweenComponent:ensure(entity, ...)
 end
 
 function TweenComponent:move_to(entity, value, duration, ease)
-    if not entity:has(self.component) then
-        return self:warp_to(entity, value)
-    end
-
-    local current_value = entity:get(self.component)
     local tween = entity:get(self.signature)
-
-    if not tween then
-        return self:set(
-            entity, current_value, value,
-            duration or self.default_duration, ease
-        )
-    end
+    if not tween then return self:warp_to(entity, value) end
 
     local threshold = 0.1
     local to = tween:to()
@@ -116,13 +119,12 @@ function TweenComponent:move_to(entity, value, duration, ease)
     if sq_dist < threshold * threshold then return self end
 
     return self:set(
-        entity, current_value, value,
+        entity, tween:value(), value,
         duration or self.default_duration, ease
     )
 end
 
 function TweenComponent:warp_to(entity, value)
-    entity:set(self.component, value)
     return self:set(entity, value, value, 0.0001)
 end
 
@@ -135,6 +137,8 @@ end
 
 function TweenComponent:assign(entity, assign)
     self.entity_assign[entity] = assign
+    local v = self:get(entity)
+    if v then assign(entity, v) end
     return self
 end
 
