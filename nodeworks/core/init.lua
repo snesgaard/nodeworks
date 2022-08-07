@@ -146,6 +146,9 @@ end
 function class()
     local c = {}
     c.__index = c
+
+    function c:class() return c end
+
     return c
 end
 
