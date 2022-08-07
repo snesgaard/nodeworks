@@ -59,7 +59,8 @@ function entity_table.create(strong_tables)
         {
             components = {},
             strong_tables = strong_tables,
-            stored_entities = {}
+            stored_entities = {},
+            on_entity_destroyed = {}
         },
         entity_table
     )
@@ -131,7 +132,9 @@ function entity_table:destroy(id)
     end
 
     if self.on_entity_destroyed then
-        self.on_entity_destroyed(id, values_destroyed)
+        for _, func in pairs(self.on_entity_destroyed) do
+            func(id, values_destroyed)
+        end
     end
 
     self.stored_entities[id] = nil

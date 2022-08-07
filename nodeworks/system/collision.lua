@@ -152,6 +152,11 @@ function Collision.default_filter()
     return "slide"
 end
 
+function Collision.on_entity_destroyed(id, values_destroyed)
+    local bump_world = values_destroyed[nw.component.bump_world]
+    if bump_world and bump_world:hasItem(id) then bump_world:remove(id) end
+end
+
 local default_instance = Collision.create()
 
 local assemble = {}
@@ -172,12 +177,19 @@ function assemble.set_bump_world(entity, bump_world)
     entity:set(nw.component.bump_world, bump_world)
 
     add_entity_to_world(entity)
+
+    local on_entity_destroyed = entity:world().on_entity_destroyed
+
+    if not on_entity_destroyed.collision then
+        on_entity_destroyed.collision = Collision.on_entity_destroyed
+    end
 end
 
 function assemble.init_entity(entity, x, y, hitbox, bump_world)
     entity
         :assemble(assemble.set_hitbox, hitbox:unpack())
         :assemble(assemble.set_bump_world, bump_world)
+
     default_instance:warp_to(entity, x, y)
 end
 
@@ -190,6 +202,12 @@ return function(ctx)
 end
 
 --[[
+
+function ecs_world.on_entity_destroyed.collision(id, values_destroyed)
+    local bump_world = values_destroyed[nw.component.bump_world]
+    if bump_world and bump_world:has(id) then bump_world:remove(id) end
+end
+
 collision(ctx):move_to(entity, 100, 100)
 ecs_world:entity():assemble(collision().init_entity, x, y, hitbox, bump_world)
 

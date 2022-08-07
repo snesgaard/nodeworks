@@ -176,4 +176,15 @@ T("collision", function(T)
         T:assert(ctx.moved:peek() == entity)
         T:assert(ctx.collision:peek().item == entity.id)
     end)
+
+    T("cleanup", function(T)
+        local entity = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                200, 300, hitbox, bump_world
+            )
+        T:assert(bump_world:hasItem(entity.id))
+        entity:destroy()
+        T:assert(not bump_world:hasItem(entity.id))
+    end)
 end)
