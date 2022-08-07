@@ -8,17 +8,47 @@ tween(ctx, nw.component.position):move_to(entity, value, duration)
 tween(ctx)
     :as(nw.component.position)
     :move_to(entity, value, duration)
+
+tween(ctx)
+    :as(nw.component.position)
+    :entity(hook)
+    :move_to(value, duration)
+    :assign(function(motion)
+        collision(ctx):move(hook, motion.x, motion.y)
+    end)
+
+tween(ctx):update(dt, ecs_world)
 ]]--
 
 
 local TweenEntity = class()
 
 function TweenEntity.create(master, entity)
+    entity:remove(master.signature_assign)
     return setmetatable({master=master, entity=entity}, TweenEntity)
 end
 
+function TweenEntity:assign(func)
+    self.entity:set(self.master.signature_assign, func)
+    self.master:do_assign(self.entity)
+    return self
+end
+
+local function assign_to_component(entity, value, component)
+    entity:set(component, value)
+end
+
+function TweenEntity:assign_to_component()
+    return self:assign(assign_to_component)
+end
+
+function TweenEntity:destroy_on_completion()
+    self.entity:set(nw.component.release_on_complete, true)
+    return self
+end
+
 local mapped_apis = {
-    "ensure", "move_to", "warp_to", "assign",
+    "ensure", "ensure_from_component", "move_to", "warp_to",
     "set", "done"
 }
 
@@ -69,8 +99,6 @@ end
 function TweenComponent.create(component)
     local this = setmetatable(
         {
-            entities=setmetatable({}, weak_table),
-            entity_assign=setmetatable({}, weak_table),
             default_duration = 0.1,
             component=component
         },
@@ -78,27 +106,42 @@ function TweenComponent.create(component)
     )
 
     function this.signature(...) return nw.component.tween(...) end
+    function this.signature_assign(func) return func end
 
     return this
 end
 
-function TweenComponent:update(dt)
+function TweenComponent:update(dt, ...)
     local dt = dt or 0
-    for entity, _ in pairs(self.entities) do
-        local tween = entity:get(self.signature)
 
-        if tween then
+    for _, ecs_world in ipairs{...} do
+        for id, tween in pairs(ecs_world:table(self.signature)) do
+            local entity = ecs_world:entity(id)
             tween:update(dt)
-            local assign = self.entity_assign[entity]
-            local value = tween:value()
-            if assign then assign(entity, value) end
-        else
-            self.entities[entity] = nil
-            self.entity_assign[entity] = nil
+            if self.on_tween_updated then
+                self.on_tween_updated(entity, tween:value(), self.component)
+            end
+            self:do_assign(entity, tween)
+        end
+
+        for id, tween in pairs(ecs_world:table(self.signature)) do
+            local release_on_complete = ecs_world:get(
+                nw.component.release_on_complete, id
+            )
+            if release_on_complete and tween:is_done() then
+                ecs_world:destroy(id)
+            end
         end
     end
 
     return self
+end
+
+function TweenComponent:do_assign(entity, tween)
+    local tween = tween or entity:get(self.signature)
+    local assign = entity:get(self.signature_assign)
+    if not assign or not tween then return end
+    assign(entity, tween:value(), self.component)
 end
 
 function TweenComponent:get(entity)
@@ -110,7 +153,12 @@ function TweenComponent:has(entity) return entity:has(self.signature) end
 
 function TweenComponent:ensure(entity, ...)
     if self:has(entity) then return self:get(entity) end
-    return self:move_to(entity, ...)
+    return self:warp_to(entity, ...)
+end
+
+function TweenComponent:ensure_from_component(entity)
+    if self:has(entity) then return self:get(entity) end
+    return self:warp_to(entity, entity:ensure(self.component))
 end
 
 function TweenComponent:move_to(entity, value, duration, ease)
@@ -133,16 +181,8 @@ function TweenComponent:warp_to(entity, value)
 end
 
 function TweenComponent:set(entity, from, to, duration, ease)
-    self.entities[entity] = to
-    self.entity_assign[entity] = nil
     entity:set(self.signature, from, to, duration, ease)
-    return self
-end
-
-function TweenComponent:assign(entity, assign)
-    self.entity_assign[entity] = assign
-    local v = self:get(entity)
-    if v then assign(entity, v) end
+    self:do_assign(entity)
     return self
 end
 
@@ -156,24 +196,10 @@ function TweenComponent:entity(entity)
     return TweenEntity.create(self, entity)
 end
 
-local function system(ctx, tween_master)
-    local update = ctx:listen("update"):collect()
-    while ctx:is_alive() do
-        for _, dt in ipairs(update:pop()) do
-            tween_master:update(dt)
-        end
-        ctx:yield()
-    end
-end
-
 local TweenMaster = class()
 
-function TweenMaster.create(world)
-    local this = setmetatable(
-        {tweens={}, world=world},
-        TweenMaster
-    )
-    this.ctx = world:ensure(system, this)
+function TweenMaster.create()
+    local this = setmetatable({tweens={}}, TweenMaster)
     return this
 end
 
@@ -185,9 +211,24 @@ function TweenMaster:as(component)
     return self.tweens[component]
 end
 
-function TweenMaster:update(dt)
-    for _, tween in pairs(self.tweens) do tween:update(dt) end
+function TweenMaster:update(dt, ...)
+    for _, tween in pairs(self.tweens) do tween:update(dt, ...) end
     return self
+end
+
+local WorldTweenMaster = inherit(TweenMaster)
+
+function WorldTweenMaster.create(world)
+    local this = TweenMaster.create()
+    local this = setmetatable(this, WorldTweenMaster)
+    this.world = world
+    return this
+end
+
+function WorldTweenMaster:as(component)
+    local component_tween = TweenMaster.as(self, component)
+
+    return component_tween
 end
 
 return function(ctx)
@@ -196,6 +237,6 @@ return function(ctx)
     end
 
     local world = ctx.world or ctx
-    world[TweenMaster] = world[TweenMaster] or TweenMaster.create(world)
-    return world[TweenMaster]
+    world[WorldTweenMaster] = world[WorldTweenMaster] or WorldTweenMaster.create(world)
+    return world[WorldTweenMaster]
 end
