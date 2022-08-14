@@ -137,24 +137,24 @@ end
 function world:spin()
     local events = self:pop_events()
 
-    while not events:empty() do
-        local event = events:head()
+    if events:empty() then return end
 
-        for _, ctx in ipairs(self.context) do
-            if ctx:parse_single_event(event.key, event.data) then
-                ctx:resume()
-                ctx:clear()
-            end
+    for _, ctx in ipairs(self.context) do
+        local activate = false
+
+        for _, e in ipairs(events) do
+            activate = ctx:parse_single_event(e.key, e.data) or activate
         end
 
-        local next_events = self:pop_events()
-        events = events:body()
-        if #next_events > 0 then events = next_events + events:body() end
+        if activate then
+            ctx:resume()
+            ctx:clear()
+        end
     end
 
     self:remove_dead_systems()
 
-    return self
+    return self:spin()
 end
 
 function world:find(system)
