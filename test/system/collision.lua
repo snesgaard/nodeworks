@@ -137,7 +137,9 @@ T("collision", function(T)
 
     local function test_system(ctx)
         ctx.moved = ctx:listen("moved"):latest()
+
         ctx.collision = ctx:listen("collision"):latest()
+
         while ctx:is_alive() do ctx:yield() end
     end
 
@@ -171,7 +173,6 @@ T("collision", function(T)
             )
 
         local ax, ay, cols = collision(ctx):move(entity, 0, 300)
-
         world:spin()
         T:assert(ctx.moved:peek() == entity)
         T:assert(ctx.collision:peek().item == entity.id)
