@@ -76,7 +76,9 @@ end
 
 function AnimationMaster:update(dt, ...)
     for _, ecs_world in ipairs{...} do
-        local entities = ecs:get_component_table(nw.component.animation_state)
+        local entities = ecs_world:get_component_table(
+            nw.component.animation_state
+        )
 
         for entity, state in pairs(entities) do
             self:update_entity_state(entity, state, dt)
