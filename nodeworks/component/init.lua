@@ -165,6 +165,14 @@ function components.animation_args(playing, once, mode, id)
     }
 end
 
+function components.animation_state(frames)
+    return {
+        frames = frames,
+        time = 0,
+        once = false
+    }
+end
+
 ----------------------------------------
 
 --- COLLISSION ------------------------

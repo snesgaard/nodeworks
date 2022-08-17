@@ -1,19 +1,18 @@
 local nw = require "nodeworks"
 local T = nw.third.knife.test
 
-local scene = {}
+local animation = nw.system.animation()
 
-function scene.on_push(ctx)
-    ctx.main = ctx:entity(world)
-        + {nw.component.sprite}
-        + {nw.component.animation_state}
-end
+local frames = {
+    {dt = 1},
+    {dt = 2},
+    {dt = 3}
+}
 
-T("Animation", function(T)
-    local world = nw.ecs.world{nw.system.animation}
-    local ctx = world:push(scene):find(scene)
+T("animation", function(T)
+    local ecs_world = nw.ecs.entity.create()
+    local entity = ecs_world:entity()
+    animation:play(entity, frames)
 
-    T("System members", function(T)
-        T:assert(#ctx.pools[nw.system.animation] == 1)
-    end)
+    T:assert(animation:get(entity) == frames[1])
 end)
