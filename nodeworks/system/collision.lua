@@ -16,7 +16,7 @@ end
 
 local function do_nothing_filter() return false end
 
-local function foward_transform(hitbox, position, mirror)
+local function forward_transform(hitbox, position, mirror)
     local hitbox = hitbox or spatial()
     local position = position or vec2()
 
@@ -25,8 +25,8 @@ local function foward_transform(hitbox, position, mirror)
     return hitbox:move(position.x, position.y)
 end
 
-local function foward_transform_from_entity(entity)
-    return foward_transform(
+local function forward_transform_from_entity(entity)
+    return forward_transform(
         entity % nw.component.hitbox,
         entity % nw.component.position,
         entity % nw.component.mirror
@@ -44,7 +44,7 @@ local function add_entity_to_world(entity)
 
     if not hitbox or not bump_world then return end
 
-    local world_hb = foward_transform_from_entity(entity)
+    local world_hb = forward_transform_from_entity(entity)
 
     if not bump_world:hasItem(entity.id) then
         bump_world:add(entity.id, world_hb:unpack())
@@ -74,9 +74,14 @@ function Collision:on_collision(entity, collision_infos)
 
 end
 
+function Collision:on_mirror(entity, mirror, collision_infos)
+
+end
+
 function Collision:move_to_state(entity, bump_world, hitbox, pos, mirror, filter)
+    local next_hitbox = forward_transform(hitbox, pos, mirror)
+
     local x, y = bump_world:getRect(entity.id)
-    local next_hitbox = foward_transform(hitbox, pos, mirror)
 
     local ecs_world = entity:world()
     local caller = ecs_world:ensure(
@@ -88,11 +93,25 @@ function Collision:move_to_state(entity, bump_world, hitbox, pos, mirror, filter
         entity.id, next_hitbox.x, next_hitbox.y, caller
     )
 
+
+    self:update_position(entity)
+
     if #col_info > 0 then self:on_collision(entity, col_info) end
 
     local dx, dy = ax - x, ay - y
 
     return dx, dy, col_info
+end
+
+function Collision:update_position(entity)
+    local bump_world, hb, pos, mirror = get_state(entity)
+    local world_rect_expected = forward_transform(hb, pos, mirror)
+    local x, y = bump_world:getRect(entity.id)
+
+    local dx, dy = world_rect_expected.x - x, world_rect_expected.y - y
+
+    entity:set(nw.component.position, pos.x - dx, pos.y - dy)
+    self:on_moved(entity, dx, dy, col_info)
 end
 
 function Collision:move_to(entity, x, y, filter)
@@ -103,11 +122,36 @@ function Collision:move_to(entity, x, y, filter)
         entity, bump_world, hb, pos_next, mirror, filter
     )
 
-    entity:set(nw.component.position, pos.x + dx, pos.y + dy)
-
-    self:on_moved(entity, dx, dy, col_info)
-
     return pos.x + dx, pos.y + dy, col_info
+end
+
+function Collision:move_hitbox_to(entity, x, y, filter)
+    local bump_world, hb, pos, mirror = get_state(entity)
+    local hb_next = spatial(x, y, hb.w, hb.h)
+
+    local dx, dy, col_info = self:move_to_state(
+        entity, bump_world, hb_next, pos, mirror, filter
+    )
+
+    entity:set(nw.component.hitbox, hb_next:unpack())
+
+    return col_info
+end
+
+function Collision:mirror_to(entity, mirror_next, filter)
+    local bump_world, hb, pos, mirror = get_state(entity)
+
+    if mirror == mirror_next then return {} end
+
+    local dx, dy, col_info = self:move_to_state(
+        entity, bump_world, hb, pos, mirror_next, filter
+    )
+
+    entity:set(nw.component.mirror, mirror_next)
+
+    self:on_mirror(entity, mirror_next)
+
+    return self
 end
 
 function Collision:move(entity, dx, dy, filter)
@@ -126,6 +170,17 @@ end
 
 function Collision:warp(entity, dx, dy)
     return self:move(entity, dx, dy, do_nothing_filter)
+end
+
+function Collision:move_hitbox(entity, dx, dy, filter)
+    local hb = entity:ensure(nw.component.hitbox)
+
+    return self:move_hitbox_to(entity, hb.x + dx, hb.y + dy, filter)
+end
+
+function Collision:mirror(entity, filter)
+    local mirror = entity:get(nw.component.mirror)
+    return self:mirror_to(entity, not mirror, filter)
 end
 
 function Collision:class()
@@ -194,6 +249,10 @@ function WorldCollision:on_collision(entity, collision_infos)
         col_info.ecs_world = entity:world()
         self.world:emit("collision", col_info)
     end
+end
+
+function WorldCollision:on_mirror(entity, mirror)
+    self.world:emit("mirror", entity, mirror)
 end
 
 return function(ctx)
