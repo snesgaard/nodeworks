@@ -1,187 +1,176 @@
 local nw = require "nodeworks"
 
-local function get_frame(entity, index)
-    return entity
-        [nw.component.animation_state]
-        [nw.component.frame_sequence]
-        [index]
+--[[
+animation(ctx):entity(ecs_world, id)
+    :play(anime.necro.idle)
+    :once()
+    :foreach_frame(assign_values)
+    :foreach_keyframe(sync_hitbox)
+
+]]--
+
+local function sum_frame_time(frames)
+    local time = 0
+    for _, f in ipairs(frames) do time = time + (f.dt or 0) end
+    return time
 end
 
-local function set_frame(entity, frame_index)
-    local frame = get_frame(entity, frame_index)
-    entity[nw.component.animation_state]:set(nw.component.index, frame_index)
-    entity[nw.component.animation_state]:set(nw.component.timer, frame.dt)
-end
+local function ease_frames(prev_frame, next_frame, time_from_prev, ease)
+    if not ease then return prev_frame end
 
-local function get_current_frame(entity)
-    local i = entity
-        [nw.component.animation_state]
-        [nw.component.index]
-    local fs = entity
-        [nw.component.animation_state]
-        [nw.component.frame_sequence]
-    return fs[i]
-end
+    local im_frame = {}
 
-local function should_be_updated(entity)
-    local state = entity[nw.component.animation_state]
-    local fs = state[nw.component.frame_sequence]
-    return state[nw.component.animation_args].playing and fs ~= nil and #fs > 0
-end
-
-local function update_animation(entity, dt)
-    local state = entity[nw.component.animation_state]
-
-    if not should_be_updated(entity) then return end
-    if not state[nw.component.timer]:update(dt) then return end
-    local prev_frame = get_current_frame(entity)
-    state:set(nw.component.index, state[nw.component.index] + 1)
-
-    if state[nw.component.index] > #state[nw.component.frame_sequence] then
-        if state[nw.component.animation_args].once then
-            state[nw.component.animation_args].playing = false
-            return prev_frame
-        end
-
-        state:set(nw.component.index, 1)
-    end
-
-    local frame = get_current_frame(entity)
-    state:set(nw.component.timer, frame.dt)
-    return prev_frame, frame
-end
-
-local function update_sprite(entity)
-    local frame = get_current_frame(entity)
-
-    if not frame then return end
-
-    entity
-        :set(nw.component.image, frame.image)
-        :set(nw.component.quad, frame.quad)
-        :set(nw.component.origin, -frame.offset)
-        :set(nw.component.slices, frame.slices)
-end
-
-local function format_event_begin(event)
-    return string.format("animation_event:%s", event)
-end
-
-local function format_event_end(event)
-    return string.format("animation_event:%s:end", event)
-end
-
-local function broadcast_event(world, entity, prev_frame, next_frame, id)
-    if not world or prev_frame == next_frame then return end
-
-    if prev_frame and not next_frame then
-        world("on_animation_ended", entity, id, prev_frame)
-
-        for event, _ in pairs(prev_frame.events) do
-            local key = format_event_end(event)
-            world(key, entity, prev_frame)
+    for key, value in pairs(prev_frame) do
+        local f = ease[key]
+        local next_value = next_frame[key]
+        if f and next_value ~= nil then
+            im_frame[key] = f(
+                time_from_prev, value, next_value - value, prev_frame.dt
+            )
+        else
+            im_frame[key] = value
         end
     end
 
-    if prev_frame and next_frame then
-        world("on_next_frame", entity, prev_frame, next_frame, id)
-
-        for event, _ in pairs(prev_frame.events) do
-            if not next_frame.events[event] then
-                world(format_event_end(event), entity, prev_frame)
-            end
-        end
-
-        for event, _ in pairs(next_frame.events) do
-            if not prev_frame.events[event] then
-                world(format_event_begin(event), entity, prev_frame)
-            end
-        end
-
-    end
-
-    if not prev_frame and next_frame then
-        world("on_animation_begun", entity, id, next_frame)
-
-        for event, _ in pairs(next_frame.events) do
-            local key = format_event_begin(event)
-            world(key, event, next_frame)
-        end
-    end
+    return im_frame, false
 end
 
-local function handle_event(world, entity, event_key, ...)
-    if not event_key then return end
-    world(event_key, entity, ...)
+local function find_frame_index(time, frames, once)
+    local total_animation_time = sum_frame_time(frames)
+    local cycled_time = once and time or math.fmod(time, total_animation_time)
+
+    if time < 0 then return 0, time end
+
+    local frame_time = 0
+
+    for index, frame in ipairs(frames) do
+        local next_time = frame_time + (frame.dt or 0)
+
+        if frame_time <= cycled_time and cycled_time < next_time then
+            return index, cycled_time - frame_time, false
+        end
+
+        frame_time = next_time
+    end
+
+    return #frames, time - cycled_time, true
 end
 
---- System Logic ---
-local animation_system =  nw.ecs.system(nw.component.animation_state)
+local function find_frame(time, frames, once, default_ease)
+    local index, time_from_prev = find_frame_index(time, frames, once)
+    local ease = frames.ease or default_ease
+    local prev_frame = frames[index]
+    local next_frame = frames[index + 1]
 
-function animation_system.update(world, pool, dt)
-    for _, entity in ipairs(pool) do
-        local prev_frame, next_frame = update_animation(entity, dt)
-        update_sprite(entity)
-        broadcast_event(
-            world, entity, prev_frame, next_frame,
-            entity[nw.component.animation_state][nw.component.animation_args].id
+    if not prev_frame and next_frame then return next_frame end
+    if prev_frame and not next_frame then return prev_frame end
+
+    return ease_frames(prev_frame, next_frame, time_from_prev, ease)
+end
+
+local AnimationMaster = class()
+
+AnimationMaster.EVENTS = {
+    DONE = "animation:done",
+    KEYFRAME = "animation:keyframe"
+}
+
+function AnimationMaster.create(world)
+    return setmetatable({world=world}, AnimationMaster)
+end
+
+function AnimationMaster:emit(key, entity, ...)
+    if not self.world then return end
+    self.world:emit(key, entity, ...)
+end
+
+function AnimationMaster:update(dt, ...)
+    for _, ecs_world in ipairs{...} do
+        local entities = ecs_world:get_component_table(
+            nw.component.animation_state
         )
+
+        for entity, state in pairs(entities) do
+            self:update_entity_state(entity, state, dt)
+        end
     end
 end
 
-function animation_system.play(entity, id, args)
-    args = args or {}
-    local state = entity[nw.component.animation_state]
-    if not id then
-        state[nw.component.animation_args].playing = true
-        return
+function AnimationMaster:update_entity_state(entity, state, dt)
+    if state.paused then return end
+
+    local prev_index, _, is_done_prev = find_frame_index(state.time, state.frames, state.once)
+    state.time = state.time + dt
+    local next_index, _, is_done_next = find_frame_index(state.time, state.frames, state.once)
+
+    if not is_done_prev and is_done_next then
+        self:emit(self.EVENTS.DONE, entity, state.frames)
     end
 
-    local map = entity[nw.component.animation_map]
-    if not map then return false end
-    local sequence = map[id]
-    if not sequence then return false end
-
-    local prev_frame = get_current_frame(entity)
-    local prev_id = state[nw.component.animation_args].id
-
-    if sequence == state[nw.component.frame_sequence] and not args.interrupt then return prev_frame end
-
-    state:set(nw.component.frame_sequence, sequence)
-    state:set(nw.component.animation_args, true, args.once, args.mode, id)
-    set_frame(entity, 1)
-    update_sprite(entity)
-
-    local next_frame = get_current_frame(entity)
-
-    -- First signal end of animation
-    broadcast_event(entity.world, entity, prev_frame, nil, prev_id)
-    -- Next signal start of the next animation
-    broadcast_event(entity.world, entity, nil, next_frame, id)
-
-    return next_frame
+    if prev_index ~= next_index and self.world then
+        local prev_frame = state.frames[prev_index]
+        local next_frame = state.frames[next_index]
+        self:emit(self.EVENTS.KEYFRAME, entity, next_frame, prev_frame)
+    end
 end
 
-function animation_system.pause(entity)
-    entity
-        [nw.component.animation_state]
-        [nw.component.animation_args]
-        .playing = false
+function AnimationMaster:get(entity)
+    local state = entity:get(nw.component.animation_state)
+    if not state then return end
+
+    return find_frame(
+        state.time, state.frames, state.once, state.ease or self.ease
+    )
 end
 
-function animation_system.stop(entity)
-    entity
-        [nw.component.animation_state]
-        [nw.component.animation_args]
-        .playing = false
-    set_frame(entity, 1)
+function AnimationMaster:play(entity, animation, once)
+    local prev_state = entity:get(nw.component.animation_state)
+
+    if prev_state then
+        self:emit(self.EVENTS.DONE, entity, prev_state.frames)
+    end
+
+    entity:set(nw.component.animation_state, animation, once)
+
+    self:emit(self.EVENTS.KEYFRAME, entity, self:get(entity))
+    return self
 end
 
-function animation_system.is_paused(entity)
-    return not entity
-        [nw.component.animation_state]
-        [nw.component.animation_args]
-        .playing
+function AnimationMaster:play_once(entity, animation)
+    return self:play(entity, animation, true)
 end
 
-return animation_system
+function AnimationMaster:pause(entity)
+    local state = entity:get(nw.component.animation_state)
+    if not state then return self end
+    state.paused = true
+    return self
+end
+
+function AnimationMaster:unpause(entity)
+    local state = entity:get(nw.component.animation_state)
+    if not state then return self end
+    state.paused = false
+    return self
+end
+
+function AnimationMaster:stop(entity)
+    local state = entity:get(nw.component.animation_state)
+    if not state then return self end
+    state.paused = true
+    state.time = 0
+
+    self:emit(self.EVENTS.KEYFRAME, entity, self:get(entity))
+
+    return self
+end
+
+local default_master = AnimationMaster.create()
+
+return function(ctx)
+    if not ctx then return default_master end
+
+    local world = ctx.world or ctx
+    world[AnimationMaster] = world[AnimationMaster] or AnimationMaster.create(world)
+    return world[AnimationMaster]
+end

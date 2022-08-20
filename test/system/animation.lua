@@ -1,19 +1,63 @@
 local nw = require "nodeworks"
 local T = nw.third.knife.test
 
-local scene = {}
+local frames = {
+    {dt = 1},
+    {dt = 2},
+    {dt = 3}
+}
 
-function scene.on_push(ctx)
-    ctx.main = ctx:entity(world)
-        + {nw.component.sprite}
-        + {nw.component.animation_state}
-end
+T("animation", function(T)
+    local ecs_world = nw.ecs.entity.create()
+    local animation = nw.system.animation()
+    local entity = ecs_world:entity()
+    animation:play(entity, frames)
 
-T("Animation", function(T)
-    local world = nw.ecs.world{nw.system.animation}
-    local ctx = world:push(scene):find(scene)
+    T:assert(animation:get(entity) == frames[1])
 
-    T("System members", function(T)
-        T:assert(#ctx.pools[nw.system.animation] == 1)
+    T("update_0.5", function(T)
+        animation:update(0.5, ecs_world)
+        T:assert(animation:get(entity) == frames[1])
     end)
+
+    T("update 1.5", function(T)
+        animation:update(1.5, ecs_world)
+        T:assert(animation:get(entity) == frames[2])
+    end)
+
+    T("update 3.5", function(T)
+        animation:update(3.5, ecs_world)
+        T:assert(animation:get(entity) == frames[3])
+    end)
+
+    T("update 7", function(T)
+        animation:update(6.5, ecs_world)
+        T:assert(animation:get(entity) == frames[1])
+    end)
+
+    T("update 100", function(T)
+        animation:update(100, ecs_world)
+        T:assert(animation:get(entity) == frames[3])
+    end)
+
+    T("update negative", function(T)
+        animation:update(-10, ecs_world)
+        T:assert(animation:get(entity) == frames[1])
+    end)
+
+    T("update_paused", function(T)
+        animation:pause(entity)
+        animation:update(1.5, ecs_world)
+        T:assert(animation:get(entity) == frames[1])
+        animation:unpause(entity)
+        animation:update(1.5, ecs_world)
+        T:assert(animation:get(entity) == frames[2])
+    end)
+
+    T("play_once", function(T)
+        animation:play_once(entity, frames)
+        animation:update(6.5, ecs_world)
+        T:assert(animation:get(entity) == frames[3])
+    end)
+
 end)
