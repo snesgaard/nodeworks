@@ -300,4 +300,14 @@ function components.delegate_order(order) return order end
 
 function components.pushdown_automata() return stack() end
 
+function components.camera(slack, slack_type, max_move)
+    return {
+        slack = slack or 0,
+        slack_type = slack_type or "box",
+        max_move = max_move or 50
+    }
+end
+
+function components.target(id) return id end
+
 return components
