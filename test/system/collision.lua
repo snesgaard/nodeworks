@@ -68,6 +68,11 @@ T("collision", function(T)
                 x, 200, hitbox, bump_world
             )
 
+        T:assert(entity:get(nw.component.position).x == x)
+        T:assert(entity:get(nw.component.position).y == y)
+        T:assert(block:get(nw.component.position).x == x)
+        T:assert(block:get(nw.component.position).y == 200)
+
         local ax, ay, cols = collision():move_to(entity, x, 400)
 
         T:assert(ax == x)
@@ -119,6 +124,7 @@ T("collision", function(T)
         T:assert(#cols == 0)
     end)
 
+    --[[
     T("move_body", function(T)
         local entity = ecs_world:entity()
             :assemble(
@@ -134,6 +140,7 @@ T("collision", function(T)
             spatial(20, 30, hitbox.w, hitbox.h)
         ))
     end)
+    ]]--
 
     local function test_system(ctx)
         ctx.moved = ctx:listen("moved"):latest()
