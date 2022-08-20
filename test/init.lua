@@ -35,6 +35,7 @@ require "test.ecs.promise"
 require "test.system.collision"
 require "test.system.tween"
 require "test.system.animation"
+require "test.system.camera"
 --[[
 require "test.ecs.pool"
 require "test.ecs.entity"
