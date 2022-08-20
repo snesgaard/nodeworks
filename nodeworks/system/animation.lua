@@ -70,13 +70,18 @@ end
 
 local AnimationMaster = class()
 
+AnimationMaster.EVENTS = {
+    DONE = "animation:done",
+    KEYFRAME = "animation:keyframe"
+}
+
 function AnimationMaster.create(world)
     return setmetatable({world=world}, AnimationMaster)
 end
 
-function AnimationMaster:emit(entity, key, ...)
+function AnimationMaster:emit(key, entity, ...)
     if not self.world then return end
-    self.world:emit(entity, key, ...)
+    self.world:emit(key, entity, ...)
 end
 
 function AnimationMaster:update(dt, ...)
@@ -99,13 +104,13 @@ function AnimationMaster:update_entity_state(entity, state, dt)
     local next_index, _, is_done_next = find_frame_index(state.time, state.frames, state.once)
 
     if not is_done_prev and is_done_next then
-        self:emit(entity, "animation:done", state.frames)
+        self:emit(self.EVENTS.DONE, entity, state.frames)
     end
 
     if prev_index ~= next_index and self.world then
         local prev_frame = state.frames[prev_index]
         local next_frame = state.frames[next_index]
-        self:emit(entity, "animation:keyframe", next_frame, prev_frame)
+        self:emit(self.EVENTS.KEYFRAME, entity, next_frame, prev_frame)
     end
 end
 
@@ -118,14 +123,21 @@ function AnimationMaster:get(entity)
     )
 end
 
-function AnimationMaster:play(entity, animation)
-    entity:set(nw.component.animation_state, animation)
+function AnimationMaster:play(entity, animation, once)
+    local prev_state = entity:get(nw.component.animation_state)
+
+    if prev_state then
+        self:emit(self.EVENTS.DONE, entity, prev_state.frames)
+    end
+
+    entity:set(nw.component.animation_state, animation, once)
+
+    self:emit(self.EVENTS.KEYFRAME, entity, self:get(entity))
     return self
 end
 
 function AnimationMaster:play_once(entity, animation)
-    entity:set(nw.component.animation_state, animation, true)
-    return self
+    return self:play(entity, animation, true)
 end
 
 function AnimationMaster:pause(entity)
@@ -147,6 +159,9 @@ function AnimationMaster:stop(entity)
     if not state then return self end
     state.paused = true
     state.time = 0
+
+    self:emit(self.EVENTS.KEYFRAME, entity, self:get(entity))
+
     return self
 end
 
