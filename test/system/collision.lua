@@ -68,6 +68,11 @@ T("collision", function(T)
                 x, 200, hitbox, bump_world
             )
 
+        T:assert(entity:get(nw.component.position).x == x)
+        T:assert(entity:get(nw.component.position).y == y)
+        T:assert(block:get(nw.component.position).x == x)
+        T:assert(block:get(nw.component.position).y == 200)
+
         local ax, ay, cols = collision():move_to(entity, x, 400)
 
         T:assert(ax == x)
@@ -119,6 +124,7 @@ T("collision", function(T)
         T:assert(#cols == 0)
     end)
 
+    --[[
     T("move_body", function(T)
         local entity = ecs_world:entity()
             :assemble(
@@ -134,6 +140,7 @@ T("collision", function(T)
             spatial(20, 30, hitbox.w, hitbox.h)
         ))
     end)
+    ]]--
 
     local function test_system(ctx)
         ctx.moved = ctx:listen("moved"):latest()
@@ -188,5 +195,129 @@ T("collision", function(T)
         T:assert(bump_world:hasItem(entity.id))
         entity:destroy()
         T:assert(not bump_world:hasItem(entity.id))
+    end)
+
+    T("move_body", function(T)
+        local pos = vec2(200, 300)
+
+        local entity = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                pos.x, pos.y, hitbox, bump_world
+            )
+
+        collision():move_hitbox(entity, 0, 0)
+        T:assert(
+            table_equal(
+                entity:get(nw.component.hitbox),
+                hitbox
+            )
+        )
+        T:assert(
+            table_equal(
+                entity:get(nw.component.position), pos
+            )
+        )
+
+        collision():move_hitbox(entity, 20, 0)
+        T:assert(
+            table_equal(
+                entity:get(nw.component.hitbox),
+                hitbox:move(20, 0)
+            )
+        )
+        T:assert(
+            table_equal(
+                entity:get(nw.component.position), pos
+            )
+        )
+
+        collision():move_hitbox(entity, 0, 30)
+        T:assert(
+            table_equal(
+                entity:get(nw.component.hitbox),
+                hitbox:move(20, 30)
+            )
+        )
+        T:assert(
+            table_equal(
+                entity:get(nw.component.position), pos
+            )
+        )
+    end)
+
+    T("move_body_w_obstacle", function(T)
+        local hitbox = spatial(0, 0, 10, 10)
+
+        local entity = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                0, 0, hitbox, bump_world
+            )
+        local block = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                100, 0, hitbox, bump_world
+            )
+
+        collision():move_hitbox(entity, 200, 0)
+
+        T:assert(
+            table_equal(
+                entity:get(nw.component.hitbox),
+                hitbox:move(200, 0)
+            )
+        )
+        T:assert(
+            table_equal(
+                entity:get(nw.component.position),
+                vec2(-110, 0)
+            )
+        )
+    end)
+
+    T("mirror", function(T)
+        local hitbox = spatial(20, 0, 10, 10)
+
+        local entity = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                0, 0, hitbox, bump_world
+            )
+
+        collision():mirror(entity)
+
+        T:assert(entity:get(nw.component.mirror))
+
+        local bump_hitbox = spatial(bump_world:getRect(entity.id))
+        T:assert(
+            table_equal(
+                bump_hitbox, hitbox:hmirror()
+            )
+        )
+    end)
+
+    T("mirror_with_obstacle", function(T)
+        local hitbox = spatial(20, 0, 10, 10)
+
+        local entity = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                0, 0, hitbox, bump_world
+            )
+        local block = ecs_world:entity()
+            :assemble(
+                collision().assemble.init_entity,
+                0, 0, spatial(-10, 0, 10, 10), bump_world
+            )
+
+        local col_info = collision():mirror(entity)
+
+        T:assert(entity:get(nw.component.mirror))
+        T:assert(#col_info == 1)
+
+        local bump_hitbox = spatial(bump_world:getRect(entity.id))
+        T:assert(table_equal(bump_hitbox, spatial(0, 0, 10, 10)))
+        T:assert(table_equal(entity:get(nw.component.position), vec2(30, 0)))
     end)
 end)
