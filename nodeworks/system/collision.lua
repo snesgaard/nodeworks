@@ -129,11 +129,11 @@ function Collision:move_hitbox_to(entity, x, y, filter)
     local bump_world, hb, pos, mirror = get_state(entity)
     local hb_next = spatial(x, y, hb.w, hb.h)
 
+    entity:set(nw.component.hitbox, hb_next:unpack())
     local dx, dy, col_info = self:move_to_state(
         entity, bump_world, hb_next, pos, mirror, filter
     )
 
-    entity:set(nw.component.hitbox, hb_next:unpack())
 
     return col_info
 end
@@ -143,15 +143,15 @@ function Collision:mirror_to(entity, mirror_next, filter)
 
     if mirror == mirror_next then return {} end
 
+    entity:set(nw.component.mirror, mirror_next)
     local dx, dy, col_info = self:move_to_state(
         entity, bump_world, hb, pos, mirror_next, filter
     )
 
-    entity:set(nw.component.mirror, mirror_next)
 
     self:on_mirror(entity, mirror_next)
 
-    return self
+    return col_info
 end
 
 function Collision:move(entity, dx, dy, filter)
