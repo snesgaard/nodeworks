@@ -115,6 +115,11 @@ function AnimationMaster:play(entity, animation)
     return self
 end
 
+function AnimationMaster:play_once(entity, animation)
+    entity:set(nw.component.animation_state, animation, true)
+    return self
+end
+
 function AnimationMaster:pause(entity)
     local state = entity:get(nw.component.animation_state)
     if not state then return self end
