@@ -115,6 +115,28 @@ function AnimationMaster:play(entity, animation)
     return self
 end
 
+function AnimationMaster:pause(entity)
+    local state = entity:get(nw.component.animation_state)
+    if not state then return self end
+    state.paused = true
+    return self
+end
+
+function AnimationMaster:unpause(entity)
+    local state = entity:get(nw.component.animation_state)
+    if not state then return self end
+    state.paused = false
+    return self
+end
+
+function AnimationMaster:stop(entity)
+    local state = entity:get(nw.component.animation_state)
+    if not state then return self end
+    state.paused = true
+    state.time = 0
+    return self
+end
+
 local default_master = AnimationMaster.create()
 
 return function(ctx)

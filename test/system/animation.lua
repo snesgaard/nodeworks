@@ -1,8 +1,6 @@
 local nw = require "nodeworks"
 local T = nw.third.knife.test
 
-local animation = nw.system.animation()
-
 local frames = {
     {dt = 1},
     {dt = 2},
@@ -11,6 +9,7 @@ local frames = {
 
 T("animation", function(T)
     local ecs_world = nw.ecs.entity.create()
+    local animation = nw.system.animation()
     local entity = ecs_world:entity()
     animation:play(entity, frames)
 
@@ -39,5 +38,14 @@ T("animation", function(T)
     T("update negative", function(T)
         animation:update(-10, ecs_world)
         T:assert(animation:get(entity) == frames[1])
+    end)
+
+    T("update_paused", function(T)
+        animation:pause(entity)
+        animation:update(1.5, ecs_world)
+        T:assert(animation:get(entity) == frames[1])
+        animation:unpause(entity)
+        animation:update(1.5, ecs_world)
+        T:assert(animation:get(entity) == frames[2])
     end)
 end)
