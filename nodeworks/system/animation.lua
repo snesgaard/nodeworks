@@ -47,13 +47,13 @@ local function find_frame_index(time, frames, once)
         local next_time = frame_time + (frame.dt or 0)
 
         if frame_time <= cycled_time and cycled_time < next_time then
-            return index, cycled_time - frame_time
+            return index, cycled_time - frame_time, false
         end
 
         frame_time = next_time
     end
 
-    return #frames, time - cycled_time
+    return #frames, time - cycled_time, true
 end
 
 local function find_frame(time, frames, once, default_ease)
@@ -74,6 +74,11 @@ function AnimationMaster.create(world)
     return setmetatable({world=world}, AnimationMaster)
 end
 
+function AnimationMaster:emit(entity, key, ...)
+    if not self.world then return end
+    self.world:emit(entity, key, ...)
+end
+
 function AnimationMaster:update(dt, ...)
     for _, ecs_world in ipairs{...} do
         local entities = ecs_world:get_component_table(
@@ -89,15 +94,18 @@ end
 function AnimationMaster:update_entity_state(entity, state, dt)
     if state.paused then return end
 
-    local prev_index = find_frame_index(state.time, state.frames, state.once)
+    local prev_index, _, is_done_prev = find_frame_index(state.time, state.frames, state.once)
     state.time = state.time + dt
-    local next_index = find_frame_index(state.time, state.frames, state.once)
+    local next_index, _, is_done_next = find_frame_index(state.time, state.frames, state.once)
+
+    if not is_done_prev and is_done_next then
+        self:emit(entity, "animation:done", state.frames)
+    end
 
     if prev_index ~= next_index and self.world then
         local prev_frame = state.frames[prev_index]
         local next_frame = state.frames[next_index]
-        self.world:emit(entity, "animation:keyframe", next_frame, prev_frame)
-        -- Handle keyframe
+        self:emit(entity, "animation:keyframe", next_frame, prev_frame)
     end
 end
 

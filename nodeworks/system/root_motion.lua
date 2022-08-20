@@ -1,24 +1,26 @@
 local nw = require "nodeworks"
 
-local root_motion_system = nw.ecs.system(
-    nw.component.root_motion, nw.component.position
-)
+local function handle_keyframe_event(ctx, entity, next_frame, prev_frame)
+    if not entity:get(nw.component.root_motion) then return end
 
-function root_motion_system.on_next_frame(world, pool, entity, prev_frame, next_frame)
-    if not pool[entity] then return end
+    local body_prev = prev_frame.slices.body
+    local body_next = next_frame.slices.body
 
-    local next_body = next_frame.slices.body
-    local prev_body = prev_frame.slices.body
+    if not body_next and not body_prev then return end
 
-    if not next_body or not prev_body then return end
-
-
-    local motion = next_frame.slices.body:center() - prev_frame.slices.body:center()
-    if math.abs(motion.x) < 1e-6 and math.abs(motion.y) < 1e-6  then return end
-
-    local mirror = entity[nw.component.mirror]
-    if mirror then motion.x = -motion.x end
-    nw.system.collision.move(entity, motion.x, motion.y)
+    local base_motion = body_next:bottomcenter() - body_prev:bottomcenter()
+    local scale = entity:get(nw.component.scale) or vec2(1, 1)
+    local motion = base_motion * scale.x
+    collision(ctx):move(entity. motion.x, motion.y)
 end
 
-return root_motion_system
+return function(ctx)
+    local keyframe_event = ctx:listen("animation:keyframe")
+
+    while ctx:is_alive() do
+        for _, event in ipairs(keyframe_event:pop()) do
+            handle_keyframe_event(ctx, unpack(keyframe_event))
+        end
+        ctx:yield()
+    end
+end

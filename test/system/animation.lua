@@ -59,4 +59,5 @@ T("animation", function(T)
         animation:update(6.5, ecs_world)
         T:assert(animation:get(entity) == frames[3])
     end)
+
 end)
