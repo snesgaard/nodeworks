@@ -43,7 +43,18 @@ end
 
 function observable:add_parent(parent)
     table.insert(self.parents, parent)
+    self:get_latest_state()
     return self
+end
+
+function observable:get_latest_state()
+    if not self.canonical_peek then return end
+    if self.canonical_peek and self:canonical_peek() then return self:canonical_peek() end
+
+    for _, parent in ipairs(self.parents) do
+        local p_state = parent:get_latest_state()
+        if p_state and 0 < #p_state then return self:process(p_state) end
+    end
 end
 
 function observable:clear_chain()
@@ -66,21 +77,27 @@ function collect.create(retain)
 end
 
 function collect:process(event)
-    if #event == 1 then
-        table.insert(self.data, unpack(event))
-    else
-        table.insert(self.data, event)
-    end
+    table.insert(self.data, event)
     return event
 end
 
 function collect:pop()
-    local d = self.data
+    local d = self:peek()
     self.data = list()
     return d
 end
 
-function collect:peek() return self.data end
+local function format_collect_peek(event)
+    if #event == 1 then
+        return event[1]
+    else
+        return event
+    end
+end
+
+function collect:peek() return self.data:map(format_collect_peek) end
+
+function collect:canonical_peek() return self.data:tail() end
 
 function collect:clear() if not self.retain then self:pop() end end
 
@@ -114,6 +131,8 @@ function reduce:process(event)
 end
 
 function reduce:peek() return self.value end
+
+function reduce:canonical_peek() return {self.value} end
 
 function reduce:reset()
     self.value = self.initial_value
@@ -149,6 +168,9 @@ latest.__index = latest
 
 function latest.create(init)
     local obs = observable.create()
+    if type(init) ~= "table" and type(init) ~= "nil" then
+        errorf("Invalid type %s", type(init))
+    end
     obs.latest_event = init
     return setmetatable(obs, latest)
 end
@@ -161,6 +183,8 @@ end
 function latest:peek()
     if self.latest_event then return unpack(self.latest_event) end
 end
+
+function latest:canonical_peek() return self.latest_event end
 
 function latest:pop()
     local le = self.latest_event
