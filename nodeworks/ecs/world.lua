@@ -89,6 +89,13 @@ function context:kill_all_but_this()
     return self
 end
 
+function context:to_cache(...)
+    self.world:to_cache(...)
+    return self
+end
+
+function context:from_cache(...) return self.world:from_cache(...) end
+
 local world = {}
 world.__index = world
 
@@ -97,7 +104,8 @@ function world.create()
         {
             events = list(),
             context = {},
-            queue = event_queue()
+            queue = event_queue(),
+            cached = {}
         },
         world
     )
@@ -113,6 +121,18 @@ end
 function world:emit(event_key, ...)
     table.insert(self.events, {key = event_key, data = {...}})
     return self
+end
+
+function world:to_cache(key, ...)
+    self:from_cache(key):emit{...}
+    return self
+end
+
+function world:from_cache(key)
+    if not self.cached[key] then
+        self.cached[key] = nw.ecs.promise.observable():latest()
+    end
+    return self.cached[key]
 end
 
 function world:pop_events()
