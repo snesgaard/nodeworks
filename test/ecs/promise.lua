@@ -141,4 +141,12 @@ T("promise", function(T)
         local c = a:latest()
         T:assert(c:peek() == 1 + 2)
     end)
+
+    T("cache_non_stateful", function(T)
+        local a = nw.ecs.promise.observable()
+            :latest{1}
+            :map(function(a) return a + 1 end)
+        local b = a:latest()
+        T:assert(b:peek() == 2)
+    end)
 end)
