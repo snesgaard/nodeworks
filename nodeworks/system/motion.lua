@@ -40,7 +40,7 @@ function Motion:update_position(entity, dt)
 
     if not p or not v then return end
 
-    return nw.system.collision(self.world):move(entity, p.x + v.x * dt, p.y + v.y * dt)
+    return nw.system.collision(self.world):move(entity, v.x * dt, v.y * dt)
 end
 
 function Motion:on_collision(colinfo)
@@ -61,7 +61,7 @@ function Motion:on_collision(colinfo)
         vx = math.max(0, vx)
     end
 
-    colinfo.ecs_world:set(nw.component.velocity, colinfo.item, vx, vyq)
+    colinfo.ecs_world:set(nw.component.velocity, colinfo.item, vx, vy)
 end
 
 local default_instace = Motion.create()
