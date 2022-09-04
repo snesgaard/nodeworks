@@ -48,7 +48,7 @@ end
 local function circular_slack(ecs_world, target, id)
     local target_pos = ecs_world:ensure(nw.component.position, target)
     local camera_pos = ecs_world:ensure(nw.component.position, id)
-    local camera_opt = ecs_world:get(component.camera, id)
+    local camera_opt = ecs_world:get(nw.component.camera, id)
 
     local slack = camera_opt.slack or 0
     local diff = target_pos - camera_pos
@@ -65,7 +65,7 @@ end
 local function box_slack(ecs_world, target, id)
     local target_pos = ecs_world:ensure(nw.component.position, target)
     local camera_pos = ecs_world:ensure(nw.component.position, id)
-    local camera_opt = ecs_world:get(component.camera, id)
+    local camera_opt = ecs_world:get(nw.component.camera, id)
 
     local slack = camera_opt.slack or 0
     local diff = target_pos - camera_pos
@@ -82,17 +82,17 @@ local function box_slack(ecs_world, target, id)
 end
 
 local function handle_update(ecs_world, dt)
-    local et = ecs_world:get_component_table(component.camera)
+    local et = ecs_world:get_component_table(nw.component.camera)
 
     Dictionary.keys(et):foreach(function(id)
-        local target = ecs_world:get(component.target, id)
+        local target = ecs_world:get(nw.component.target, id)
         if not target then return end
         box_slack(ecs_world, target, id)
     end)
 end
 
 function camera.draw_slack(entity)
-    local camera_opt = entity:get(component.camera)
+    local camera_opt = entity:get(nw.component.camera)
     local pos = entity:get(nw.component.position)
 
     if not camera_opt or not pos then return end
@@ -139,6 +139,42 @@ function camera.system(ctx, ecs_world)
 
         ctx:yield()
     end
+end
+
+function camera.observables(ctx)
+    return {
+        wheelmoved = ctx:listen("wheelmoved")
+            :map(vec2)
+            :collect(),
+
+        mousemoved = ctx:listen("mousemoved"):collect(),
+
+        update = ctx:listen("update"):collect()
+    }
+end
+
+function camera.handle_obserables(ctx, obs, ecs_world, ...)
+    if not ecs_world then return end
+
+    obs.wheelmoved
+        :pop()
+        :foreach(function(m)
+            handle_wheelmoved(ecs_world, m)
+        end)
+
+    obs.mousemoved
+        :pop()
+        :foreach(function(args)
+            handle_mousemoved(ecs_world, unpack(args))
+        end)
+
+    obs.update
+        :pop()
+        :foreach(function(dt)
+            handle_update(ecs_world, dt)
+        end)
+
+    return camera.handle_obserables(ctx, obs, ...)
 end
 
 return camera
