@@ -1,51 +1,74 @@
 local nw = require "nodeworks"
 
-local system = nw.ecs.system(nw.component.position, nw.component.velocity, nw.component.gravity)
+local Motion = class()
 
-local function update_entity(entity, dt)
-    local disable = entity[nw.component.disable_motion] or 0
-    if disable > 0 then return end
+function Motion.create(world)
+    return setmetatable({world=world}, Motion)
+end
 
-    local v = entity[nw.component.velocity]
-    local p = entity[nw.component.position]
-    local g = entity[nw.component.gravity]
-    local d = entity[nw.component.drag] or 0
+function Motion:update(dt, ecs_world, ...)
+    if not ecs_world then return end
 
-    v = v + (g - v * d) * dt
-    entity:set(nw.component.velocity, v:unpack())
+    local entities = ecs_world:get_component_table(nw.component.position)
 
-    if v.x ~= 0 or v.y ~= 0 then
-        p = p + v * dt
-        nw.system.collision.move_to(entity, p:unpack())
+    for id, _ in pairs(entities) do
+        local e = ecs_world:entity(id)
+        self:update_velocity(e, dt)
+        self:update_position(e, dt)
     end
+
+    return self:update(dt, ...)
 end
 
-function system.update(world, pool, dt)
-    List.foreach(pool, update_entity, dt)
+function Motion:update_velocity(entity, dt)
+    local g = entity:get(nw.component.gravity)
+    local d = entity:get(nw.component.drag)
+
+    if not g and not d then return end
+
+    local g = g or vec2()
+    local d = d or 0
+    local v = entity:ensure(nw.component.velocity)
+    local vx = v.x + (g.x - v.x * d) * dt
+    local vy = v.y + (g.y - v.y * d) * dt
+    entity:set(nw.component.velocity, vx, vy)
 end
 
-function system.on_collision(world, pool, collision_info)
+function Motion:update_position(entity, dt)
+    local v = entity:get(nw.component.velocity)
+    local p = entity:get(nw.component.position)
 
-    List.foreach(collision_info, function(info)
-        if not self.pool[info.item] then return end
-        if info.type ~= "touch" and info.type ~= "slide" then return end
+    if not p or not v then return end
 
-
-        local vx, vy = info.item[nw.component.velocity]:unpack()
-        local t = 0.9
-        if info.normal.y <= -t then
-            vy = math.min(0, vy)
-            vx = 0
-        elseif info.normal.y >= t then
-            vy = math.max(0, vy)
-        elseif info.normal.x <= -t then
-            vx = math.min(0, vx)
-        elseif info.normal.x >= t then
-            vx = math.max(0, vx)
-        end
-
-        info.item:set(nw.component.velocity, vx, vy)
-    end)
+    return nw.system.collision(self.world):move(entity, p.x + v.x * dt, p.y + v.y * dt)
 end
 
-return system
+function Motion:on_collision(colinfo)
+    local v = colinfo.ecs_world:get(nw.component.velocity, colinfo.item)
+
+    if not v then return end
+    if colinfo.type ~= "slide" and colinfo.type ~= "touch" then return end
+
+    local vx, vy = v:unpack()
+    local t = 0.9
+    if colinfo.normal.y <= -t then
+        vy = math.min(0, vy)
+    elseif colinfo.normal.y >= t then
+        vy = math.max(0, vy)
+    elseif colinfo.normal.x <= -t then
+        vx = math.min(0, vx)
+    elseif colinfo.normal.x >= t then
+        vx = math.max(0, vx)
+    end
+
+    colinfo.ecs_world:set(nw.component.velocity, colinfo.item, vx, vyq)
+end
+
+local default_instace = Motion.create()
+
+return function(ctx)
+    if not ctx then return default_instace end
+    local world = ctx.world or ctx
+    if not world[Motion] then world[Motion] = Motion.create(world) end
+    return world[Motion]
+end

@@ -182,6 +182,8 @@ function components.body() return true end
 function components.oneway() return true end
 
 function components.hitbox(x, y, w, h)
+    if not w then return spatial(-x * 0.5, -y, x, y) end
+
     return spatial(x, y, w, h)
 end
 
