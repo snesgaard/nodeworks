@@ -13,12 +13,14 @@ function Record.create(init_state)
     )
 end
 
+function Record:__tostring() return "Record" end
+
 function Record:register_epoch(action, state, info)
     if not state then
         errorf("State must be defined")
     end
 
-    table.insert(self._epochs, {action = action, state = state, info = info})
+    table.insert(self._epochs, dict{action = action, state = state, info = info})
     self._infos[action] = info
     self._states[action] = state
 end
@@ -31,7 +33,7 @@ function Record:root() return self:children(self):head() end
 
 function Record:children(epoch)
     return self._epochs
-        :filter(function(e) return self._parent[e] == epoch end)
+        :filter(function(e) return self._parent[e.action] == epoch end)
 end
 
 function Record:epochs() return self._epochs end
@@ -88,7 +90,7 @@ local function execute_action(record, map, action, on_action, on_state, parent)
     record:register_epoch(action, epoch.state, epoch.info)
     record:register_parent(action, parent)
 
-    on_action(record, action)
+    on_action(record, action, epoch)
     on_state(epoch.state)
 
     if not derived_actions then return end

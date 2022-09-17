@@ -19,6 +19,7 @@ local map = {}
 
 function map.attack(state, user, target, damage)
     local damage = {"damage", target, damage}
+
     local drain = {
         "heal", user,
         function(record)
@@ -27,10 +28,16 @@ function map.attack(state, user, target, damage)
             return math.floor(damage_info.damage * drain)
         end
     }
-    local thorns = {"thorns", user, target}
-    local info = {damage = damage}
-    local epoch = epoch(state)
 
+    local thorns = {"thorns", user, target}
+
+    local info = {}
+
+    function info.damage(record)
+        return record:info(damage).damage
+    end
+
+    local epoch = epoch(state, info)
     return epoch, list(damage, drain, thorns)
 end
 
@@ -106,11 +113,19 @@ T("reducer", function(T)
     T("attack_inspection", function(T)
         local record = reducer:run{"attack", id.player, id.foe, 4}
 
-        local damage = record:children(record:root())
-            :filter(function(e) return e.action[1] == "damage" end)
-            :head().info.damage
+        T:assert(record:root().info.damage(record) == 4)
+    end)
 
-        T:assert(damage == 4)
+    T("on_action", function(T)
+        local data = {attack_gotten = false}
+
+        function reducer.on_action(record, action, epoch)
+            data.attack_gotten = data.attack_gotten or action[1] == "attack"
+        end
+
+        reducer:run{"attack", id.player, id.foe, 7}
+
+        T:assert(data.attack_gotten)
     end)
 
 end)
