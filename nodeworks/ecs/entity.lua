@@ -66,6 +66,18 @@ function entity_table.create(strong_tables)
     )
 end
 
+function entity_table:copy()
+    local next_entity = entity_table.create(self.strong_tables)
+
+    for comp, entity_value in pairs(self.components) do
+        for id, value in pairs(entity_value) do
+            next_entity:set(comp, id, value)
+        end
+    end
+
+    return next_entity
+end
+
 function entity_table:entity(id)
     local id = id or {}
     if not self.stored_entities[id] then

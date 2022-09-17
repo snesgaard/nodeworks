@@ -32,6 +32,7 @@ require "test.core.pool"
 require "test.core.event_queue"
 
 require "test.ecs.promise"
+require "test.ecs.reducer"
 require "test.system.collision"
 require "test.system.tween"
 require "test.system.animation"

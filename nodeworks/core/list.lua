@@ -41,7 +41,7 @@ function list:head() return self[1] end
 
 function list:tail() return self[#self] end
 
-function list:body() return self:sub(2) end
+function list:body() return List.sub(self, 2) end
 
 function list:random() return self[rng(#self)] end
 
