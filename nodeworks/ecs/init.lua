@@ -7,5 +7,6 @@ return {
   --assemblage = require(... .. ".assemblage"),
   --system = require(... .. ".system"),
   pool = require(... .. ".pool"),
-  promise = require(... .. ".promise")
+  promise = require(... .. ".promise"),
+  reducer = require(... .. ".reducer")
 }
