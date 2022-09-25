@@ -87,7 +87,7 @@ local function execute_action(record, map, action, on_action, on_state, parent)
 
     if not epoch then errorf("An epoch must be returned: %s", key) end
 
-    record:register_epoch(action, epoch.state, epoch.info)
+    record:register_epoch(action, epoch.state or state, epoch.info)
     record:register_parent(action, parent)
 
     on_action(record, action, epoch)
