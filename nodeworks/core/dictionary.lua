@@ -64,10 +64,10 @@ function dictionary:keys()
     return keys
 end
 
-function dictionary:filter(f)
+function dictionary:filter(f, ...)
   local ret = dictionary.create()
   for key, val in pairs(self) do
-    ret[key] = f(key, val) and val or nil
+    ret[key] = f(key, val, ...) and val or nil
   end
   return ret
 end
