@@ -96,6 +96,8 @@ end
 
 function context:from_cache(...) return self.world:from_cache(...) end
 
+function context:paused() return false end
+
 local world = {}
 world.__index = world
 
@@ -160,15 +162,17 @@ function world:spin()
     if events:empty() then return end
 
     for _, ctx in ipairs(self.context) do
-        local activate = false
+        if not ctx:paused() then
+            local activate = false
 
-        for _, e in ipairs(events) do
-            activate = ctx:parse_single_event(e.key, e.data) or activate
-        end
+            for _, e in ipairs(events) do
+                activate = ctx:parse_single_event(e.key, e.data) or activate
+            end
 
-        if activate then
-            ctx:resume()
-            ctx:clear()
+            if activate then
+                ctx:resume()
+                ctx:clear()
+            end
         end
     end
 
