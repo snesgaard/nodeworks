@@ -153,28 +153,27 @@ function camera.observables(ctx)
     }
 end
 
-function camera.handle_obserables(ctx, obs, ecs_world, ...)
+function camera.handle_observables(ctx, obs, ecs_world, ...)
     if not ecs_world then return end
-
     obs.wheelmoved
-        :pop()
+        :peek()
         :foreach(function(m)
             handle_wheelmoved(ecs_world, m)
         end)
 
     obs.mousemoved
-        :pop()
+        :peek()
         :foreach(function(args)
             handle_mousemoved(ecs_world, unpack(args))
         end)
 
     obs.update
-        :pop()
+        :peek()
         :foreach(function(dt)
             handle_update(ecs_world, dt)
         end)
 
-    return camera.handle_obserables(ctx, obs, ...)
+    return camera.handle_observables(obs, ...)
 end
 
 return camera

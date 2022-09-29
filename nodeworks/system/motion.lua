@@ -64,11 +64,34 @@ function Motion:on_collision(colinfo)
     colinfo.ecs_world:set(nw.component.velocity, colinfo.item, vx, vy)
 end
 
+function Motion.observables(ctx)
+    return {
+        update = ctx:listen("update"):collect(),
+        collision = ctx:listen("collision"):collect()
+    }
+end
+
+function Motion.handle_observables(ctx, obs, ecs_world, ...)
+    if not ecs_world then return end
+
+    for _, dt in ipairs(obs.update:pop()) do
+        Motion.from_ctx(ctx):update(dt, ecs_world)
+    end
+
+    for _, colinfo in ipairs(obs.collision:pop()) do
+        Motion.from_ctx(ctx):on_collision(colinfo)
+    end
+
+    return Motion.handle_observables(obs, ...)
+end
+
 local default_instace = Motion.create()
 
-return function(ctx)
+function Motion.from_ctx(ctx)
     if not ctx then return default_instace end
     local world = ctx.world or ctx
     if not world[Motion] then world[Motion] = Motion.create(world) end
     return world[Motion]
 end
+
+return Motion.from_ctx

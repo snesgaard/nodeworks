@@ -165,12 +165,29 @@ function AnimationMaster:stop(entity)
     return self
 end
 
-local default_master = AnimationMaster.create()
+function AnimationMaster.observables(ctx)
+    return {
+        update = ctx:listen("update"):collect()
+    }
+end
 
-return function(ctx)
+function AnimationMaster.handle_observables(ctx, obs, ecs_world, ...)
+    if not ecs_world then return end
+
+    for _, dt in ipairs(obs.update:pop()) do
+        AnimationMaster.from_ctx(ctx):update(dt, ecs_world)
+    end
+
+    return AnimationMaster.handle_observables(ctx, obs, ...)
+end
+
+local default_master = AnimationMaster.create()
+function AnimationMaster.from_ctx(ctx)
     if not ctx then return default_master end
 
     local world = ctx.world or ctx
     world[AnimationMaster] = world[AnimationMaster] or AnimationMaster.create(world)
     return world[AnimationMaster]
 end
+
+return AnimationMaster.from_ctx
