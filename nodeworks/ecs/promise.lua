@@ -43,12 +43,12 @@ end
 
 function observable:add_parent(parent)
     table.insert(self.parents, parent)
-    self:get_latest_state()
+    if self.canonical_peek then self:get_latest_state() end
     return self
 end
 
 function observable:get_latest_state()
-    if not self.canonical_peek then return end
+    --if not self.canonical_peek then return end
     if self.canonical_peek and self:canonical_peek() then return self:canonical_peek() end
 
     for _, parent in ipairs(self.parents) do

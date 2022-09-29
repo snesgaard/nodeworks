@@ -87,7 +87,8 @@ function Collision:move_to_state(entity, bump_world, hitbox, pos, mirror, filter
     local caller = ecs_world:ensure(
         filter_caller.create, "__global__", ecs_world
     )
-    caller:set_filter(filter or self.default_filter)
+    local entity_filter = filter or entity:get(nw.component.collision_filter)
+    caller:set_filter(entity_filter or self.default_filter)
 
     local ax, ay, col_info = bump_world:move(
         entity.id, next_hitbox.x, next_hitbox.y, caller

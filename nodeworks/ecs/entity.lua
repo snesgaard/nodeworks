@@ -174,7 +174,7 @@ function entity_table:pool(...)
 end
 
 function entity_table:table(component)
-    return fetch_component(self, component)
+    return self:get_component_table(component)
 end
 
 return entity_table

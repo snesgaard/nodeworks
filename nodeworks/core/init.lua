@@ -152,11 +152,11 @@ function class()
     return c
 end
 
-function decorate(dst, src)
+function decorate(dst, src, overwrite)
     for key, value in pairs(src) do
         local is_function = type(value) == "function"
         if is_function then
-            if not dst[key] then
+            if not dst[key] or overwrite then
                 dst[key] = value
             else
                 errorf("Tried to decorate key %s to table, but was already set", key)
