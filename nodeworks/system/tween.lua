@@ -231,7 +231,7 @@ function WorldTweenMaster:as(component)
     return component_tween
 end
 
-return function(ctx)
+function WorldTweenMaster.from_ctx(ctx)
     if not ctx then
         errorf("Context or world must be given")
     end
@@ -240,3 +240,17 @@ return function(ctx)
     world[WorldTweenMaster] = world[WorldTweenMaster] or WorldTweenMaster.create(world)
     return world[WorldTweenMaster]
 end
+
+function WorldTweenMaster.observables(ctx)
+    return {
+        update = ctx:listen("update"):collect()
+    }
+end
+
+function WorldTweenMaster.handle_observables(ctx, obs, ...)
+    for _, dt in ipairs(obs:pop()) do
+        WorldTweenMaster.from_ctx(ctx):update(dt, ...)
+    end
+end
+
+return WorldTweenMaster.from_ctx
