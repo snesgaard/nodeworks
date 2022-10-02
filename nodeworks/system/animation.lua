@@ -114,6 +114,13 @@ function AnimationMaster:update_entity_state(entity, state, dt)
     end
 end
 
+function AnimationMaster:done(entity)
+    local state = entity:get(nw.component.animation_state)
+    if not state then return true end
+    local total_animation_time = sum_frame_time(state.frames)
+    return total_animation_time <= state.time
+end
+
 function AnimationMaster:get(entity)
     local state = entity:get(nw.component.animation_state)
     if not state then return end
@@ -134,6 +141,14 @@ function AnimationMaster:play(entity, animation, once)
 
     self:emit(self.EVENTS.KEYFRAME, entity, self:get(entity))
     return self
+end
+
+function AnimationMaster:ensure(entity, animation, once)
+    local prev_state = entity:get(nw.component.animation_state)
+    local is_done = self:done(entity)
+    if prev_state and prev_state.frames == animation and not is_done then return end
+
+    return self:play(entity, animation, once)
 end
 
 function AnimationMaster:play_once(entity, animation)
