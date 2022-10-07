@@ -20,6 +20,10 @@ function frame.create(image, slices, quad, offset)
     return setmetatable(this, frame)
 end
 
+function frame:copy()
+    return frame.create(self.image, self.slices, self.quad, self.offset)
+end
+
 function frame:set_dt(dt)
     self.dt = dt
     return self

@@ -53,4 +53,15 @@ function drawables.body(entity)
     gfx.pop()
 end
 
+function drawables.particles(entity)
+    local particles = entity % nw.component.particles
+    if not particles then return end
+
+    gfx.push("all")
+    drawables.push_transform(entity)
+    drawables.push_state(entity)
+    gfx.draw(particles, 0, 0)
+    gfx.pop()
+end
+
 return drawables
