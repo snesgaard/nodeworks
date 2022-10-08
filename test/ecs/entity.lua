@@ -1,69 +1,49 @@
 local nw = require "nodeworks"
 local T = nw.third.knife.test
 
+local function component_a(v) return v end
 
 T("entity", function(T)
-    local components = {}
-    function components.a(val) return val or 1 end
-    function components.b(val) return val or 2 end
+    local ecs_world = nw.ecs.entity.create()
+    local id = "id"
 
-    local a = nw.ecs.entity()
-        :set(components.a)
-        :set(components.b)
-
-    local b = nw.ecs.entity()
-        :set(components.b)
-
-    T("get", function(T)
-        T:assert(a:get(components.a) == components.a())
-        T:assert(a:get(components.b) == components.b())
-
-        T:assert(a % components.a == components.a())
-        T:assert(a % components.b == components.b())
-
-        T:assert(b:get(components.a) == nil)
-        T:assert(b:get(components.b) == components.b())
+    T("set", function(T)
+        ecs_world:set(component_a, id, 2)
+        T:assert(ecs_world:get(component_a, id) == 2)
     end)
 
-    T("ensure", function(T)
-        T:assert(b:ensure(components.a, 22) == 22)
-        T:assert(b:ensure(components.a, 30) == 22)
+    T("entity_persistence", function(T)
+        T:assert(ecs_world:entity(id) == ecs_world:entity(id))
     end)
 
-    T("changed", function(T)
-        T:assert(a:has_changed())
-        local past = a:pop_past()
-        T:assert(not a:has_changed())
+    T("copy_on_write", function(T)
+        -- First set a value
+        ecs_world:set(component_a, id, 2)
+        -- Then create a copy
+        local ecs_world_copy = ecs_world:copy()
+        -- Assert that both the values and the tables are the same in both worlds
+        T:assert(
+            ecs_world_copy:get(component_a, id) == ecs_world:get(component_a, id)
+        )
+        T:assert(
+            ecs_world_copy:get_component_table(component_a) == ecs_world:get_component_table(component_a)
+        )
+        -- Now write a new value into the copy
+        ecs_world_copy:set(component_a, id, 3)
+        -- Assert that values in both are different
+        T:assert(
+            ecs_world_copy:get(component_a, id) ~= ecs_world:get(component_a, id)
+        )
+        T:assert(
+            ecs_world_copy:get_component_table(component_a) ~= ecs_world:get_component_table(component_a)
+        )
 
-        T:assert(past[components.a] == nil)
-        T:assert(past[components.b] == nil)
-    end)
-
-    T("past", function(T)
-        a:pop_past()
-        a:set(components.a, 3):set(components.b, 4)
-        T:assert(a:has_changed())
-        local past = a:pop_past()
-        T:assert(not a:has_changed())
-
-        T:assert(past[components.a] == components.a())
-        T:assert(past[components.b] == components.b())
-    end)
-
-    T("remove", function(T)
-        a:pop_past()
-        a:remove(components.a)
-        local past = a:pop_past()
-
-        T:assert(a % components.a == nil)
-        T:assert(a % components.b == components.b())
-        T:assert(past[components.a] == components.a())
-    end)
-
-    T("kill", function(T)
-        a:pop_past()
-        a:destroy()
-        T:assert(a:has_changed())
-        T:assert(a:is_dead())
+        -- Next try to write a new value again in the copy.
+        -- Verify that the component table has been retained.
+        local prev_comp_table = ecs_world_copy:get_component_table(component_a)
+        ecs_world_copy:set(component_a, id, 4)
+        T:assert(
+            ecs_world_copy:get_component_table((component_a)) == prev_comp_table
+        )
     end)
 end)
