@@ -3,7 +3,7 @@ local T = nw.third.knife.test
 local Reducer = nw.ecs.reducer
 local epoch = Reducer.epoch
 
-local id = {player = "player", foe = "doe"}
+local id = {player = "player", foe = "doe", other="other"}
 
 local component = {}
 
@@ -72,6 +72,8 @@ function map.heal(state, target, heal)
     return epoch(state, info)
 end
 
+function map.noop(state) return epoch(state, {}) end
+
 T("reducer", function(T)
     local intial_state = nw.ecs.entity.create()
         :set(component.health, id.player, 10)
@@ -128,4 +130,15 @@ T("reducer", function(T)
         T:assert(data.attack_gotten)
     end)
 
+    T("state_preprocess", function(T)
+        local record = reducer:run{"noop"}
+        T:assert(not record:state():get(component.health, id.other))
+
+        function reducer.state_preprocess(state)
+            return state:copy():set(component.health, id.other, 12)
+        end
+
+        local record = reducer:run{"noop"}
+        T:assert(record:state():get(component.health, id.other) == 12)
+    end)
 end)

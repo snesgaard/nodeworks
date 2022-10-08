@@ -76,13 +76,16 @@ local function format_args(arg, record)
     return arg(record)
 end
 
-local function execute_action(record, map, action, on_action, on_state, parent)
+local function execute_action(
+        record, map, action, on_action, on_state, parent, state_preprocess
+)
     local key = action[1]
     local m = map[key]
     if not m then errorf("Unknown action %s", key) end
 
     local epoch, derived_actions = m(
-        record:state(), List.body(action):map(format_args, record):unpack()
+        state_preprocess(record:state()),
+        List.body(action):map(format_args, record):unpack()
     )
 
     if not epoch then errorf("An epoch must be returned: %s", key) end
@@ -96,14 +99,21 @@ local function execute_action(record, map, action, on_action, on_state, parent)
     if not derived_actions then return end
 
     for _, a in ipairs(derived_actions) do
-        execute_action(record, map, a, on_action, on_state, action)
+        execute_action(
+            record, map, a, on_action, on_state, action,
+            state_preprocess
+        )
     end
 end
 
+function Reducer.state_preprocess(state) return state end
+
 function Reducer:run(action)
     local record = Record.create(self.state)
-
-    execute_action(record, self.map, action, self.on_action, self.on_state, record)
+    execute_action(
+        record, self.map, action, self.on_action, self.on_state, record,
+        self.state_preprocess
+    )
 
     self.state = record:state()
     return record

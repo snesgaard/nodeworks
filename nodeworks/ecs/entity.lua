@@ -54,12 +54,12 @@ function entity:__mod(component) return self:get(component) end
 local entity_table = {}
 entity_table.__index = entity_table
 
-function entity_table.create(strong_tables)
+function entity_table.create()
     return setmetatable(
         {
             components = {},
-            strong_tables = strong_tables,
             stored_entities = {},
+            foreign_component = {},
             on_entity_destroyed = {}
         },
         entity_table
@@ -67,12 +67,11 @@ function entity_table.create(strong_tables)
 end
 
 function entity_table:copy()
-    local next_entity = entity_table.create(self.strong_tables)
+    local next_entity = entity_table.create()
 
-    for comp, entity_value in pairs(self.components) do
-        for id, value in pairs(entity_value) do
-            next_entity:set(comp, id, value)
-        end
+    for comp, comp_table in pairs(self.components) do
+        next_entity.components[comp] = comp_table
+        next_entity.foreign_component[comp] = true
     end
 
     return next_entity
@@ -89,13 +88,21 @@ end
 local function fetch_component(self, component)
     local c = self.components[component]
     if c then return c end
-    local c = {}
-    if not self.strong_tables then setmetatable({}, weak_table) end
+    local c = dict()
     self.components[component] = c
     return c
 end
 
+local function handle_copy_on_write(self, component)
+    if not self.foreign_component[component] then return end
+    local c = self.components[component]
+    if not c then return end
+    self.foreign_component[component] = false
+    self.components[component] = dict(c)
+end
+
 local function raw_set_component(self, component, id, value)
+    handle_copy_on_write(self, component)
     local c = fetch_component(self, component)
     c[id] = value
     return self

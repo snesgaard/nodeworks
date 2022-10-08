@@ -31,6 +31,7 @@ require "test.core.stack"
 require "test.core.pool"
 require "test.core.event_queue"
 
+require "test.ecs.entity"
 require "test.ecs.promise"
 require "test.ecs.reducer"
 require "test.system.collision"
@@ -40,7 +41,6 @@ require "test.system.camera"
 require "test.system.motion"
 --[[
 require "test.ecs.pool"
-require "test.ecs.entity"
 require "test.ecs.system"
 require "test.ecs.world"
 
