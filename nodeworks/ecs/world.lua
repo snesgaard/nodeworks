@@ -156,6 +156,8 @@ function world:remove_dead_systems()
     end
 end
 
+local ALL_EVENT_HOLDER = {}
+
 function world:spin()
     local events = self:pop_events()
 
@@ -167,6 +169,9 @@ function world:spin()
 
             for _, e in ipairs(events) do
                 activate = ctx:parse_single_event(e.key, e.data) or activate
+                ALL_EVENT_HOLDER.data = e.data
+                ALL_EVENT_HOLDER.key = e.key
+                activate = ctx:parse_single_event(world.ALL_EVENT, ALL_EVENT_HOLDER) or activate
             end
 
             if activate then
@@ -195,5 +200,7 @@ function world:ensure(system, ...)
 end
 
 world.Context = context
+
+world.ALL_EVENT = {}
 
 return world
