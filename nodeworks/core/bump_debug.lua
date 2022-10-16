@@ -10,7 +10,7 @@ local function get_color(key)
     if type(key) ~= "table" then
         return 0, 1, 0
     end
-    if key[components.body] then
+    if key[nw.component.body] then
         return 0, 0, 1
     else
         return 1, 0, 0
