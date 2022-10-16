@@ -55,4 +55,26 @@ T("script", function(T)
         T:assert(dst.value == 1)
         T:assert(dst.done)
     end)
+
+    local action_complete_token = "we did it"
+
+    local function action(ctx, entity)
+        ctx:emit(action_complete_token, true)
+    end
+
+    local function ai_with_action(ctx, entity)
+        local obs = ctx:listen(action_complete_token):latest()
+        nw.system.script().action.set(entity, action)
+        while not obs:peek() do
+            coroutine.yield()
+        end
+        entity.we_did_it = true
+    end
+
+    T("action", function(T)
+        T:assert(not entity.we_did_it)
+        nw.system.script().set(entity, ai_with_action)
+        world:emit("update"):spin()
+        T:assert(entity.we_did_it)
+    end)
 end)

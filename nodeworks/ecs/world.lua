@@ -121,6 +121,9 @@ function world:push(system, ...)
 end
 
 function world:emit(event_key, ...)
+    if self.verbose then
+        print("event", event_key, ...)
+    end
     table.insert(self.events, {key = event_key, data = {...}})
     return self
 end
