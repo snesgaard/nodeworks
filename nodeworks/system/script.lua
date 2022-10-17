@@ -49,7 +49,10 @@ function Script.handle_context(obs, entity, ctx)
         should_run = parsed or should_run
     end
 
-    if should_run then ctx:resume() end
+    if should_run then
+        ctx:resume()
+        ctx:clear()
+    end
 end
 
 function Script.handle_decision(ctx, obs, entity, script, args)
