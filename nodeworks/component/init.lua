@@ -85,7 +85,7 @@ function timer:finish()
     self.time = 0
 end
 
-components.timer = timer
+components.timer = timer.create
 
 --------------------------------------------------
 
