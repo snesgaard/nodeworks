@@ -184,6 +184,14 @@ function Collision:mirror(entity, filter)
     return self:mirror_to(entity, not mirror, filter)
 end
 
+function Collision.get_bump_hitbox(entity)
+    local bump_world = entity % nw.component.bump_world
+    if not bump_world then return end
+    if not bump_world:hasItem(entity.id) then return end
+
+    return bump_world:getRect(entity.id)
+end
+
 function Collision:class()
     return Collision
 end

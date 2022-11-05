@@ -11,8 +11,15 @@ function drawables.push_color(entity, opacity)
     end
 end
 
+function drawables.push_font(entity)
+    local font = entity % nw.component.font
+    if not font then return end
+    gfx.setFont(font)
+end
+
 function drawables.push_state(entity)
     drawables.push_color(entity)
+    drawables.push_font(entity)
 end
 
 function drawables.push_transform(entity)
