@@ -117,11 +117,12 @@ function TweenComponent:update(dt, ...)
     for _, ecs_world in ipairs{...} do
         for id, tween in pairs(ecs_world:table(self.signature)) do
             local entity = ecs_world:entity(id)
+            local prev_value = tween:value()
             tween:update(dt)
             if self.on_tween_updated then
-                self.on_tween_updated(entity, tween:value(), self.component)
+                self.on_tween_updated(entity, tween:value(), self.component, prev_value)
             end
-            self:do_assign(entity, tween)
+            self:do_assign(entity, tween, prev_value)
         end
 
         for id, tween in pairs(ecs_world:table(self.signature)) do
