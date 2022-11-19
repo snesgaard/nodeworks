@@ -16,7 +16,12 @@ local Record = class()
 
 function Record.create(initial_state)
     return setmetatable(
-        {epochs=list(Epoch.create(initial_state)), tags=dict(), children=dict()},
+        {
+            epochs=list(),
+            tags=dict(),
+            children=dict(),
+            initial_state=initial_state
+        },
         Record
     )
 end
@@ -26,7 +31,10 @@ function Record:register(epoch)
     return self
 end
 
-function Record:state() return self.epochs:tail():state() end
+function Record:state()
+    local tail_epoch = self.epochs:tail()
+    return tail_epoch and tail_epoch:state() or self.initial_state
+end
 
 function Record:tag(tag, epoch)
     if tag then self.tags[tag] = epoch end

@@ -51,7 +51,7 @@ function functor.damage(state, target, damage)
 
     if shield then real_damage = 0 end
 
-    state:set(component.health, hp.value - real_damage, hp.max)
+    state:set(component.health, target, hp.value - real_damage, hp.max)
 
     local info = dict{
         damage = real_damage,
@@ -86,6 +86,12 @@ T("reducer", function(T)
         :set(component.health, id.player, 10)
 
     local reducer = Reducer.create(state, functor)
-    local record = reducer:speculate({"attack", id.player, id.foe, 5})
-    print(record.epochs:map(function(e) return e:info() or "unknown" end))
+    local record = reducer:speculate({"attack", id.player, id.foe, 5, tag="action"})
+    T:assert(record.epochs:size() == 3)
+    local epoch_types = record.epochs:map(function(e) return e.type end)
+    T:assert(epoch_types == list("attack", "damage", "apply_poison"))
+    T:assert(record:state() ~= state)
+    T:assert(record:state():get(component.health, id.foe).value == 15)
+    T:assert(record:find("action"))
+    T:assert(record:find("action").type == "attack")
 end)

@@ -323,4 +323,12 @@ function list:max(comp, ...)
     return next_value
 end
 
+function list:__eq(other)
+    if self:size() ~= other:size() then return false end
+    for i = 1, #self do
+        if self[i] ~= other[i] then return false end
+    end
+    return true
+end
+
 return list
