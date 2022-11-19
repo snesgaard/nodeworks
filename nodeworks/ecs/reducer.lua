@@ -1,132 +1,120 @@
+local Epoch = class()
+
+function Epoch.create(state, info, actions)
+    return setmetatable(
+        {_state=state, _info=info or {}, _actions=actions or list()}, Epoch
+    )
+end
+
+function Epoch:state() return self._state end
+
+function Epoch:info() return self._info end
+
+function Epoch:actions() return self._actions end
+
 local Record = class()
 
-function Record.create(init_state)
+function Record.create(initial_state)
     return setmetatable(
-        {
-            _init_state = init_state,
-            _epochs = list(),
-            _infos = dict(),
-            _states = dict(),
-            _parent = dict(),
-        },
+        {epochs=list(Epoch.create(initial_state)), tags=dict(), children=dict()},
         Record
     )
 end
 
-function Record:__tostring() return "Record" end
+function Record:register(epoch)
+    table.insert(self.epochs, epoch)
+    return self
+end
 
-function Record:register_epoch(action, state, info)
-    if not state then
-        errorf("State must be defined")
+function Record:state() return self.epochs:tail():state() end
+
+function Record:tag(tag, epoch)
+    if tag then self.tags[tag] = epoch end
+    return self
+end
+
+function Record:link(parent, child)
+    self.children[parent] = self.children[parent] or {}
+    table.insert(self.children[parent], child)
+    return self
+end
+
+function Record:get_children(epoch)
+    return self.children[epoch] or list()
+end
+
+local function recursive_child(record, all_children, epoch)
+    for _, child in ipairs(record:get_children(epoch)) do
+        table.insert(all_children, child)
+        recursive_child(record, all_children, child)
     end
 
-    table.insert(self._epochs, dict{action = action, state = state, info = info})
-    self._infos[action] = info
-    self._states[action] = state
+    return all_children
 end
 
-function Record:register_parent(child, parent)
-    self._parent[child] = parent
+function Record:get_all_children(epoch)
+    return recursive_child(self, list(epoch), epoch)
 end
 
-function Record:root() return self:children(self):head() end
-
-function Record:children(epoch)
-    return self._epochs
-        :filter(function(e) return self._parent[e.action] == epoch end)
-end
-
-function Record:epochs() return self._epochs end
-
-function Record:state(action)
-    if not action then
-        local epoch = self._epochs:tail()
-
-        return epoch and epoch.state or self._init_state
-    end
-
-    local state = self._state[action]
-
-    if not state then
-        errorf("Request for state of action %s was undefined", action.key)
-    end
-
-    return state
-end
-
-function Record:info(action)
-    local info = self._infos[action]
-
-    if not info then
-        errorf("Request for info of action %s was undefined", action.key)
-    end
-
-    return info
-end
+function Record:find(tag) return self.tags[tag] end
 
 local Reducer = class()
 
-function Reducer.create(init_state, map)
-    return setmetatable({state=init_state, map=map}, Reducer)
-end
-
-local function format_args(arg, record)
-    if type(arg) ~= "function" then return arg end
-
-    return arg(record)
-end
-
-local function execute_action(
-        record, map, action, on_action, on_state, parent, state_preprocess
-)
-    local key = action[1]
-    local m = map[key]
-    if not m then errorf("Unknown action %s", key) end
-
-    local epoch, derived_actions = m(
-        state_preprocess(record:state()),
-        List.body(action):map(format_args, record):unpack()
+function Reducer.create(state, functor)
+    return setmetatable(
+        {
+            _state = state,
+            _functor = functor or {}
+        },
+        Reducer
     )
+end
 
-    if not epoch then errorf("An epoch must be returned: %s", key) end
+local function noop(state) return Epoch.create(state) end
 
-    record:register_epoch(action, epoch.state or state, epoch.info)
-    record:register_parent(action, parent)
+local function format_args(record, arg, ...)
+    if arg == nil then return end
 
-    on_action(record, action, epoch)
-    on_state(epoch.state)
-
-    if not derived_actions then return end
-
-    for _, a in ipairs(derived_actions) do
-        execute_action(
-            record, map, a, on_action, on_state, action,
-            state_preprocess
-        )
+    if type(arg) == "function" then
+        return arg(record), format_args(record, ...)
+    else
+        return arg, format_args(record, ...)
     end
 end
 
-function Reducer.state_preprocess(state) return state end
+function Reducer:call_action(record, key, ...)
+    local f = noop
+    if key then f = self._functor[key] or noop end
+    return f(record:state():copy(), format_args(record, ...))
+end
 
-function Reducer:run(action)
-    local record = Record.create(self.state)
-    execute_action(
-        record, self.map, action, self.on_action, self.on_state, record,
-        self.state_preprocess
-    )
+local function recurse_action(reducer, record, action)
+    local epoch = reducer:call_action(record, unpack(action))
 
-    self.state = record:state()
+    if not epoch then return epoch end
+
+    epoch.type = action[1]
+
+    record
+        :register(epoch)
+        :tag(action.tag, epoch)
+
+    for _, sub_action in ipairs(epoch:actions()) do
+        local sub_epoch = recurse_action(reducer, record, sub_action)
+        record:link(epoch, sub_epoch)
+    end
+
+    return epoch
+end
+
+function Reducer:speculate(...)
+    local record = Record.create(self._state)
+
+    for _, action in ipairs{...} do recurse_action(self, record, action) end
+
     return record
 end
 
-function Reducer.on_action(record, action)
-
-end
-
-function Reducer.on_state(state)
-
-end
-
-function Reducer.epoch(state, info) return {state=state, info=info or {}} end
+function Reducer.epoch(...) return Epoch.create(...) end
 
 return Reducer
