@@ -273,6 +273,8 @@ function components.color(r, g, b, a)
     return  {r, g, b, a}
 end
 
+function components.frame(frame) return frame end
+
 function components.shader(shader) return shader end
 
 function components.shader_uniforms(uniforms) return uniforms end

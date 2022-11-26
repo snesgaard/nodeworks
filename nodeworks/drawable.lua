@@ -71,4 +71,15 @@ function drawables.particles(entity)
     gfx.pop()
 end
 
+function drawables.frame(entity)
+    local frame = entity % nw.component.frame
+    if not frame then return end
+
+    gfx.push("all")
+    drawables.push_transform(entity)
+    drawables.push_state(entity)
+    frame:draw("body")
+    gfx.pop()
+end
+
 return drawables

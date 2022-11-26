@@ -174,3 +174,5 @@ function inherit(c, this)
 
     return i
 end
+
+love.graphics.setDefaultFilter("nearest", "nearest")
