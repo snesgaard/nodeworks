@@ -33,6 +33,17 @@ local function get_event_tag(tag)
     return string.match(tag, "event<(.*)>")
 end
 
+local function slice_outside_frame(slice, w, h)
+    local x_outside = w <= slice.x or slice.x + slice.w < 0
+    local y_outside = h <= slice.y or slice.y + slice.h < 0
+    return x_outside or y_outside
+end
+
+local function decode_slice_data(slice_data)
+    if not slice_data then return {} end
+    return dict(nw.third.json.decode(slice_data))
+end
+
 function Atlas.create(path)
     local sheet = gfx.newImage(path .. "/atlas.png")
     local data = read_json(path   .. "/atlas.json")
@@ -88,6 +99,8 @@ function Atlas.create(path)
     for _, slice in ipairs(data.meta.slices) do
         local name = slice.name
 
+        local slice_data = decode_slice_data(slice.data)
+
         for _, key in ipairs(slice.keys) do
             local hitbox = spatial(
                 key.bounds.x, key.bounds.y, key.bounds.w, key.bounds.h
@@ -95,6 +108,7 @@ function Atlas.create(path)
             local frame_index = key.frame + 1
             local frame = this.frames[frame_index]
             frame.slices[name] = hitbox
+            frame.slice_data[name] = slice_data
         end
 
         -- Forward interpolation
@@ -123,6 +137,16 @@ function Atlas.create(path)
                         frame.slices[slice_name] = nil
                     end
                 end
+            end
+        end
+    end
+
+    --Remove slices that are outside the frame bound
+    for index, frame in ipairs(this.frames) do
+        local size = data.frames[index].sourceSize
+        for name, slice in pairs(frame.slices) do
+            if slice_outside_frame(slice, size.w, size.h) then
+                frame.slices[name] = nil
             end
         end
     end

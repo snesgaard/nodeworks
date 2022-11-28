@@ -17,6 +17,7 @@ function frame.create(image, slices, quad, offset)
     this.deltas = dict{}
     this.deltas_init = dict{}
     this.slices_origin = dict{}
+    this.slice_data = dict()
     return setmetatable(this, frame)
 end
 
