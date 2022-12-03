@@ -40,6 +40,7 @@ require "test.system.animation"
 require "test.system.camera"
 require "test.system.motion"
 require "test.system.script"
+require "test.core.tree"
 --[[
 require "test.ecs.pool"
 require "test.ecs.system"
