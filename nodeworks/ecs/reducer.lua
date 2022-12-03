@@ -1,132 +1,75 @@
+local Result = nw.Result
+
 local Record = class()
 
-function Record.create(init_state)
+function Record.create()
     return setmetatable(
         {
-            _init_state = init_state,
-            _epochs = list(),
-            _infos = dict(),
-            _states = dict(),
-            _parent = dict(),
+            tree = nw.component.tree(),
+            info = dict(),
+            alias = dict()
         },
         Record
     )
 end
 
-function Record:__tostring() return "Record" end
+function Record:find(alias)
+    local node = self.alias[alias]
+    return node and Result.just(node) or Result.empty()
+end
 
-function Record:register_epoch(action, state, info)
-    if not state then
-        errorf("State must be defined")
+function Record:get_info(node)
+    local info = self.info[node]
+    return info and Result.just(info) or Result.empty()
+end
+
+local Reducer = class()
+
+local function format_args(record, arg, ...)
+    if arg == nil then
+    elseif type(arg) == "function" then
+        return arg(record), format_args(record, ...)
+    else
+        return arg, format_args(record, ...)
     end
-
-    table.insert(self._epochs, dict{action = action, state = state, info = info})
-    self._infos[action] = info
-    self._states[action] = state
 end
 
-function Record:register_parent(child, parent)
-    self._parent[child] = parent
+function Reducer:_call_functor(state, action_name, ...)
+    local f = self._functor[action_name]
+    if not f then return end
+    return f(state, ...)
 end
 
-function Record:root() return self:children(self):head() end
+function Reducer:_invoke(state, record, action_name, ...)
+    local f = self._functor[action_name]
 
-function Record:children(epoch)
-    return self._epochs
-        :filter(function(e) return self._parent[e.action] == epoch end)
-end
+    if not f then return state end
 
-function Record:epochs() return self._epochs end
+    local state, info, next_actions = f(
+        state, format_args(record, ...)
+    )
 
-function Record:state(action)
-    if not action then
-        local epoch = self._epochs:tail()
+    record.info[action] = info
+    if action.alias then record.alias[action.alias] = action end
 
-        return epoch and epoch.state or self._init_state
-    end
-
-    local state = self._state[action]
-
-    if not state then
-        errorf("Request for state of action %s was undefined", action.key)
+    for _, a in ipairs(next_actions) do
+        record.tree:link(action, a)
+        state = self:_invoke(state, record, a)
     end
 
     return state
 end
 
-function Record:info(action)
-    local info = self._infos[action]
+function Reducer:__call(state, action)
+    local record = {
+        tree = nw.component.tree(),
+        info = dict(),
+        alias = {}
+    }
 
-    if not info then
-        errorf("Request for info of action %s was undefined", action.key)
-    end
+    local final_state = self:_invoke(state, record, action)
 
-    return info
+    return state, record
 end
-
-local Reducer = class()
-
-function Reducer.create(init_state, map)
-    return setmetatable({state=init_state, map=map}, Reducer)
-end
-
-local function format_args(arg, record)
-    if type(arg) ~= "function" then return arg end
-
-    return arg(record)
-end
-
-local function execute_action(
-        record, map, action, on_action, on_state, parent, state_preprocess
-)
-    local key = action[1]
-    local m = map[key]
-    if not m then errorf("Unknown action %s", key) end
-
-    local epoch, derived_actions = m(
-        state_preprocess(record:state()),
-        List.body(action):map(format_args, record):unpack()
-    )
-
-    if not epoch then errorf("An epoch must be returned: %s", key) end
-
-    record:register_epoch(action, epoch.state or state, epoch.info)
-    record:register_parent(action, parent)
-
-    on_action(record, action, epoch)
-    on_state(epoch.state)
-
-    if not derived_actions then return end
-
-    for _, a in ipairs(derived_actions) do
-        execute_action(
-            record, map, a, on_action, on_state, action,
-            state_preprocess
-        )
-    end
-end
-
-function Reducer.state_preprocess(state) return state end
-
-function Reducer:run(action)
-    local record = Record.create(self.state)
-    execute_action(
-        record, self.map, action, self.on_action, self.on_state, record,
-        self.state_preprocess
-    )
-
-    self.state = record:state()
-    return record
-end
-
-function Reducer.on_action(record, action)
-
-end
-
-function Reducer.on_state(state)
-
-end
-
-function Reducer.epoch(state, info) return {state=state, info=info or {}} end
 
 return Reducer

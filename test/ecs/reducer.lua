@@ -15,130 +15,34 @@ function component.thorns(t) return t or 0 end
 
 function component.drain(d) return d or 0 end
 
-local map = {}
+local functor = {}
 
-function map.attack(state, user, target, damage)
-    local damage = {"damage", target, damage}
+function functor.attack(state, from, to, base_dmg)
+    local str = state:ensure(component.strength, from)
+    local arm = state:ensure(component.armor, to)
+    local dmg = base_dmg + str - arm
 
-    local drain = {
-        "heal", user,
-        function(record)
-            local damage_info = record:info(damage)
-            local drain = record:state():get(component.drain, user) or 0
-            return math.floor(damage_info.damage * drain)
-        end
+    local info = {
+        from = from,
+        to = to,
+        dmg = dmg
     }
 
-    local thorns = {"thorns", user, target}
+    local actions = list(
+        {"damage", to, dmg, alias="attack_damage"}
+    )
 
-    local info = {}
-
-    function info.damage(record)
-        return record:info(damage).damage
-    end
-
-    local epoch = epoch(state, info)
-    return epoch, list(damage, drain, thorns)
+    return state, info, actions
 end
 
-function map.thorns(state, user, target)
-    local thorns = state:get(component.thorns, target) or 0
-    if 0 < thorns then
-        return epoch(state), list({"damage", user, thorns})
-    else
-        return epoch(state)
-    end
+function functor.attack_with_drain(state, from, to, base_dmg)
+    local attack_action = list(
+        {"attack", from, to, base_dmg, alias="attack_drain"},
+        {"heal", from, function(record)
+            return record:find("attack_drain")
+                :and_then(function(node) return record:info(node) end)
+                :map(function(info) return info.damage end)
+                :value_or_default(0)
+        end}
+    )
 end
-
-function map.damage(state, target, damage)
-    local next_state = state:copy()
-        :map(component.health, target, function(hp)
-            return hp - damage
-        end)
-
-    local info = {damage = damage}
-
-    return epoch(next_state, info)
-end
-
-function map.heal(state, target, heal)
-    local next_state = state:copy()
-        :map(component.health, target, function(hp)
-            return hp + heal
-        end)
-
-    local info = {heal = heal}
-
-    return epoch(state, info)
-end
-
-function map.noop(state) return epoch(state, {}) end
-
-T("reducer", function(T)
-    local intial_state = nw.ecs.entity.create()
-        :set(component.health, id.player, 10)
-        :set(component.health, id.foe, 5)
-
-    local reducer = Reducer.create(nw.ecs.entity).create(intial_state, map)
-
-    T("damage", function(T)
-        local record = reducer:run{"damage", id.foe, 5}
-        T:assert(record:state():get(component.health, id.foe), 0)
-    end)
-
-    T("attack_w_thorns", function(T)
-        reducer.state:set(component.thorns, id.foe, 2)
-        local record = reducer:run{"attack", id.player, id.foe, 3}
-
-        T:assert(record:state():get(component.health, id.foe), 2)
-        T:assert(record:state():get(component.health, id.player), 8)
-
-        local expected_actions = {
-            "attack", "damage", "heal", "thorns", "damage"
-        }
-        local actions = record:epochs():map(function(e) return e.action[1] end)
-        T:assert(table_equal(actions, expected_actions))
-    end)
-
-    T("attack_w_drain", function(T)
-        reducer.state:set(component.drain, id.player, 2)
-
-        local attack = {"attack", id.player, id.foe, 3}
-        local record = reducer:run(attack)
-
-        local heals = record:epochs():filter(function(e) return e.action[1] == "heal" end)
-        T:assert(heals:size() == 1)
-        local heal = heals:head()
-        T:assert(heal.info.heal == 6)
-    end)
-
-    T("attack_inspection", function(T)
-        local record = reducer:run{"attack", id.player, id.foe, 4}
-
-        T:assert(record:root().info.damage(record) == 4)
-    end)
-
-    T("on_action", function(T)
-        local data = {attack_gotten = false}
-
-        function reducer.on_action(record, action, epoch)
-            data.attack_gotten = data.attack_gotten or action[1] == "attack"
-        end
-
-        reducer:run{"attack", id.player, id.foe, 7}
-
-        T:assert(data.attack_gotten)
-    end)
-
-    T("state_preprocess", function(T)
-        local record = reducer:run{"noop"}
-        T:assert(not record:state():get(component.health, id.other))
-
-        function reducer.state_preprocess(state)
-            return state:copy():set(component.health, id.other, 12)
-        end
-
-        local record = reducer:run{"noop"}
-        T:assert(record:state():get(component.health, id.other) == 12)
-    end)
-end)
