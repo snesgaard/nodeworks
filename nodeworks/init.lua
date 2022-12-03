@@ -2,6 +2,9 @@ local rh = {}
 
 require(... .. ".core")
 
+rh.just = Result.just
+rh.empty = Result.empty
+
 rh.ease = require(... .. ".core.ease")
 
 local BASE = ...

@@ -1,5 +1,3 @@
-local Result = nw.Result
-
 local Record = class()
 
 function Record.create()
@@ -15,12 +13,18 @@ end
 
 function Record:find(alias)
     local node = self.alias[alias]
-    return node and Result.just(node) or Result.empty()
+    return node and nw.just(node) or nw.empty()
 end
 
 function Record:get_info(node)
     local info = self.info[node]
-    return info and Result.just(info) or Result.empty()
+    return info and nw.just(info) or nw.empty()
+end
+
+function Record:info_from_alias(alias)
+    return self
+        :find(alias)
+        :and_then(function(node) return self:get_info(node) end)
 end
 
 local Reducer = class()
@@ -34,42 +38,32 @@ local function format_args(record, arg, ...)
     end
 end
 
-function Reducer:_call_functor(state, action_name, ...)
-    local f = self._functor[action_name]
-    if not f then return end
-    return f(state, ...)
-end
-
-function Reducer:_invoke(state, record, action_name, ...)
-    local f = self._functor[action_name]
-
-    if not f then return state end
-
+function Reducer:_invoke(state, record, f, ...)
     local state, info, next_actions = f(
-        state, format_args(record, ...)
+        state:copy(), format_args(record, ...)
     )
 
     record.info[action] = info
     if action.alias then record.alias[action.alias] = action end
 
-    for _, a in ipairs(next_actions) do
+    for _, a in ipairs(next_actions or list()) do
         record.tree:link(action, a)
-        state = self:_invoke(state, record, a)
+        state = self:_invoke(state, record, unpack(a))
     end
 
     return state
 end
 
 function Reducer:__call(state, action)
-    local record = {
-        tree = nw.component.tree(),
-        info = dict(),
-        alias = {}
-    }
+    local record = Record.create()
 
-    local final_state = self:_invoke(state, record, action)
+    local final_state = self:_invoke(state, record, unpack(action))
 
-    return state, record
+    if self._on_action() then
+        self._on_action(action, final_state, record)
+    end
+
+    return final_state, record
 end
 
 return Reducer
