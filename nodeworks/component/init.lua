@@ -110,6 +110,8 @@ components.tick = tick
 
 components.tween = require(... .. ".tween")
 
+components.tree = require(... .. ".tree")
+
 ---
 
 function components.position(x, y)
