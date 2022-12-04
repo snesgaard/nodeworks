@@ -27,19 +27,7 @@ local function add_and_repeat(state, id, a)
     return state, {}, actions
 end
 
-local multiply = class()
-
-function multiply.create(val)
-    return setmetatable({val=val}, multiply)
-end
-
-function multiply:__call(num)
-    return num * self.val
-end
-
-local function multiply(num, val)
-    return num * val
-end
+local function multiply(num, val) return num * val end
 
 local function factorial(num, next_val)
     local actions = list(

@@ -9,6 +9,12 @@ function class()
 
     function c:class() return c end
 
+    function c.constructor() return {} end
+
+    function c.create(...)
+        return setmetatable(c.constructor(...), c)
+    end
+
     return c
 end
 
