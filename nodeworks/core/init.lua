@@ -3,6 +3,44 @@ BASE = BASE == "init" and "" or BASE
 
 gfx = love.graphics
 
+function class()
+    local c = {}
+    c.__index = c
+
+    function c:class() return c end
+
+    function c.constructor() return {} end
+
+    function c.create(...)
+        return setmetatable(c.constructor(...), c)
+    end
+
+    return c
+end
+
+function decorate(dst, src, overwrite)
+    for key, value in pairs(src) do
+        local is_function = type(value) == "function"
+        if is_function then
+            if not dst[key] or overwrite then
+                dst[key] = value
+            else
+                errorf("Tried to decorate key %s to table, but was already set", key)
+            end
+        end
+    end
+end
+
+function inherit(c, this)
+    local i = setmetatable(this or {}, c)
+    i.__index = i
+
+    function i:class() return i end
+    function i:superclass() return c end
+
+    return i
+end
+
 require(BASE .. ".functional")
 Atlas = require(BASE .. ".atlas")
 Color = require(BASE .. ".color")
@@ -25,6 +63,7 @@ layer = require(BASE .. ".layer")
 imtween = require(BASE .. ".imtween")
 im_animation = require(BASE .. ".imanimation")
 gui = require(BASE .. ".gui")
+Result = require(BASE .. ".result")
 
 atlas_cache = {}
 function get_atlas(path)
@@ -141,36 +180,4 @@ function math.atan2(x, y)
     else
         return 0
     end
-end
-
-function class()
-    local c = {}
-    c.__index = c
-
-    function c:class() return c end
-
-    return c
-end
-
-function decorate(dst, src, overwrite)
-    for key, value in pairs(src) do
-        local is_function = type(value) == "function"
-        if is_function then
-            if not dst[key] or overwrite then
-                dst[key] = value
-            else
-                errorf("Tried to decorate key %s to table, but was already set", key)
-            end
-        end
-    end
-end
-
-function inherit(c, this)
-    local i = setmetatable(this or {}, c)
-    i.__index = i
-
-    function i:class() return i end
-    function i:superclass() return c end
-
-    return i
 end

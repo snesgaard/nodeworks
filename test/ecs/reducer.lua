@@ -3,142 +3,78 @@ local T = nw.third.knife.test
 local Reducer = nw.ecs.reducer
 local epoch = Reducer.epoch
 
-local id = {player = "player", foe = "doe", other="other"}
-
 local component = {}
 
-function component.health(hp) return hp or 0 end
+function component.value(v) return v or 0 end
 
-function component.poison(p) return p or 0 end
+local function add(state, id, b)
+    state:map(component.value, id, function(a) return a + b end)
+    return state, {value=b}
+end
 
-function component.thorns(t) return t or 0 end
-
-function component.drain(d) return d or 0 end
-
-local map = {}
-
-function map.attack(state, user, target, damage)
-    local damage = {"damage", target, damage}
-
-    local drain = {
-        "heal", user,
+local function add_and_repeat(state, id, a)
+    local actions = list(
+        {add, id, a, alias="prev_add"},
         function(record)
-            local damage_info = record:info(damage)
-            local drain = record:state():get(component.drain, user) or 0
-            return math.floor(damage_info.damage * drain)
+            local value = record
+                :maybe_info_from_alias("prev_add")
+                :map(function(info) return info.value end)
+                :value_or_default(0)
+            return {add, id, value}
         end
-    }
+    )
 
-    local thorns = {"thorns", user, target}
-
-    local info = {}
-
-    function info.damage(record)
-        return record:info(damage).damage
-    end
-
-    local epoch = epoch(state, info)
-    return epoch, list(damage, drain, thorns)
+    return state, {}, actions
 end
 
-function map.thorns(state, user, target)
-    local thorns = state:get(component.thorns, target) or 0
-    if 0 < thorns then
-        return epoch(state), list({"damage", user, thorns})
-    else
-        return epoch(state)
-    end
+local function multiply(num, val) return num * val end
+
+local function factorial(num, next_val)
+    local actions = list(
+        {multiply, next_val},
+        {factorial, next_val - 1}
+    )
+    if next_val > 0 then return num, {}, actions end
+    return num
 end
 
-function map.damage(state, target, damage)
-    local next_state = state:copy()
-        :map(component.health, target, function(hp)
-            return hp - damage
-        end)
-
-    local info = {damage = damage}
-
-    return epoch(next_state, info)
-end
-
-function map.heal(state, target, heal)
-    local next_state = state:copy()
-        :map(component.health, target, function(hp)
-            return hp + heal
-        end)
-
-    local info = {heal = heal}
-
-    return epoch(state, info)
-end
-
-function map.noop(state) return epoch(state, {}) end
+local function type_from_action(action) return action[1] end
 
 T("reducer", function(T)
-    local intial_state = nw.ecs.entity.create()
-        :set(component.health, id.player, 10)
-        :set(component.health, id.foe, 5)
+    local state = nw.ecs.entity.create()
+    local id = "id"
+    local reducer = nw.ecs.reducer.create()
 
-    local reducer = Reducer.create(nw.ecs.entity).create(intial_state, map)
+    state:set(component.value, id, 1)
 
-    T("damage", function(T)
-        local record = reducer:run{"damage", id.foe, 5}
-        T:assert(record:state():get(component.health, id.foe), 0)
+    T("simple_add", function(T)
+        local next_state, record = reducer(
+            state:copy(), {add, id, 1, alias="foobar"}
+        )
+        T:assert(next_state:get(component.value, id) == 2)
+        T:assert(record:maybe_find("foobar"):has_value())
+        T:assert(record:maybe_info_from_alias("foobar"):has_value())
     end)
 
-    T("attack_w_thorns", function(T)
-        reducer.state:set(component.thorns, id.foe, 2)
-        local record = reducer:run{"attack", id.player, id.foe, 3}
-
-        T:assert(record:state():get(component.health, id.foe), 2)
-        T:assert(record:state():get(component.health, id.player), 8)
-
-        local expected_actions = {
-            "attack", "damage", "heal", "thorns", "damage"
-        }
-        local actions = record:epochs():map(function(e) return e.action[1] end)
-        T:assert(table_equal(actions, expected_actions))
+    T("add_and_repeat", function(T)
+        local next_state, record = reducer(
+            state:copy(), {add_and_repeat, id, 1}
+        )
+        T:assert(next_state:get(component.value, id) == 3)
     end)
 
-    T("attack_w_drain", function(T)
-        reducer.state:set(component.drain, id.player, 2)
+    T("recursive", function(T)
+        local num, record = reducer(1, {factorial, 3, alias="root"})
+        T:assert(num == 6)
 
-        local attack = {"attack", id.player, id.foe, 3}
-        local record = reducer:run(attack)
+        local maybe_children = record
+            :maybe_find("root")
+            :map(function(node) return record.tree:children(node) end)
+            :map(function(children)
+                return children:map(type_from_action)
+            end)
 
-        local heals = record:epochs():filter(function(e) return e.action[1] == "heal" end)
-        T:assert(heals:size() == 1)
-        local heal = heals:head()
-        T:assert(heal.info.heal == 6)
-    end)
-
-    T("attack_inspection", function(T)
-        local record = reducer:run{"attack", id.player, id.foe, 4}
-
-        T:assert(record:root().info.damage(record) == 4)
-    end)
-
-    T("on_action", function(T)
-        local data = {attack_gotten = false}
-
-        function reducer.on_action(record, action, epoch)
-            data.attack_gotten = data.attack_gotten or action[1] == "attack"
-        end
-
-        reducer:run{"attack", id.player, id.foe, 7}
-
-        T:assert(data.attack_gotten)
-    end)
-
-    T("state_preprocess", function(T)
-        local record = reducer:run{"noop"}
-        T:assert(not record:state():get(component.health, id.other))
-
-        function reducer.state_preprocess(state)
-            return state:copy():set(component.health, id.other, 12)
-        end
-
-        local record = reducer:run{"noop"}
-        T:assert(record:state():get(component.health, id.other) == 12)
+        local expected_children_types = list(multiply, factorial)
+        T:assert(maybe_children:value() == expected_children_types)
     end)
 end)
