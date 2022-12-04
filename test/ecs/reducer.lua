@@ -15,15 +15,26 @@ end
 local function add_and_repeat(state, id, a)
     local actions = list(
         {add, id, a, alias="prev_add"},
-        {add, id, function(record)
-            return record
+        function(record)
+            local value = record
                 :maybe_info_from_alias("prev_add")
                 :map(function(info) return info.value end)
                 :value_or_default(0)
-        end}
+            return {add, id, value}
+        end
     )
 
     return state, {}, actions
+end
+
+local multiply = class()
+
+function multiply.create(val)
+    return setmetatable({val=val}, multiply)
+end
+
+function multiply:__call(num)
+    return num * self.val
 end
 
 local function multiply(num, val)
@@ -38,6 +49,8 @@ local function factorial(num, next_val)
     if next_val > 0 then return num, {}, actions end
     return num
 end
+
+local function type_from_action(action) return action[1] end
 
 T("reducer", function(T)
     local state = nw.ecs.entity.create()
@@ -63,7 +76,17 @@ T("reducer", function(T)
     end)
 
     T("recursive", function(T)
-        local num, record = reducer(1, {factorial, 3})
+        local num, record = reducer(1, {factorial, 3, alias="root"})
         T:assert(num == 6)
+
+        local maybe_children = record
+            :maybe_find("root")
+            :map(function(node) return record.tree:children(node) end)
+            :map(function(children)
+                return children:map(type_from_action)
+            end)
+
+        local expected_children_types = list(multiply, factorial)
+        T:assert(maybe_children:value() == expected_children_types)
     end)
 end)

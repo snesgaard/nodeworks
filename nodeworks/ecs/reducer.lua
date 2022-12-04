@@ -1,5 +1,17 @@
 local nw = require "nodeworks"
 
+local Action = class()
+
+function Action:func() return self[1] end
+
+local function ignore_first(first, ...) return ... end
+
+function Action:args() return ignore_first(unpack(self)) end
+
+local function invoke(state, func, ...) return func(state, ...) end
+
+function Action:__call(state) return invoke(state, unpack(self)) end
+
 local Record = class()
 
 function Record.create()
@@ -39,21 +51,23 @@ function Reducer.create()
     return setmetatable({}, Reducer)
 end
 
-local function format_args(record, arg, ...)
-    if arg == nil then
-    elseif type(arg) == "function" then
-        return arg(record), format_args(record, ...)
-    else
-        return arg, format_args(record, ...)
-    end
-end
-
 local function invoke_action(state, record, f, ...)
     return f(state, format_args(record, ...))
 end
 
+local function create_if_func(action, record)
+    if type(action) == "table" then
+        return action
+    elseif type(action) == "function" then
+        return action(record)
+    else
+        errorf("Unsupported actiont type %s", action)
+    end
+end
+
 function Reducer:_invoke(state, record, action)
-    local state, info, next_actions = invoke_action(state, record, unpack(action))
+    local action = Reducer.action(create_if_func(action, record))
+    local state, info, next_actions = action(state)
 
     record.info[action] = info
     if action.alias then record.alias[action.alias] = action end
@@ -77,5 +91,9 @@ function Reducer:__call(state, action)
 end
 
 function Reducer.on_action() end
+
+function Reducer.action(action)
+    return setmetatable(action, Action)
+end
 
 return Reducer
