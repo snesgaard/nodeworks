@@ -5,7 +5,6 @@ local collision = nw.system.collision
 T("collision", function(T)
     local world = nw.ecs.world()
     local ecs_world = nw.ecs.entity.create()
-    local bump_world = nw.third.bump.newWorld()
 
     local hitbox = spatial(0, 0, 100, 100)
     local x, y = 10, 20
@@ -14,23 +13,21 @@ T("collision", function(T)
         local entity = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                x, y, hitbox, bump_world
+                x, y, hitbox
             )
 
         T:assert(entity:has(nw.component.hitbox))
         T:assert(entity:has(nw.component.position))
-        T:assert(entity:has(nw.component.bump_world))
 
         T:assert(table_equal(entity:get(nw.component.hitbox), hitbox))
         T:assert(table_equal(entity:get(nw.component.position), vec2(x, y)))
-        T:assert(entity:get(nw.component.bump_world) == bump_world)
     end)
 
     T("move", function(T)
         local entity = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                x, y, hitbox, bump_world
+                x, y, hitbox
             )
 
         local ax, ay, cols = collision():move(entity, 10, 20)
@@ -45,7 +42,7 @@ T("collision", function(T)
         local entity = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                x, y, hitbox, bump_world
+                x, y, hitbox
             )
 
         local ax, ay, cols = collision():move_to(entity, 20, 40)
@@ -60,12 +57,12 @@ T("collision", function(T)
         local entity = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                x, y, hitbox, bump_world
+                x, y, hitbox
             )
         local block = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                x, 200, hitbox, bump_world
+                x, 200, hitbox
             )
 
         T:assert(entity:get(nw.component.position).x == x)
@@ -84,12 +81,12 @@ T("collision", function(T)
         local entity = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                x, y, hitbox, bump_world
+                x, y, hitbox
             )
         local block = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                x, 200, hitbox, bump_world
+                x, 200, hitbox
             )
 
         local ax, ay, cols = collision():move_to(
@@ -106,12 +103,12 @@ T("collision", function(T)
         local entity = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                x, y, hitbox, bump_world
+                x, y, hitbox
             )
         local block = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                x, 200, hitbox, bump_world
+                x, 200, hitbox
             )
 
         local ax, ay, cols = collision():move_to(
@@ -156,7 +153,7 @@ T("collision", function(T)
         local entity = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                x, y, hitbox, bump_world
+                x, y, hitbox
             )
 
         local ax, ay, cols = collision(ctx):move(entity, 10, 20)
@@ -171,12 +168,12 @@ T("collision", function(T)
         local entity = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                x, y, hitbox, bump_world
+                x, y, hitbox
             )
         local block = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                x, 200, hitbox, bump_world
+                x, 200, hitbox
             )
 
         local ax, ay, cols = collision(ctx):move(entity, 0, 300)
@@ -190,8 +187,9 @@ T("collision", function(T)
         local entity = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                200, 300, hitbox, bump_world
+                200, 300, hitbox
             )
+        local bump_world = collision().get_bump_world(ecs_world)
         T:assert(bump_world:hasItem(entity.id))
         entity:destroy()
         T:assert(not bump_world:hasItem(entity.id))
@@ -203,7 +201,7 @@ T("collision", function(T)
         local entity = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                pos.x, pos.y, hitbox, bump_world
+                pos.x, pos.y, hitbox
             )
 
         collision():move_hitbox(entity, 0, 0)
@@ -252,12 +250,12 @@ T("collision", function(T)
         local entity = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                0, 0, hitbox, bump_world
+                0, 0, hitbox
             )
         local block = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                100, 0, hitbox, bump_world
+                100, 0, hitbox
             )
 
         collision():move_hitbox(entity, 200, 0)
@@ -282,14 +280,14 @@ T("collision", function(T)
         local entity = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                0, 0, hitbox, bump_world
+                0, 0, hitbox
             )
 
         collision():mirror(entity)
 
         T:assert(entity:get(nw.component.mirror))
 
-        local bump_hitbox = spatial(bump_world:getRect(entity.id))
+        local bump_hitbox = collision().read_bump_hitbox(entity)
         T:assert(
             table_equal(
                 bump_hitbox, hitbox:hmirror()
@@ -303,12 +301,12 @@ T("collision", function(T)
         local entity = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                0, 0, hitbox, bump_world
+                0, 0, hitbox
             )
         local block = ecs_world:entity()
             :assemble(
                 collision().assemble.init_entity,
-                0, 0, spatial(-10, 0, 10, 10), bump_world
+                0, 0, spatial(-10, 0, 10, 10)
             )
 
         local col_info = collision():mirror(entity)
@@ -316,7 +314,7 @@ T("collision", function(T)
         T:assert(entity:get(nw.component.mirror))
         T:assert(#col_info == 1)
 
-        local bump_hitbox = spatial(bump_world:getRect(entity.id))
+        local bump_hitbox = collision().read_bump_hitbox(entity)
         T:assert(table_equal(bump_hitbox, spatial(0, 0, 10, 10)))
         T:assert(table_equal(entity:get(nw.component.position), vec2(30, 0)))
     end)
