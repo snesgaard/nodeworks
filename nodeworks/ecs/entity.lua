@@ -152,7 +152,7 @@ function entity_table:destroy(id)
 
     if self.on_entity_destroyed then
         for _, func in pairs(self.on_entity_destroyed) do
-            func(id, values_destroyed)
+            func(id, values_destroyed, self)
         end
     end
 

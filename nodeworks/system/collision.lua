@@ -1,5 +1,7 @@
 local nw = require "nodeworks"
 
+local GLOBAL = "__collision__"
+
 local filter_caller = class()
 
 function filter_caller.create(ecs_world)
@@ -34,13 +36,20 @@ local function forward_transform_from_entity(entity)
 end
 
 local function get_state(entity)
-    return entity % nw.component.bump_world, entity:ensure(nw.component.hitbox),
+    return entity:ensure(nw.component.hitbox),
         entity:ensure(nw.component.position), entity:ensure(nw.component.mirror)
+end
+
+local function get_bump_world(ecs_world)
+    if not ecs_world:has(nw.component.bump_world, GLOBAL) then
+        ecs_world:set(nw.component.bump_world, GLOBAL, nw.third.bump.newWorld())
+    end
+    return ecs_world:get(nw.component.bump_world, GLOBAL)
 end
 
 local function add_entity_to_world(entity)
     local hitbox = entity % nw.component.hitbox
-    local bump_world = entity % nw.component.bump_world
+    local bump_world = get_bump_world(entity:world())
 
     if not hitbox or not bump_world then return end
 
@@ -54,13 +63,15 @@ local function add_entity_to_world(entity)
 end
 
 local function read_bump_hitbox(ecs_world, id)
-    local bump_world = ecs_world:get(nw.component.bump_world, id)
+    local bump_world = get_bump_world(ecs_world)
     if not bump_world then return end
     if not bump_world:hasItem(id) then return end
     return spatial(bump_world:getRect(id))
 end
 
 local Collision = class()
+
+Collision.get_bump_world = get_bump_world
 
 function Collision.create()
     return setmetatable({}, Collision)
@@ -78,7 +89,8 @@ function Collision:on_mirror(entity, mirror, collision_infos)
 
 end
 
-function Collision:move_to_state(entity, bump_world, hitbox, pos, mirror, filter)
+function Collision:move_to_state(entity, hitbox, pos, mirror, filter)
+    local bump_world = get_bump_world(entity:world())
     local next_hitbox = forward_transform(hitbox, pos, mirror)
 
     local x, y = bump_world:getRect(entity.id)
@@ -105,8 +117,9 @@ function Collision:move_to_state(entity, bump_world, hitbox, pos, mirror, filter
 end
 
 function Collision:update_position(entity)
-    local bump_world, hb, pos, mirror = get_state(entity)
+    local hb, pos, mirror = get_state(entity)
     local world_rect_expected = forward_transform(hb, pos, mirror)
+    local bump_world = get_bump_world(entity:world())
     local x, y = bump_world:getRect(entity.id)
 
     local dx, dy = world_rect_expected.x - x, world_rect_expected.y - y
@@ -116,23 +129,25 @@ function Collision:update_position(entity)
 end
 
 function Collision:move_to(entity, x, y, filter)
-    local bump_world, hb, pos, mirror = get_state(entity)
+    local bump_world = get_bump_world(entity:world())
+    local hb, pos, mirror = get_state(entity)
     local pos_next = vec2(x, y)
 
     local dx, dy, col_info = self:move_to_state(
-        entity, bump_world, hb, pos_next, mirror, filter
+        entity, hb, pos_next, mirror, filter
     )
 
     return pos.x + dx, pos.y + dy, col_info
 end
 
 function Collision:move_hitbox_to(entity, x, y, filter)
-    local bump_world, hb, pos, mirror = get_state(entity)
+    local bump_world = get_bump_world(entity:world())
+    local hb, pos, mirror = get_state(entity)
     local hb_next = spatial(x, y, hb.w, hb.h)
 
     entity:set(nw.component.hitbox, hb_next:unpack())
     local dx, dy, col_info = self:move_to_state(
-        entity, bump_world, hb_next, pos, mirror, filter
+        entity, hb_next, pos, mirror, filter
     )
 
 
@@ -140,13 +155,14 @@ function Collision:move_hitbox_to(entity, x, y, filter)
 end
 
 function Collision:mirror_to(entity, mirror_next, filter)
-    local bump_world, hb, pos, mirror = get_state(entity)
+    local bump_world = get_bump_world(entity:world())
+    local hb, pos, mirror = get_state(entity)
 
     if mirror == mirror_next then return {} end
 
     entity:set(nw.component.mirror, mirror_next)
     local dx, dy, col_info = self:move_to_state(
-        entity, bump_world, hb, pos, mirror_next, filter
+        entity, hb, pos, mirror_next, filter
     )
 
 
@@ -192,9 +208,13 @@ function Collision.default_filter()
     return "slide"
 end
 
-function Collision.on_entity_destroyed(id, values_destroyed)
-    local bump_world = values_destroyed[nw.component.bump_world]
+function Collision.on_entity_destroyed(id, values_destroyed, ecs_world)
+    local bump_world = get_bump_world(ecs_world)
     if bump_world and bump_world:hasItem(id) then bump_world:remove(id) end
+end
+
+function Collision.read_bump_hitbox(entity)
+    return read_bump_hitbox(entity:world(), entity.id)
 end
 
 local default_instance = Collision.create()
@@ -208,29 +228,19 @@ function assemble.set_hitbox(entity, ...)
     add_entity_to_world(entity)
 end
 
-function assemble.set_bump_world(entity, bump_world)
-    local prev_world = entity % nw.component.bump_world
+function assemble.init_entity(entity, x, y, hitbox)
+    local bump_world = get_bump_world(entity:world())
 
-    if prev_world ~= nil and prev_world ~= bump_world then
-        prev_world:remove(entity.id)
-    end
-    entity:set(nw.component.bump_world, bump_world)
+    entity
+        :assemble(assemble.set_hitbox, hitbox:unpack())
 
-    add_entity_to_world(entity)
+    default_instance:warp_to(entity, x, y)
 
     local on_entity_destroyed = entity:world().on_entity_destroyed
 
     if not on_entity_destroyed.collision then
         on_entity_destroyed.collision = Collision.on_entity_destroyed
     end
-end
-
-function assemble.init_entity(entity, x, y, hitbox, bump_world)
-    entity
-        :assemble(assemble.set_hitbox, hitbox:unpack())
-        :assemble(assemble.set_bump_world, bump_world)
-
-    default_instance:warp_to(entity, x, y)
 end
 
 local WorldCollision = inherit(Collision)
