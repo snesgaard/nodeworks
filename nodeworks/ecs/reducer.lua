@@ -1,132 +1,99 @@
+local nw = require "nodeworks"
+
+local Action = class()
+
+function Action:func() return self[1] end
+
+local function ignore_first(first, ...) return ... end
+
+function Action:args() return ignore_first(unpack(self)) end
+
+local function invoke(state, func, ...) return func(state, ...) end
+
+function Action:__call(state) return invoke(state, unpack(self)) end
+
 local Record = class()
 
-function Record.create(init_state)
+function Record.create()
     return setmetatable(
         {
-            _init_state = init_state,
-            _epochs = list(),
-            _infos = dict(),
-            _states = dict(),
-            _parent = dict(),
+            tree = nw.component.tree(),
+            info = dict(),
+            alias = dict()
         },
         Record
     )
 end
 
-function Record:__tostring() return "Record" end
+function Record:find(alias)
+    return self.alias[alias]
+end
 
-function Record:register_epoch(action, state, info)
-    if not state then
-        errorf("State must be defined")
+function Record:maybe_find(alias)
+    local node = self.alias[alias]
+    return node and nw.just(node) or nw.empty()
+end
+
+function Record:maybe_info(node)
+    local info = self.info[node]
+    return info and nw.just(info) or nw.empty()
+end
+
+function Record:maybe_info_from_alias(alias)
+    return self
+        :maybe_find(alias)
+        :and_then(function(node) return self:maybe_info(node) end)
+end
+
+local Reducer = class()
+
+function Reducer.create()
+    return setmetatable({}, Reducer)
+end
+
+local function invoke_action(state, record, f, ...)
+    return f(state, format_args(record, ...))
+end
+
+local function create_if_func(action, record)
+    if type(action) == "table" then
+        return action
+    elseif type(action) == "function" then
+        return action(record)
+    else
+        errorf("Unsupported actiont type %s", action)
     end
-
-    table.insert(self._epochs, dict{action = action, state = state, info = info})
-    self._infos[action] = info
-    self._states[action] = state
 end
 
-function Record:register_parent(child, parent)
-    self._parent[child] = parent
-end
+function Reducer:_invoke(state, record, action)
+    local action = Reducer.action(create_if_func(action, record))
+    local state, info, next_actions = action(state)
 
-function Record:root() return self:children(self):head() end
+    record.info[action] = info
+    if action.alias then record.alias[action.alias] = action end
 
-function Record:children(epoch)
-    return self._epochs
-        :filter(function(e) return self._parent[e.action] == epoch end)
-end
-
-function Record:epochs() return self._epochs end
-
-function Record:state(action)
-    if not action then
-        local epoch = self._epochs:tail()
-
-        return epoch and epoch.state or self._init_state
-    end
-
-    local state = self._state[action]
-
-    if not state then
-        errorf("Request for state of action %s was undefined", action.key)
+    for _, a in ipairs(next_actions or list()) do
+        record.tree:link(action, a)
+        state = self:_invoke(state, record, a)
     end
 
     return state
 end
 
-function Record:info(action)
-    local info = self._infos[action]
+function Reducer:__call(state, action)
+    local record = Record.create()
 
-    if not info then
-        errorf("Request for info of action %s was undefined", action.key)
-    end
+    local final_state = self:_invoke(state, record, action)
 
-    return info
+    self.on_action(action, final_state, record)
+
+    return final_state, record
 end
 
-local Reducer = class()
+function Reducer.on_action() end
 
-function Reducer.create(init_state, map)
-    return setmetatable({state=init_state, map=map}, Reducer)
+function Reducer.action(action)
+    return setmetatable(action, Action)
 end
-
-local function format_args(arg, record)
-    if type(arg) ~= "function" then return arg end
-
-    return arg(record)
-end
-
-local function execute_action(
-        record, map, action, on_action, on_state, parent, state_preprocess
-)
-    local key = action[1]
-    local m = map[key]
-    if not m then errorf("Unknown action %s", key) end
-
-    local epoch, derived_actions = m(
-        state_preprocess(record:state()),
-        List.body(action):map(format_args, record):unpack()
-    )
-
-    if not epoch then errorf("An epoch must be returned: %s", key) end
-
-    record:register_epoch(action, epoch.state or state, epoch.info)
-    record:register_parent(action, parent)
-
-    on_action(record, action, epoch)
-    on_state(epoch.state)
-
-    if not derived_actions then return end
-
-    for _, a in ipairs(derived_actions) do
-        execute_action(
-            record, map, a, on_action, on_state, action,
-            state_preprocess
-        )
-    end
-end
-
-function Reducer.state_preprocess(state) return state end
-
-function Reducer:run(action)
-    local record = Record.create(self.state)
-    execute_action(
-        record, self.map, action, self.on_action, self.on_state, record,
-        self.state_preprocess
-    )
-
-    self.state = record:state()
-    return record
-end
-
-function Reducer.on_action(record, action)
-
-end
-
-function Reducer.on_state(state)
-
-end
-
-function Reducer.epoch(state, info) return {state=state, info=info or {}} end
 
 return Reducer

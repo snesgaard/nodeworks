@@ -30,6 +30,7 @@ end
 require "test.core.stack"
 require "test.core.pool"
 require "test.core.event_queue"
+require "test.core.result"
 
 require "test.ecs.entity"
 require "test.ecs.promise"
@@ -40,6 +41,7 @@ require "test.system.animation"
 require "test.system.camera"
 require "test.system.motion"
 require "test.system.script"
+require "test.core.tree"
 --[[
 require "test.ecs.pool"
 require "test.ecs.system"
