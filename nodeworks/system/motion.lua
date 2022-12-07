@@ -40,10 +40,20 @@ function Motion:update_position(entity, dt)
 
     if not p or not v then return end
 
-    return nw.system.collision(self.world):move(entity, v.x * dt, v.y * dt)
+    -- TODO Respond instantly to the collision here
+    local ax, ay, collisions = nw.system.collision(self.world)
+        :move(entity, v.x * dt, v.y * dt)
+
+    for _, colinfo in ipairs(collisions) do
+        self:on_collision(colinfo)
+    end
 end
 
 function Motion:on_collision(colinfo)
+    -- Check if we already responded to this
+    if colinfo[self] then return end
+    colinfo[self] = true
+    
     local v = colinfo.ecs_world:get(nw.component.velocity, colinfo.item)
 
     if not v then return end

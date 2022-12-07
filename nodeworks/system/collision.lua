@@ -106,7 +106,6 @@ function Collision:move_to_state(entity, hitbox, pos, mirror, filter)
         entity.id, next_hitbox.x, next_hitbox.y, caller
     )
 
-
     self:update_position(entity)
 
     if #col_info > 0 then self:on_collision(entity, col_info) end
