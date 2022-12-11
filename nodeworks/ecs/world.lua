@@ -123,6 +123,7 @@ function world.create()
     )
 end
 
+function world:__tostring() return "World" end
 
 function world:push(system, ...)
     local ctx = context.create(self, system, ...)
