@@ -81,7 +81,7 @@ function Reducer:__call(state, ...)
         local next_action = action_queue:head()
         local info = next_action:evaluate(state)
         table.insert(action_complete, next_action)
-        self.post(info)
+        self.post(state, info)
         local sub_actions = info.actions
 
         if self._depth_first then
