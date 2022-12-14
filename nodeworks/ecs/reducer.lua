@@ -2,9 +2,11 @@ local nw = require "nodeworks"
 
 local Info = class()
 
-function Info.constructor()
-    return {actions=list()}
+function Info.constructor(type)
+    return {actions=list(), _type=type}
 end
+
+function Info:type() return self._type end
 
 function Info:iter()
     local function visit(info)
@@ -23,7 +25,7 @@ function Action.constructor(func, ...)
 end
 
 function Action:evaluate(state)
-    self._info = Info.create()
+    self._info = Info.create(self._func)
     self._func(self._info, state, unpack(self._args))
     return self._info
 end
@@ -81,7 +83,7 @@ function Reducer:__call(state, ...)
         local next_action = action_queue:head()
         local info = next_action:evaluate(state)
         table.insert(action_complete, next_action)
-        self.post(state, info)
+        self.post(info, state)
         local sub_actions = info.actions
 
         if self._depth_first then

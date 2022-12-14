@@ -64,4 +64,14 @@ T("reducer", function(T)
         for i in info:iter() do count = count + 1 end
         T:assert(count == 3)
     end)
+
+    T("post", function(T)
+        function reducer.post(info)
+            if info:type() == add then info:action(sub, 1) end
+        end
+
+        local state = {value=0}
+        local info = reducer(state, add, 10)
+        T:assert(state.value == 10 - 1)
+    end)
 end)
