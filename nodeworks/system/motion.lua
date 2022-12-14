@@ -87,6 +87,39 @@ end
 
 local default_instace = Motion.create()
 
+local actions = {}
+
+local function update_velocity(info, entity, dt)
+    local g = entity:get(nw.component.gravity)
+    local d = entity:get(nw.component.drag)
+
+    if not g and not d then return end
+
+    local g = g or vec2()
+    local d = d or 0
+    local v = entity:ensure(nw.component.velocity)
+    local vx = v.x + (g.x - v.x * d) * dt
+    local vy = v.y + (g.y - v.y * d) * dt
+    entity:set(nw.component.velocity, vx, vy)
+end
+
+local function update_position(info, entity, dt)
+    local v = entity:get(nw.component.velocity)
+    local p = entity:get(nw.component.position)
+
+    if not p or not v then return end
+
+    info:action(nw.system.collision().action.move, v.x * dt, v.y * dt)
+end
+
+function actions.update(info, state, dt)
+    for id, _ in pairs(entities) do
+        local e = ecs_world:entity(id)
+        update_velocity(info, e, dt)
+        update_position(info, e, dt)
+    end
+end
+
 function Motion.from_ctx(ctx)
     if not ctx then return default_instace end
     local world = ctx.world or ctx

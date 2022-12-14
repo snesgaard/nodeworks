@@ -1,99 +1,105 @@
 local nw = require "nodeworks"
 
+local Info = class()
+
+function Info.constructor()
+    return {actions=list()}
+end
+
+function Info:iter()
+    local function visit(info)
+        coroutine.yield(info)
+
+        for _, a in ipairs(info.actions) do visit(a()) end
+    end
+
+    return coroutine.wrap(function() visit(self) end)
+end
+
 local Action = class()
 
-function Action:func() return self[1] end
-
-local function ignore_first(first, ...) return ... end
-
-function Action:args() return ignore_first(unpack(self)) end
-
-local function invoke(state, func, ...) return func(state, ...) end
-
-function Action:__call(state) return invoke(state, unpack(self)) end
-
-local Record = class()
-
-function Record.create()
-    return setmetatable(
-        {
-            tree = nw.component.tree(),
-            info = dict(),
-            alias = dict()
-        },
-        Record
-    )
+function Action.constructor(func, ...)
+    return {_func=func, _args={...}}
 end
 
-function Record:find(alias)
-    return self.alias[alias]
+function Action:evaluate(state)
+    self._info = Info.create()
+    self._func(self._info, state, unpack(self._args))
+    return self._info
 end
 
-function Record:maybe_find(alias)
-    local node = self.alias[alias]
-    return node and nw.just(node) or nw.empty()
+function Action:__call()
+    if not self._info then
+        error("Action has not been evaluated")
+    end
+
+    return self._info
 end
 
-function Record:maybe_info(node)
-    local info = self.info[node]
-    return info and nw.just(info) or nw.empty()
+local MaybeAction = class()
+
+function MaybeAction.constructor(func, ...)
+    return {_func=func, _args={...}}
 end
 
-function Record:maybe_info_from_alias(alias)
-    return self
-        :maybe_find(alias)
-        :and_then(function(node) return self:maybe_info(node) end)
+function MaybeAction:evaluate(state)
+    self._action = self._action or Action.create(self._func(unpack(self._args)))
+    return self._action:evaluate(state)
+end
+
+function MaybeAction:__call()
+    if not self._action() then
+        error("MaybeAction has not been evaluated")
+    end
+    return self._action()
+end
+
+function Info:action(...)
+    local action = Action.create(...)
+    table.insert(self.actions, action)
+    return action
+end
+
+function Info:maybe_action(...)
+    local maybe_action = MaybeAction.create(...)
+    table.insert(self.actions, maybe_action)
+    return maybe_action
 end
 
 local Reducer = class()
 
-function Reducer.create()
-    return setmetatable({}, Reducer)
+function Reducer.constructor(breath_first)
+    return {_depth_first=not breath_first}
 end
 
-local function invoke_action(state, record, f, ...)
-    return f(state, format_args(record, ...))
-end
+function Reducer:__call(state, ...)
+    local action = Action.create(...)
+    local action_queue = list(action)
+    local action_complete = list()
 
-local function create_if_func(action, record)
-    if type(action) == "table" then
-        return action
-    elseif type(action) == "function" then
-        return action(record)
-    else
-        errorf("Unsupported actiont type %s", action)
-    end
-end
+    while action_queue:size() > 0 do
+        local next_action = action_queue:head()
+        local info = next_action:evaluate(state)
+        table.insert(action_complete, next_action)
+        self.post(info)
+        local sub_actions = info.actions
 
-function Reducer:_invoke(state, record, action)
-    local action = Reducer.action(create_if_func(action, record))
-    local state, info, next_actions = action(state)
-
-    record.info[action] = info
-    if action.alias then record.alias[action.alias] = action end
-
-    for _, a in ipairs(next_actions or list()) do
-        record.tree:link(action, a)
-        state = self:_invoke(state, record, a)
+        if self._depth_first then
+            action_queue = sub_actions + action_queue:body()
+        else
+            action_queue = action_queue:body() + sub_actions
+        end
     end
 
-    return state
-end
+    for _, action in ipairs(action_complete) do
+        self.on_action(state, action)
+    end
 
-function Reducer:__call(state, action)
-    local record = Record.create()
-
-    local final_state = self:_invoke(state, record, action)
-
-    self.on_action(action, final_state, record)
-
-    return final_state, record
+    return action()
 end
 
 function Reducer.on_action() end
 
-function Reducer.action(action)
-    return setmetatable(action, Action)
-end
+function Reducer.post() end
 
-return Reducer
+return Reducer.create

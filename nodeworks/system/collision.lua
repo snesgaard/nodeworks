@@ -219,6 +219,28 @@ end
 
 local default_instance = Collision.create()
 
+local actions = {}
+
+function actions.move_to(info, state, id, x, y, filter)
+    local ax, ay, collisions = default_instance:move_to(
+        state:entity(id), x, y, filter
+    )
+
+    info.request = vec2(x, y)
+    info.final = vec2(ax, ay)
+    info.collisions = collisions
+end
+
+function actions:move(info, state, id, dx, dy, filter)
+    local pos = state:ensure(nw.component.position, id)
+
+    info.move_to = info:action(
+        actions.move_to, id, pos.x + dx, pos.y + dy, filter
+    )
+end
+
+Collision.actions = actions
+
 local assemble = {}
 
 Collision.assemble = assemble

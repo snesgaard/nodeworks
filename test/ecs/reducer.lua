@@ -1,80 +1,67 @@
 local nw = require "nodeworks"
 local T = nw.third.knife.test
 local Reducer = nw.ecs.reducer
-local epoch = Reducer.epoch
 
-local component = {}
-
-function component.value(v) return v or 0 end
-
-local function add(state, id, b)
-    state:map(component.value, id, function(a) return a + b end)
-    return state, {value=b}
+local function add(info, state, num)
+    info.name = "add"
+    state.value = state.value + num
+    info.value = state.value
 end
 
-local function add_and_repeat(state, id, a)
-    local actions = list(
-        {add, id, a, alias="prev_add"},
-        function(record)
-            local value = record
-                :maybe_info_from_alias("prev_add")
-                :map(function(info) return info.value end)
-                :value_or_default(0)
-            return {add, id, value}
-        end
-    )
-
-    return state, {}, actions
+local function sub(info, state, num)
+    state.value = state.value - num
+    info.name = "sub"
+    info.value = state.value
 end
 
-local function multiply(num, val) return num * val end
-
-local function factorial(num, next_val)
-    local actions = list(
-        {multiply, next_val},
-        {factorial, next_val - 1}
-    )
-    if next_val > 0 then return num, {}, actions end
-    return num
+local function mul(info, state, num)
+    info.name = "mul"
+    state.value = state.value * num
 end
 
-local function type_from_action(action) return action[1] end
+local function add_then_mul(info, state, a)
+    info.add = info:action(add, a)
+    info.sub = info:action(mul, a)
+end
+
+local function add_then_maybe_zero(info, state, a)
+    info.name = "add_then_maybe_zero"
+    info.add = info:action(sub, a)
+    info.zero = info:maybe_action(function()
+        local value = info.add().value
+        local num = value < 0 and -value or 0
+        return add, num
+    end)
+end
 
 T("reducer", function(T)
-    local state = nw.ecs.entity.create()
-    local id = "id"
-    local reducer = nw.ecs.reducer.create()
+    local reducer = Reducer()
 
-    state:set(component.value, id, 1)
-
-    T("simple_add", function(T)
-        local next_state, record = reducer(
-            state:copy(), {add, id, 1, alias="foobar"}
-        )
-        T:assert(next_state:get(component.value, id) == 2)
-        T:assert(record:maybe_find("foobar"):has_value())
-        T:assert(record:maybe_info_from_alias("foobar"):has_value())
+    T("add", function(T)
+        local state = {value=0}
+        local add_info = reducer(state, add, 1)
+        T:assert(state.value == 0 + 1)
     end)
 
-    T("add_and_repeat", function(T)
-        local next_state, record = reducer(
-            state:copy(), {add_and_repeat, id, 1}
-        )
-        T:assert(next_state:get(component.value, id) == 3)
+    T("sub", function(T)
+        local state = {value=1}
+        local sub_info = reducer(state, sub, 2)
+        T:assert(state.value == 1 - 2)
     end)
 
-    T("recursive", function(T)
-        local num, record = reducer(1, {factorial, 3, alias="root"})
-        T:assert(num == 6)
+    T("add_then_mul", function(T)
+        local state = {value=1}
+        local info = reducer(state, add_then_mul, 2)
+        T:assert(state.value == (1 + 2) * 2)
+    end)
 
-        local maybe_children = record
-            :maybe_find("root")
-            :map(function(node) return record.tree:children(node) end)
-            :map(function(children)
-                return children:map(type_from_action)
-            end)
+    T("add_then_maybe_zero", function(T)
+        local state = {value=0}
+        local info = reducer(state, add_then_maybe_zero, 1)
+        T:assert(state.value == 0)
 
-        local expected_children_types = list(multiply, factorial)
-        T:assert(maybe_children:value() == expected_children_types)
+        local count = 0
+        for i in info:iter() do count = count + 1 end
+        T:assert(count == 3)
     end)
 end)

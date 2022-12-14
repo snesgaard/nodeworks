@@ -176,4 +176,12 @@ function camera.handle_observables(ctx, obs, ecs_world, ...)
     return camera.handle_observables(obs, ...)
 end
 
+local action = {}
+
+function action.update(info, state, dt)
+    handle_update(ecs_world, dt)
+end
+
+camera.action = action
+
 return camera
