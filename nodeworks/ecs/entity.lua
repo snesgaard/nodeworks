@@ -26,6 +26,10 @@ function entity:get(component)
     return self.table:get(component, self.id)
 end
 
+function entity:maybe_get(component)
+    return self.table:maybe_get(component, self.id)
+end
+
 function entity:ensure(component, ...)
     return self.table:ensure(component, self.id, ...)
 end
@@ -118,6 +122,14 @@ end
 
 function entity_table:get(component, id)
     return fetch_component(self, component)[id]
+end
+
+function entity_table:maybe_get(component, id)
+    if self:has(component, id) then
+        return Result.just(self:get(component, id))
+    else
+        return Result.empty()
+    end
 end
 
 function entity_table:get_component_table(component)
