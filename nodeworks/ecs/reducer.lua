@@ -94,7 +94,7 @@ function Reducer:__call(state, ...)
     end
 
     for _, action in ipairs(action_complete) do
-        self.on_action(state, action)
+        self.on_action(state, action())
     end
 
     return action()
