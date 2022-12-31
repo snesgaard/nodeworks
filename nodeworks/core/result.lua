@@ -4,6 +4,14 @@ function Result.create(values, msg)
     return setmetatable({_values=values, _msg=msg}, Result)
 end
 
+function Result:__tostring()
+    if self:has_value() then
+        return "Just: " .. tostring(self._values)
+    else
+        return "Error: " .. tostring(self._msg)
+    end
+end
+
 function Result.just(...) return Result.create(list(...)) end
 
 function Result.error(msg) return Result.create(nil, msg) end
