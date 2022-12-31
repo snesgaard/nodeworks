@@ -106,7 +106,6 @@ function Collision:move_to_state(entity, hitbox, pos, mirror, filter)
         entity.id, next_hitbox.x, next_hitbox.y, caller
     )
 
-
     self:update_position(entity)
 
     if #col_info > 0 then self:on_collision(entity, col_info) end
@@ -225,6 +224,12 @@ Collision.assemble = assemble
 
 function assemble.set_hitbox(entity, ...)
     entity:set(nw.component.hitbox, ...)
+    local prev_world = entity % nw.component.bump_world
+
+    if prev_world and prev_world:hasItem(entity.id) then
+        prev_world:remove(entity.id)
+    end
+
     add_entity_to_world(entity)
 end
 

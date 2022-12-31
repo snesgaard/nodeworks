@@ -181,3 +181,5 @@ function math.atan2(x, y)
         return 0
     end
 end
+
+love.graphics.setDefaultFilter("nearest", "nearest")

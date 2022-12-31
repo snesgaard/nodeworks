@@ -77,4 +77,24 @@ T("script", function(T)
         world:emit("update"):spin()
         T:assert(entity.we_did_it)
     end)
+
+
+    T("bug:clear", function(T)
+        -- This basically detects a bug in the scripting system where
+        -- observables wouldn't be properly cleared on script yield
+        --
+        -- Thus this checks whehter the max size of update is only one
+        local function updates(ctx, entity)
+            local u = ctx:listen("update"):collect()
+            while ctx:is_alive() do
+                entity.updates = u:peek():size()
+                ctx:yield()
+            end
+        end
+
+        nw.system.script().set(entity, updates)
+        world:emit("update"):spin()
+        world:emit("update"):spin()
+        T:assert(entity.updates == 1)
+    end)
 end)

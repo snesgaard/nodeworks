@@ -83,9 +83,10 @@ end
 
 function timer:finish()
     self.time = 0
+    return self
 end
 
-components.timer = timer
+components.timer = timer.create
 
 --------------------------------------------------
 
@@ -273,6 +274,8 @@ function components.color(r, g, b, a)
     if type(r) == "table" then return r end
     return  {r, g, b, a}
 end
+
+function components.frame(frame) return frame end
 
 function components.shader(shader) return shader end
 

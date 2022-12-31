@@ -27,6 +27,8 @@ function context.create(world, system, ...)
     )
 end
 
+function context:__tostring() return "Context" end
+
 function context:__call(...) return self.world:ensure(...) end
 
 function context:resume()
@@ -98,6 +100,14 @@ function context:from_cache(...) return self.world:from_cache(...) end
 
 function context:paused() return false end
 
+function context:spin(func, ...)
+    while self:is_alive() do
+        local ret = func(self, ...)
+        if ret then return ret end
+        self:yield()
+    end
+end
+
 local world = {}
 world.__index = world
 
@@ -113,6 +123,7 @@ function world.create()
     )
 end
 
+function world:__tostring() return "World" end
 
 function world:push(system, ...)
     local ctx = context.create(self, system, ...)
@@ -159,8 +170,6 @@ function world:remove_dead_systems()
     end
 end
 
-local ALL_EVENT_HOLDER = {}
-
 function world:spin()
     local events = self:pop_events()
 
@@ -172,9 +181,7 @@ function world:spin()
 
             for _, e in ipairs(events) do
                 activate = ctx:parse_single_event(e.key, e.data) or activate
-                ALL_EVENT_HOLDER.data = e.data
-                ALL_EVENT_HOLDER.key = e.key
-                activate = ctx:parse_single_event(world.ALL_EVENT, ALL_EVENT_HOLDER) or activate
+                activate = ctx:parse_single_event(world.ALL_EVENT, e) or activate
             end
 
             if activate then

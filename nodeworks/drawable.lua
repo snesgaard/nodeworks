@@ -11,8 +11,15 @@ function drawables.push_color(entity, opacity)
     end
 end
 
+function drawables.push_font(entity)
+    local font = entity % nw.component.font
+    if not font then return end
+    gfx.setFont(font)
+end
+
 function drawables.push_state(entity)
     drawables.push_color(entity)
+    drawables.push_font(entity)
 end
 
 function drawables.push_transform(entity)
@@ -61,6 +68,17 @@ function drawables.particles(entity)
     drawables.push_transform(entity)
     drawables.push_state(entity)
     gfx.draw(particles, 0, 0)
+    gfx.pop()
+end
+
+function drawables.frame(entity)
+    local frame = entity % nw.component.frame
+    if not frame then return end
+
+    gfx.push("all")
+    drawables.push_transform(entity)
+    drawables.push_state(entity)
+    frame:draw("body")
     gfx.pop()
 end
 
