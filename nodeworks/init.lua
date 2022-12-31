@@ -6,6 +6,8 @@ rh.just = Result.just
 rh.empty = Result.empty
 
 rh.ease = require(... .. ".core.ease")
+rh.Task = require(... .. ".core.task")
+rh.task = rh.Task.create
 
 local BASE = ...
 

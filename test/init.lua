@@ -31,6 +31,7 @@ require "test.core.stack"
 require "test.core.pool"
 require "test.core.event_queue"
 require "test.core.result"
+require "test.core.test_task"
 
 require "test.ecs.entity"
 require "test.ecs.promise"
