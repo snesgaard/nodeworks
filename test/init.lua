@@ -42,6 +42,8 @@ require "test.system.animation"
 require "test.system.camera"
 require "test.system.motion"
 require "test.system.script"
+require "test.system.test_decision"
+
 require "test.core.tree"
 require "test.core.test_animation"
 --[[
