@@ -149,7 +149,6 @@ function Collision:move_hitbox_to(entity, x, y, filter)
         entity, hb_next, pos, mirror, filter
     )
 
-
     return col_info
 end
 
