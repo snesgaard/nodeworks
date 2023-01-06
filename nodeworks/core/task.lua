@@ -32,9 +32,12 @@ function Task:resume()
     return handle_resume_return(coroutine.resume(self._co, unpack(self._args)))
 end
 
+function Task:func() return self._func end
+
 function Task:set(...)
     local other = Task.create(...)
-    return self == other and self or other
+    local should_keep = self == other and self:is_alive()
+    return should_keep and self or other
 end
 
 return Task

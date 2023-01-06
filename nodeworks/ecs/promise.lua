@@ -128,6 +128,7 @@ end
 
 function reduce:process(event)
     self.value = self.func(self.value, unpack(event))
+    return {self.value}
 end
 
 function reduce:peek() return self.value end

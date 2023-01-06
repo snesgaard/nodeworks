@@ -101,6 +101,7 @@ function context:from_cache(...) return self.world:from_cache(...) end
 function context:paused() return false end
 
 function context:spin(func, ...)
+    local func = func or function() end
     while self:is_alive() do
         local ret = func(self, ...)
         if ret then return ret end
@@ -170,10 +171,10 @@ function world:remove_dead_systems()
     end
 end
 
-function world:spin()
+function world:spin(force_run)
     local events = self:pop_events()
 
-    if events:empty() then return end
+    if events:empty() and not force_run then return end
 
     for _, ctx in ipairs(self.context) do
         if not ctx:paused() then
@@ -184,7 +185,7 @@ function world:spin()
                 activate = ctx:parse_single_event(world.ALL_EVENT, e) or activate
             end
 
-            if activate then
+            if activate or force_run then
                 ctx:resume()
                 ctx:clear()
             end
