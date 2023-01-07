@@ -327,4 +327,6 @@ function components.task(t) return t or nw.task() end
 
 function components.decision(d) return d end
 
+function components.should_decide(d) return d end
+
 return components

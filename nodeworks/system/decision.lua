@@ -14,19 +14,43 @@ local function pick_best_task(tasks_and_scores)
     return best_task
 end
 
+local function reduce_score(sum, task)
+    return sum + task.score
+end
+
+local function pick_weighted_random_rask(tasks_and_scores)
+    table.sort(tasks_and_scores, sort_by_score)
+    local best_task = tasks_and_scores:tail()
+    if not best_task then return end
+    if best_task.score == math.huge then return best_task end
+
+    local sum_of_scores = List.reduce(tasks_and_scores, reduce_score, 0)
+    local r = love.math.random()
+
+    for _, task in ipairs(tasks_and_scores) do
+        r = r - task.score
+        if r <= 0 then return task end
+    end
+
+    return best_task
+end
+
 local function evaluate_decision(ctx, entity, decision)
     local tasks_and_scores = list()
 
-    for _, func in pairs(decision) do
+    for id, func in pairs(decision) do
         local action_score = func(entity)
         if action_score and action_score.score > 0 then
+            action_score.id = id
             table.insert(tasks_and_scores, action_score)
         end
     end
 
-    local next_task = pick_best_task(tasks_and_scores)
+    local next_task = pick_weighted_random_rask(tasks_and_scores)
 
     if not next_task then return end
+
+    print("next task", next_task.id)
 
     entity:map(nw.component.task, function(current_task)
         return current_task:set(next_task.func, ctx, unpack(next_task.args or {}))
@@ -34,7 +58,14 @@ local function evaluate_decision(ctx, entity, decision)
 end
 
 local function should_evaluate_decision(entity)
-    return true
+    local should_decide = entity:get(nw.component.should_decide)
+    if not should_decide then return true end
+    return should_decide(entity)
+end
+
+function Decision.is_busy(entity)
+    local task = entity:get(nw.component.task)
+    return task and task:is_alive()
 end
 
 function Decision.run_decisions(ctx, ecs_world)
