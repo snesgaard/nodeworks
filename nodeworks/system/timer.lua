@@ -12,7 +12,7 @@ function timer:handle_finished(ecs_world, id)
     local cb = ecs_world:get(nw.component.on_timer_complete, id)
     if cb then cb(self.world, ecs_world:entity(id)) end
     local die = ecs_world:get(nw.component.die_on_timer_complete, id)
-    if die then entity(self.world):destroy(ecs_world:entity(id)) end
+    if die then ecs_world:entity(id):destroy() end
 end
 
 function timer:update(dt, ecs_world)

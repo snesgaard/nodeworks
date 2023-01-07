@@ -33,7 +33,9 @@ local function evaluate_decision(ctx, entity, decision)
     end)
 end
 
-local function should_evaluate_decision() return true end
+local function should_evaluate_decision(entity)
+    return true
+end
 
 function Decision.run_decisions(ctx, ecs_world)
     local decision_table = ecs_world:get_component_table(nw.component.decision)

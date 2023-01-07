@@ -88,6 +88,10 @@ end
 
 components.timer = timer.create
 
+function components.die_on_timer_complete() return true end
+
+function components.on_timer_complete(f) return f end
+
 --------------------------------------------------
 
 local tick = {}

@@ -90,6 +90,10 @@ function entity_table:entity(id)
 end
 
 local function fetch_component(self, component)
+    if not component then
+        print("Component get was nil")
+        return
+    end
     local c = self.components[component]
     if c then return c end
     local c = dict()
@@ -106,6 +110,10 @@ local function handle_copy_on_write(self, component)
 end
 
 local function raw_set_component(self, component, id, value)
+    if not component then
+        print("Component set was nil")
+        return self
+    end
     handle_copy_on_write(self, component)
     local c = fetch_component(self, component)
     c[id] = value
