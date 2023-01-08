@@ -1,61 +1,53 @@
 local nw = require "nodeworks"
 
-local function children_component(...) return list(...) end
+local Parent = nw.system.base()
 
-local function adopt(parent, child)
-    table.insert(parent:ensure(children_component), child)
-end
+local component = {}
+
+function component.parent(p) return p end
+
+function component.children(c) return c or dict() end
 
 local function orphan(parent, child)
-    local children = parent[children_component]
+    if not parent or not child then return end
+
+    local children = parent:ensure(component.children)
+    if children[child] then
+        child:remove(component.parent)
+        children[child] = nil
+    end
+
+end
+
+local function adopt(parent, child)
+    if not parent or not child then return end
+
+    local children = parent:ensure(component.children)
+    children[child] = true
+    child:set(component.parent, parent)
+
+    local on_entity_destroyed = parent:world().on_entity_destroyed
+    on_entity_destroyed.parent = on_entity_destroyed.parent or Parent.on_entity_destroyed
+end
+
+function Parent.on_entity_destroyed(id, destroyed_values, ecs_world)
+    local children = destroyed_values[component.children]
     if not children then return end
-    local index = List.argfind(children, child)
-    table.remove(children, index)
-    if #children == 0 then parent[children_component] = nil end
-end
 
-
-local system = nw.ecs.system(nw.component.parent)
-
-function system.on_entity_added(world, entity)
-    adopt(entity[nw.component.parent], entity)
-end
-
-function system.on_entity_changed(world, entity, prev_state)
-    local prev_parent = prev_state[nw.component.parent]
-    local next_parent = entity[nw.component.parent]
-    if prev_parent then orphan(prev_parent, entity) end
-    if next_parent then adopt(next_parent, entity) end
-end
-
-function system.on_entity_removed(world, entity, prev_state)
-    local parent = entity[nw.component.parent] or prev_state[nw.component.parent]
-    if parent then
-        orphan(parent, entity)
+    for child, _ in pairs(children) do
+        if child:get(nw.component.die_with_parent) then
+            child:destroy()
+        end
     end
 end
 
---[[ Refactor with an explicit destruction component
-function system:on_entity_destroyed(entity)
-    for _, child in ipairs(entity[children_component] or {}) do
-        orphan(entity, child)
-        child:destroy()
-    end
-end
-]]--
-
-function system.children(entity) return entity[children_component] or list() end
-
-function system.lineage(entity)
-    local lineage = list()
-    local e = entity
-
-    while e do
-        table.insert(lineage, e)
-        e = e[nw.component.parent]
-    end
-
-    return lineage
+function Parent.set_parent(entity, parent)
+    orphan(entity:get(component.parent), entity)
+    adopt(parent, entity)
 end
 
-return system
+function Parent.children(entity)
+    return entity:ensure(component.children)
+end
+
+return parent.from_ctx
