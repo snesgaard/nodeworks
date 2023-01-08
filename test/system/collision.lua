@@ -318,4 +318,11 @@ T("collision", function(T)
         T:assert(table_equal(bump_hitbox, spatial(0, 0, 10, 10)))
         T:assert(table_equal(entity:get(nw.component.position), vec2(30, 0)))
     end)
+
+    T("move_without_bump", function(T)
+        local noop = ecs_world:entity()
+            :set(nw.component.position, 0, 0)
+
+        collision():move_to(noop, 100, 0)
+    end)
 end)
