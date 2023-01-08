@@ -46,8 +46,12 @@ function Parent.set_parent(entity, parent)
     adopt(parent, entity)
 end
 
+function Parent.get_parent(entity)
+    return entity:get(component.parent)
+end
+
 function Parent.children(entity)
     return entity:ensure(component.children)
 end
 
-return parent.from_ctx
+return Parent.from_ctx
