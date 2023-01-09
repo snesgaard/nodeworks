@@ -321,8 +321,23 @@ T("collision", function(T)
 
     T("move_without_bump", function(T)
         local noop = ecs_world:entity()
-            :set(nw.component.position, 0, 0)
+            :set(nw.component.position, 10, 10)
 
-        collision():move_to(noop, 100, 0)
+        local x, y, cols = collision():move_to(noop, 110, 10)
+
+        T:assert(x == 110)
+        T:assert(y == 10)
+        T:assert(#cols == 0)
+
+        T:assert(noop:get(nw.component.position).x == 110)
+        T:assert(noop:get(nw.component.position).y == 10)
+
+        local dx, dy, cols = collision():move(noop, 0, 50)
+        T:assert(dx == 0)
+        T:assert(dy == 50)
+        T:assert(#cols == 0)
+
+        T:assert(noop:get(nw.component.position).x == 110)
+        T:assert(noop:get(nw.component.position).y == 60)
     end)
 end)
