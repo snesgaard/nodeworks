@@ -2,9 +2,8 @@ local nw = require "nodeworks"
 
 local component = {}
 
-function component.follow(leader, x, y)
+function component.follow(x, y)
     return {
-        leader = leader,
         x = x or 0,
         y = y or 0
     }
@@ -12,23 +11,33 @@ end
 
 local weak_table = {__mode = "k"}
 
-local factory = setmetatable({}, weak_table)
+local factory = {
+    comp = setmetatable({}, weak_table)
+}
 
 function factory.follow_component(leader)
-    local c = factory[leader]
+    local c = factory.comp[leader]
     if not c then
         c = function(x, y)
-            return component.follow(leader, x, y)
+            return component.follow(x, y)
         end
-        factory[leader] = c
+        factory.comp[leader] = c
     end
     return c
 end
 
 local Follow = nw.system.base()
 
+function Follow.get_follow_component(leader)
+    return factory.follow_component(leader.id)
+end
+
+function Follow.get_follow_component_num()
+    return Dictionary.size(factory.comp)
+end
+
 function Follow.follow(entity, leader, x, y)
-     for _, c in pairs(factory) do
+     for _, c in pairs(factory.comp) do
          entity:remove(c)
      end
 

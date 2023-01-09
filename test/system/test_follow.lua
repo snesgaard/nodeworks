@@ -24,4 +24,33 @@ T("follow", function(T)
         T:assert(follower:get(nw.component.position).x == 10)
         T:assert(follower:get(nw.component.position).y == 0)
     end)
+
+    T("second follower", function(T)
+        local f = ecs_world:entity()
+            :set(nw.component.position)
+            :assemble(follow.follow, leader, 0, 0)
+
+        follow.handle_moved(nil, leader, 0, 10, ecs_world)
+
+        T:assert(follower:get(nw.component.position).x == 10)
+        T:assert(follower:get(nw.component.position).y == 10)
+
+        T:assert(f:get(nw.component.position).x == 0)
+        T:assert(f:get(nw.component.position).y == 10)
+    end)
+
+    T("gc", function(T)
+        collectgarbage()
+        local n1 = follow.get_follow_component_num()
+
+        for i = 1, 10 do
+            local s = ecs_world:entity()
+            T:assert(follow.get_follow_component(s))
+            s:destroy()
+        end
+
+        collectgarbage()
+        local n2 = follow.get_follow_component_num()
+        T:assert(n1 == n2)
+    end)
 end)
