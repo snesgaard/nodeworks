@@ -10,7 +10,9 @@ function component.follow(leader, x, y)
     }
 end
 
-local factory = {}
+local weak_table = {__mode = "k"}
+
+local factory = setmetatable({}, weak_table)
 
 function factory.follow_component(leader)
     local c = factory[leader]
@@ -30,8 +32,10 @@ function Follow.follow(entity, leader, x, y)
          entity:remove(c)
      end
 
-     local c = factory.follow_component(leader.id)
-     entity:set(c, x, y)
+     if leader then
+         local c = factory.follow_component(leader.id)
+         entity:set(c, x, y)
+     end
 end
 
 local function cross_filter() return "cross" end
@@ -56,6 +60,7 @@ end
 function Follow.handle_moved(ctx, entity, dx, dy, ecs_world, ...)
     if not ecs_world then return end
 
+    -- TODO only read here, dont create
     local c = factory.follow_component(entity.id)
 
     local followers = ecs_world:get_component_table(c)
