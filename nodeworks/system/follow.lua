@@ -62,11 +62,12 @@ function Follow.handle_mirror(ctx, entity, mirror, ecs_world, ...)
         y = y + follow.y
         nw.system.collision(ctx):move_to(ecs_world:entity(id), x, y)
     end
+
+    return Follow.handle_mirror(ctx, entity, mirror, ...)
 end
 
 function Follow.handle_moved(ctx, entity, dx, dy, ecs_world, ...)
     if not ecs_world then return end
-
     -- TODO only read here, dont create
     local c = Follow.follow_component:get(entity.id)
     if not c then return end
@@ -74,8 +75,14 @@ function Follow.handle_moved(ctx, entity, dx, dy, ecs_world, ...)
     local followers = ecs_world:get_component_table(c)
 
     for id, follow in pairs(followers) do
-        nw.system.collision(ctx):move(ecs_world:entity(id), dx, dy)
+        local pos = entity:get(nw.component.position)
+        local x, y = pos.x, pos.y
+        x = x + (mirror and -follow.x or follow.x)
+        y = y + follow.y
+        nw.system.collision(ctx):move_to(ecs_world:entity(id), x, y)
     end
+
+    return Follow.handle_moved(ctx, entity, dx, dy, ...)
 end
 
 function Follow.observables(ctx)
@@ -85,13 +92,15 @@ function Follow.observables(ctx)
     }
 end
 
-function Follow.handle_observables(ctx, obs)
+function Follow.handle_observables(ctx, obs, ecs_world, ...)
     for _, args in ipairs(obs.mirror:pop()) do
-        Follow.handle_mirror(ctx, unpack(args))
+        local entity, mirror = unpack(args)
+        Follow.handle_mirror(ctx, entity, mirror, ecs_world, ...)
     end
 
     for _, args in ipairs(obs.moved:pop()) do
-        Follow.handle_moved(ctx, unpack(args))
+        local entity, dx, dy = unpack(args)
+        Follow.handle_moved(ctx, entity, dx, dy, ecs_world, ...)
     end
 end
 

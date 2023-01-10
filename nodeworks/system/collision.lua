@@ -133,7 +133,7 @@ function Collision:update_position(entity)
     local dx, dy = world_rect_expected.x - x, world_rect_expected.y - y
 
     entity:set(nw.component.position, pos.x - dx, pos.y - dy)
-    self:on_moved(entity, dx, dy, col_info)
+    self:on_moved(entity, -dx, -dy, col_info)
 end
 
 function Collision:move_to(entity, x, y, filter)
