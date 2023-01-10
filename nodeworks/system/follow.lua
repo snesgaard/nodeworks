@@ -48,7 +48,8 @@ local function cross_filter() return "cross" end
 function Follow.handle_mirror(ctx, entity, mirror, ecs_world, ...)
     if not ecs_world then return end
 
-    local c = Follow.follow_component:ensure(entity.id)
+    local c = Follow.follow_component:get(entity.id)
+    if not c then return end
 
     -- Dont create here, only pull check if it is there
     local followers = ecs_world:get_component_table(c)
@@ -67,7 +68,8 @@ function Follow.handle_moved(ctx, entity, dx, dy, ecs_world, ...)
     if not ecs_world then return end
 
     -- TODO only read here, dont create
-    local c = Follow.follow_component:ensure(entity.id)
+    local c = Follow.follow_component:get(entity.id)
+    if not c then return end
 
     local followers = ecs_world:get_component_table(c)
 
