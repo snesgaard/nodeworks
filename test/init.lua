@@ -44,6 +44,7 @@ require "test.system.motion"
 require "test.system.script"
 require "test.system.test_decision"
 require "test.system.test_parent"
+require "test.system.test_follow"
 
 require "test.core.tree"
 require "test.core.test_animation"
