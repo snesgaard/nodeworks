@@ -35,26 +35,57 @@ local function pick_weighted_random_rask(tasks_and_scores)
     return best_task
 end
 
-local function evaluate_decision(ctx, entity, decision)
-    local tasks_and_scores = list()
+local function is_same_task(task, func, args)
+    if not task then return false end
+    return task.system == func and task.args == args
+end
 
-    for id, func in pairs(decision) do
-        local action_score = func(entity)
-        if action_score and action_score.score > 0 then
-            action_score.id = id
-            table.insert(tasks_and_scores, action_score)
+local function decide_yes(entity, decision)
+    if type(decision) == "table" then
+        local tasks_and_scores = list()
+
+        for id, func in pairs(decision) do
+            local action_score = func(entity)
+            if action_score and action_score.score > 0 then
+                action_score.id = id
+                table.insert(tasks_and_scores, action_score)
+            end
         end
-    end
 
-    local next_task = pick_weighted_random_rask(tasks_and_scores)
+        return pick_weighted_random_rask(tasks_and_scores)
+    elseif type(decision) == "function" then
+        return decision(entity)
+    end
+end
+
+local function evaluate_decision(ctx, entity, decision)
+
+    local next_task = decide_yes(entity, decision)
 
     if not next_task then return end
 
-    print("next task", next_task.id)
+    local current_task = entity:get(nw.component.task)
+    if is_same_task(current_task, next_task.func, next_task.args) then
+        return
+    end
 
-    entity:map(nw.component.task, function(current_task)
-        return current_task:set(next_task.func, ctx, unpack(next_task.args or {}))
-    end)
+    if current_task then current_task:kill() end
+
+    if not next_task.func then
+        print("task was nil for", entity)
+        return
+    end
+
+    local next_ctx = nw.ecs.World.Context.create(
+        ctx.world, next_task.func, unpack(next_task.args)
+    )
+    next_ctx:resume()
+    entity:set(nw.component.task, next_ctx)
+
+
+    --entity:map(nw.component.task, function(current_task)
+    --    return current_task:set(next_task.func, ctx, unpack(next_task.args or {}))
+    --end)
 end
 
 local function should_evaluate_decision(entity)
@@ -78,33 +109,54 @@ function Decision.run_decisions(ctx, ecs_world)
     end
 end
 
-function Decision.run_tasks(ctx, ecs_world)
+function Decision.run_tasks(ctx, obs, ecs_world)
     local task_table = ecs_world:get_component_table(nw.component.task)
+
     for id, task in pairs(task_table) do
-        local res = task:resume()
-        if res:has_error() then
-            print("Task failed => ", res:message())
+        local should_run = false
+
+        for _, event in ipairs(obs.all_events:peek()) do
+            local parsed = task:parse_single_event(event.key, event.data)
+            should_run = parsed or should_run
         end
+
+        if should_run then task:resume():clear() end
     end
 end
 
 function Decision.run_decision_and_task(ctx, obs, ecs_world)
     Decision.run_decisions(ctx, ecs_world)
-    Decision.run_tasks(ctx, ecs_world)
+    Decision.run_tasks(ctx, obs, ecs_world)
 end
 
 function Decision.observables(ctx)
     return {
-        update = ctx:listen("update"):collect()
+        update = ctx:listen("update"):collect(),
+        all_events = ctx:listen(nw.ecs.World.ALL_EVENT):collect()
     }
 end
 
 function Decision.handle_observables(ctx, obs, ...)
     for _, dt in ipairs(obs.update:pop()) do
         for _, ecs_world in ipairs({...}) do
-            Decision.run_decision_and_task(ctx, obs, ecs_world)
+            Decision.run_decisions(ctx, ecs_world)
+            --Decision.run_decision_and_task(ctx, obs, ecs_world)
         end
     end
+
+    for _, ecs_world in ipairs{...} do
+        Decision.run_tasks(ctx, obs, ecs_world)
+    end
+end
+
+function Decision.is_busy(entity)
+    local task = entity:get(nw.component.task)
+    return task and task:is_alive()
+end
+
+function Decision.has_task(entity, func)
+    local task = entity:get(nw.component.task)
+    return task and task:is_alive() and task.system == func
 end
 
 return Decision.from_ctx

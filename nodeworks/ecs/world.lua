@@ -27,7 +27,7 @@ function context.create(world, system, ...)
     )
 end
 
-function context:__tostring() return "Context" end
+function context:__tostring() return string.format("Context[%s]", tostring(self.observers)) end
 
 function context:__call(...) return self.world:ensure(...) end
 

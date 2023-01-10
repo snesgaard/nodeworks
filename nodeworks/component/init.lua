@@ -323,7 +323,7 @@ function components.target(id) return id end
 
 ---
 
-function components.task(t) return t or nw.task() end
+function components.task(t) return t end
 
 function components.decision(d) return d end
 
