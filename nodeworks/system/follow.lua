@@ -55,12 +55,12 @@ function Follow.handle_mirror(ctx, entity, mirror, ecs_world, ...)
     local followers = ecs_world:get_component_table(c)
 
     for id, follow in pairs(followers) do
-        nw.system.collision(ctx):mirror_to(ecs_world:entity(id), mirror, cross_filter)
+        nw.system.collision(ctx):mirror_to(ecs_world:entity(id), mirror)
         local pos = entity:get(nw.component.position)
         local x, y = pos.x, pos.y
         x = x + (mirror and -follow.x or follow.x)
         y = y + follow.y
-        nw.system.collision(ctx):move_to(ecs_world:entity(id), x, y, cross_filter)
+        nw.system.collision(ctx):move_to(ecs_world:entity(id), x, y)
     end
 end
 
@@ -74,7 +74,7 @@ function Follow.handle_moved(ctx, entity, dx, dy, ecs_world, ...)
     local followers = ecs_world:get_component_table(c)
 
     for id, follow in pairs(followers) do
-        nw.system.collision(ctx):move(ecs_world:entity(id), dx, dy, cross_filter)
+        nw.system.collision(ctx):move(ecs_world:entity(id), dx, dy)
     end
 end
 
