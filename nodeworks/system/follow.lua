@@ -9,42 +9,38 @@ function component.follow(x, y)
     }
 end
 
-local weak_table = {__mode = "k"}
+local RelationalComponent = class()
 
-local factory = {
-    comp = setmetatable({}, weak_table)
-}
+function RelationalComponent.constructor(base_comp)
+    return {
+        data = setmetatable({}, {__mode = "k"}),
+        base_comp = base_comp
+    }
+end
 
-function factory.follow_component(leader)
-    local c = factory.comp[leader]
-    if not c then
-        c = function(x, y)
-            return component.follow(x, y)
-        end
-        factory.comp[leader] = c
-    end
-    return c
+function RelationalComponent:get(id)
+    return self.data[id]
+end
+
+function RelationalComponent:ensure(id)
+    self.data[id] = self.data[id] or function(...) return self.base_comp(...) end
+    return self:get(id)
+end
+
+function RelationalComponent:size()
+    return Dictionary.size(self.data)
 end
 
 local Follow = nw.system.base()
 
-function Follow.get_follow_component(leader)
-    return factory.follow_component(leader.id)
-end
-
-function Follow.get_follow_component_num()
-    return Dictionary.size(factory.comp)
-end
+Follow.follow_component = RelationalComponent.create(component.follow)
 
 function Follow.follow(entity, leader, x, y)
-     for _, c in pairs(factory.comp) do
-         entity:remove(c)
-     end
+    for _, c in pairs(Follow.follow_component.data) do entity:remove(c) end
 
-     if leader then
-         local c = factory.follow_component(leader.id)
-         entity:set(c, x, y)
-     end
+    if not leader then return end
+    local c = Follow.follow_component:ensure(leader.id)
+    entity:set(c, x, y)
 end
 
 local function cross_filter() return "cross" end
@@ -52,8 +48,9 @@ local function cross_filter() return "cross" end
 function Follow.handle_mirror(ctx, entity, mirror, ecs_world, ...)
     if not ecs_world then return end
 
-    local c = factory.follow_component(entity.id)
+    local c = Follow.follow_component:ensure(leader.id)
 
+    -- Dont create here, only pull check if it is there
     local followers = ecs_world:get_component_table(c)
 
     for id, follow in pairs(followers) do
@@ -70,7 +67,7 @@ function Follow.handle_moved(ctx, entity, dx, dy, ecs_world, ...)
     if not ecs_world then return end
 
     -- TODO only read here, dont create
-    local c = factory.follow_component(entity.id)
+    local c = Follow.follow_component:ensure(entity.id)
 
     local followers = ecs_world:get_component_table(c)
 

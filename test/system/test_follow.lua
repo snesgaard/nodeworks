@@ -41,16 +41,16 @@ T("follow", function(T)
 
     T("gc", function(T)
         collectgarbage()
-        local n1 = follow.get_follow_component_num()
+        local n1 = follow.follow_component:size()
 
         for i = 1, 10 do
             local s = ecs_world:entity()
-            T:assert(follow.get_follow_component(s))
+            T:assert(follow.follow_component:ensure(s))
             s:destroy()
         end
 
         collectgarbage()
-        local n2 = follow.get_follow_component_num()
+        local n2 = follow.follow_component:size()
         T:assert(n1 == n2)
     end)
 end)
