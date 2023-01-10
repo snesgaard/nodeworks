@@ -17,6 +17,11 @@ T("follow", function(T)
     T:assert(follower:get(nw.component.position).x == 10)
     T:assert(follower:get(nw.component.position).y == 0)
 
+    T("mirror", function(T)
+        follow.handle_mirror(nil, leader, true, ecs_world)
+        T:assert(follower:get(nw.component.mirror))
+    end)
+
     T("unfollow", function(T)
         follower:assemble(follow.follow)
 
@@ -45,7 +50,7 @@ T("follow", function(T)
 
         for i = 1, 10 do
             local s = ecs_world:entity()
-            T:assert(follow.follow_component:ensure(s))
+            T:assert(follow.follow_component:ensure(s.id))
             s:destroy()
         end
 

@@ -48,7 +48,7 @@ local function cross_filter() return "cross" end
 function Follow.handle_mirror(ctx, entity, mirror, ecs_world, ...)
     if not ecs_world then return end
 
-    local c = Follow.follow_component:ensure(leader.id)
+    local c = Follow.follow_component:ensure(entity.id)
 
     -- Dont create here, only pull check if it is there
     local followers = ecs_world:get_component_table(c)
