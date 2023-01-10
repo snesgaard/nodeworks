@@ -36,8 +36,9 @@ local function forward_transform_from_entity(entity)
 end
 
 local function get_state(entity)
-    return entity:ensure(nw.component.hitbox),
-        entity:ensure(nw.component.position), entity:ensure(nw.component.mirror)
+    return entity:get(nw.component.hitbox),
+        entity:ensure(nw.component.position, 0, 0),
+        entity:get(nw.component.mirror)
 end
 
 local function get_bump_world(ecs_world)
@@ -90,6 +91,14 @@ function Collision:on_mirror(entity, mirror, collision_infos)
 end
 
 function Collision:move_to_state(entity, hitbox, pos, mirror, filter)
+    if not hitbox or not pos then
+        local prev_pos = entity:ensure(nw.component.position, 0, 0)
+        local x = pos and pos.x or 0
+        local y = pos and pos.y or 0
+        entity:set(nw.component.position, x, y)
+        return x - prev_pos.x, y - prev_pos.y, {}
+    end
+
     local bump_world = get_bump_world(entity:world())
     local next_hitbox = forward_transform(hitbox, pos, mirror)
 

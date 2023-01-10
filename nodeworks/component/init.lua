@@ -220,6 +220,8 @@ function components.tag(tag) return tag end
 
 function components.parent(parent) return parent end
 
+function components.die_with_parent() return true end
+
 function components.collision_filter(f) return f end
 
 function components.disable_motion(v) return v or 0 end
