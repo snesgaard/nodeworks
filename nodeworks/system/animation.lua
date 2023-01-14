@@ -1,208 +1,130 @@
 local nw = require "nodeworks"
 
---[[
-animation(ctx):entity(ecs_world, id)
-    :play(anime.necro.idle)
-    :once()
-    :foreach_frame(assign_values)
-    :foreach_keyframe(sync_hitbox)
+local component = {}
 
-]]--
-
-local function sum_frame_time(frames)
-    local time = 0
-    for _, f in ipairs(frames) do time = time + (f.dt or 0) end
-    return time
+function component.player(animation)
+    return nw.animation.player(animation)
 end
 
-local function ease_frames(prev_frame, next_frame, time_from_prev, ease)
-    if not ease then return prev_frame end
+function component.hitbox_slices(slices)
+    return slices or {}
+end
 
-    local im_frame = {}
+component.animation_slice = nw.component.relation()
 
-    for key, value in pairs(prev_frame) do
-        local f = ease[key]
-        local next_value = next_frame[key]
-        if f and next_value ~= nil then
-            im_frame[key] = f(
-                time_from_prev, value, next_value - value, prev_frame.dt
+local assemble = {}
+
+function assemble.slice_hitbox()
+
+end
+
+local function update_slices(entity, next_slices, assembly)
+    local relation = component.animation_slice:ensure(entity.id)
+    local ecs_world = entity:world()
+
+    local prev_slices = ecs_world:get_component_table(relation)
+
+    for id, _ in pairs(slices) do ecs_world:destroy(id) end
+
+    local pos = entity:get(nw.component.position)
+    if not pos then return end
+
+    local created_slices = dict()
+
+    for id, slice in pairs(next_slices) do
+        local slice = frame:get_slice(id, "body")
+        local assemble_func = assembly[id]
+
+        created_slices[id] = ecs_world():entity()
+            :set(nw.component.team, entity:get(nw.component.team))
+            :set(nw.component.mirror, entity:get(nw.component.mirror))
+            :set(relation)
+            :assemble(
+                nw.system.collision().assemble.init_entity,
+                pos.x, pos.y, slice
             )
-        else
-            im_frame[key] = value
-        end
+            :set(nw.component.velocity, 0, 0)
+            :set(nw.component.is_ghost)
+            :assemble(nw.system.follow().follow, entity)
+            :assemble(assemble_func)
     end
 
-    return im_frame, false
+    return created_slices
 end
 
-local function find_frame_index(time, frames, once)
-    local total_animation_time = sum_frame_time(frames)
-    local cycled_time = once and time or math.fmod(time, total_animation_time)
-
-    if time < 0 then return 0, time end
-
-    local frame_time = 0
-
-    for index, frame in ipairs(frames) do
-        local next_time = frame_time + (frame.dt or 0)
-
-        if frame_time <= cycled_time and cycled_time < next_time then
-            return index, cycled_time - frame_time, false
-        end
-
-        frame_time = next_time
-    end
-
-    return #frames, time - cycled_time, true
-end
-
-local function find_frame(time, frames, once, default_ease)
-    local index, time_from_prev = find_frame_index(time, frames, once)
-    local ease = frames.ease or default_ease
-    local prev_frame = frames[index]
-    local next_frame = frames[index + 1]
-
-    if not prev_frame and next_frame then return next_frame end
-    if prev_frame and not next_frame then return prev_frame end
-
-    return ease_frames(prev_frame, next_frame, time_from_prev, ease)
-end
-
-local AnimationMaster = class()
-
-AnimationMaster.EVENTS = {
-    DONE = "animation:done",
-    KEYFRAME = "animation:keyframe"
-}
-
-function AnimationMaster.create(world)
-    return setmetatable({world=world}, AnimationMaster)
-end
-
-function AnimationMaster:emit(key, entity, ...)
-    if not self.world then return end
-    self.world:emit(key, entity, ...)
-end
-
-function AnimationMaster:update(dt, ...)
-    for _, ecs_world in ipairs{...} do
-        local entities = ecs_world:get_component_table(
-            nw.component.animation_state
-        )
-
-        for entity, state in pairs(entities) do
-            self:update_entity_state(entity, state, dt)
-        end
+local function on_update(entity, value, prev_value)
+    if value.frame ~= prev_value.frame then
+        entity:set(nw.component.frame, value.frame)
+        --update_slices(entity, value.frame)
     end
 end
 
-function AnimationMaster:update_entity_state(entity, state, dt)
-    if state.paused then return end
+local Animation = nw.system.base()
 
-    local prev_index, _, is_done_prev = find_frame_index(state.time, state.frames, state.once)
-    state.time = state.time + dt
-    local next_index, _, is_done_next = find_frame_index(state.time, state.frames, state.once)
-
-    if not is_done_prev and is_done_next then
-        self:emit(self.EVENTS.DONE, entity, state.frames)
-    end
-
-    if prev_index ~= next_index and self.world then
-        local prev_frame = state.frames[prev_index]
-        local next_frame = state.frames[next_index]
-        self:emit(self.EVENTS.KEYFRAME, entity, next_frame, prev_frame)
-    end
+function Animation.on_entity_destroyed(id, values_destroyed, ecs_world)
+    local hitboxes = values_destroyed[component.hitbox_slices]
+    if not hitboxes then return end
+    for _, hb in pairs(hitboxes) do hb:destroy() end
 end
 
-function AnimationMaster:done(entity)
-    local state = entity:get(nw.component.animation_state)
-    if not state then return true end
-    local total_animation_time = sum_frame_time(state.frames)
-    return total_animation_time <= state.time
+function Animation:play(entity, animation)
+    local on_entity_destroyed = entity:world().on_entity_destroyed
+    on_entity_destroyed.animation = on_entity_destroyed.animation or Animation.on_entity_destroyed
+
+    local player = self:player(entity)
+    if player and player.animation == animation then return player end
+    entity:set(component.player, animation)
+    local player = entity:get(component.player)
+    local value = player:value()
+    on_update(entity, value, {})
+    return player
 end
 
-function AnimationMaster:get(entity)
-    local state = entity:get(nw.component.animation_state)
-    if not state then return end
-
-    return find_frame(
-        state.time, state.frames, state.once, state.ease or self.ease
-    )
-end
-
-function AnimationMaster:play(entity, animation, once)
-    local prev_state = entity:get(nw.component.animation_state)
-
-    if prev_state then
-        self:emit(self.EVENTS.DONE, entity, prev_state.frames)
-    end
-
-    entity:set(nw.component.animation_state, animation, once)
-
-    self:emit(self.EVENTS.KEYFRAME, entity, self:get(entity))
+function Animation:stop(entity)
+    entity:remove(component.player)
     return self
 end
 
-function AnimationMaster:ensure(entity, animation, once)
-    local prev_state = entity:get(nw.component.animation_state)
-    local is_done = self:done(entity)
-    if prev_state and prev_state.frames == animation and not is_done then return end
-
-    return self:play(entity, animation, once)
+function Animation:play_once(entity, animation)
+    local player = self:play(entity, animation)
+    player:play_once()
+    return player
 end
 
-function AnimationMaster:play_once(entity, animation)
-    return self:play(entity, animation, true)
+function Animation:update_entity(entity, player, dt)
+    local prev_value = player:value()
+    local is_done = player:done()
+    player:update(dt)
+    local next_value = player:value()
+    on_update(entity, next_value, prev_value)
+    if player:done() and not is_done then
+        self:emit("on_animation_done", entity, player.animation)
+    end
 end
 
-function AnimationMaster:pause(entity)
-    local state = entity:get(nw.component.animation_state)
-    if not state then return self end
-    state.paused = true
-    return self
+function Animation:update(dt, ecs_world)
+    local animation_table = ecs_world:get_component_table(component.player)
+    for id, player in pairs(animation_table) do
+        self:update_entity(ecs_world:entity(id), player, dt)
+    end
 end
 
-function AnimationMaster:unpause(entity)
-    local state = entity:get(nw.component.animation_state)
-    if not state then return self end
-    state.paused = false
-    return self
+function Animation:player(entity)
+    return entity:get(component.player)
 end
 
-function AnimationMaster:stop(entity)
-    local state = entity:get(nw.component.animation_state)
-    if not state then return self end
-    state.paused = true
-    state.time = 0
-
-    self:emit(self.EVENTS.KEYFRAME, entity, self:get(entity))
-
-    return self
-end
-
-function AnimationMaster.observables(ctx)
+function Animation.observables(ctx)
     return {
         update = ctx:listen("update"):collect()
     }
 end
 
-function AnimationMaster.handle_observables(ctx, obs, ecs_world, ...)
-    if not ecs_world then return end
+function Animation.handle_observables(ctx, obs, ecs_world)
+    local sys = Animation.from_ctx(ctx)
 
     for _, dt in ipairs(obs.update:pop()) do
-        AnimationMaster.from_ctx(ctx):update(dt, ecs_world)
+        self:update(dt, ecs_world)
     end
-
-    return AnimationMaster.handle_observables(ctx, obs, ...)
 end
 
-local default_master = AnimationMaster.create()
-function AnimationMaster.from_ctx(ctx)
-    if not ctx then return default_master end
-
-    local world = ctx.world or ctx
-    world[AnimationMaster] = world[AnimationMaster] or AnimationMaster.create(world)
-    return world[AnimationMaster]
-end
-
-return AnimationMaster.from_ctx
+return Animation.from_ctx

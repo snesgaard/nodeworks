@@ -45,7 +45,7 @@ function entity:remove(component)
 end
 
 function entity:assemble(func, ...)
-    func(self, ...)
+    if func then func(self, ...) end
     return self
 end
 

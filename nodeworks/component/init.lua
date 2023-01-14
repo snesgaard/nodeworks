@@ -224,6 +224,32 @@ function components.disable_motion(v) return v or 0 end
 
 ---------------------------------------
 
+local RelationalComponent = class()
+
+function RelationalComponent.constructor(base_comp)
+    return {
+        data = setmetatable({}, {__mode = "k"}),
+        base_comp = base_comp or function() return true end
+    }
+end
+
+function RelationalComponent:get(id)
+    return self.data[id]
+end
+
+function RelationalComponent:ensure(id)
+    self.data[id] = self.data[id] or function(...) return self.base_comp(...) end
+    return self:get(id)
+end
+
+function RelationalComponent:size()
+    return Dictionary.size(self.data)
+end
+
+components.relation = RelationalComponent.create
+
+---------------------------------------
+
 local action = {}
 action.__index = action
 

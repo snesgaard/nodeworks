@@ -9,31 +9,9 @@ function component.follow(x, y)
     }
 end
 
-local RelationalComponent = class()
-
-function RelationalComponent.constructor(base_comp)
-    return {
-        data = setmetatable({}, {__mode = "k"}),
-        base_comp = base_comp
-    }
-end
-
-function RelationalComponent:get(id)
-    return self.data[id]
-end
-
-function RelationalComponent:ensure(id)
-    self.data[id] = self.data[id] or function(...) return self.base_comp(...) end
-    return self:get(id)
-end
-
-function RelationalComponent:size()
-    return Dictionary.size(self.data)
-end
-
 local Follow = nw.system.base()
 
-Follow.follow_component = RelationalComponent.create(component.follow)
+Follow.follow_component = nw.component.relation(component.follow)
 
 function Follow.follow(entity, leader, x, y)
     for _, c in pairs(Follow.follow_component.data) do entity:remove(c) end
