@@ -41,7 +41,6 @@ local function update_slices(entity, next_slices, assembly)
                 nw.system.collision().assemble.init_entity,
                 pos.x, pos.y, slice
             )
-            :set(nw.component.velocity, 0, 0)
             :assemble(nw.system.follow().follow, entity)
             :assemble(assemble_func)
     end
@@ -62,9 +61,12 @@ Animation.update_slices = update_slices
 Animation.component = component
 
 function Animation.on_entity_destroyed(id, values_destroyed, ecs_world)
-    local hitboxes = values_destroyed[component.hitbox_slices]
-    if not hitboxes then return end
-    for _, hb in pairs(hitboxes) do hb:destroy() end
+    local relation = component.animation_slice:get(id)
+    if not relation then return end
+    local others = ecs_world:get_component_table(relation)
+        :keys()
+
+    for _, id in ipairs(others) do ecs_world:destroy(id) end
 end
 
 function Animation:play(entity, animation)
