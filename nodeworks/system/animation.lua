@@ -19,24 +19,22 @@ function assemble.slice_hitbox()
 end
 
 local function update_slices(entity, next_slices, assembly)
+    local assembly = assembly or {}
     local relation = component.animation_slice:ensure(entity.id)
     local ecs_world = entity:world()
-
+    
     local prev_slices = ecs_world:get_component_table(relation)
-
-    for id, _ in pairs(slices) do ecs_world:destroy(id) end
-
+    
+    for id, _ in pairs(prev_slices) do ecs_world:destroy(id) end
+    
     local pos = entity:get(nw.component.position)
     if not pos then return end
 
     local created_slices = dict()
 
     for id, slice in pairs(next_slices) do
-        local slice = frame:get_slice(id, "body")
         local assemble_func = assembly[id]
-
-        created_slices[id] = ecs_world():entity()
-            :set(nw.component.team, entity:get(nw.component.team))
+        created_slices[id] = ecs_world:entity()
             :set(nw.component.mirror, entity:get(nw.component.mirror))
             :set(relation)
             :assemble(
@@ -44,7 +42,6 @@ local function update_slices(entity, next_slices, assembly)
                 pos.x, pos.y, slice
             )
             :set(nw.component.velocity, 0, 0)
-            :set(nw.component.is_ghost)
             :assemble(nw.system.follow().follow, entity)
             :assemble(assemble_func)
     end
@@ -60,6 +57,9 @@ local function on_update(entity, value, prev_value)
 end
 
 local Animation = nw.system.base()
+
+Animation.update_slices = update_slices
+Animation.component = component
 
 function Animation.on_entity_destroyed(id, values_destroyed, ecs_world)
     local hitboxes = values_destroyed[component.hitbox_slices]

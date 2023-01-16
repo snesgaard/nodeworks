@@ -13,6 +13,7 @@ local animation = nw.animation.animation()
 T("animation", function(T)
     local ecs_world = nw.ecs.entity.create()
     local entity = ecs_world:entity()
+        :set(nw.component.position, 30, 40)
 
     nw.system.animation():play(entity, animation)
 
@@ -29,5 +30,21 @@ T("animation", function(T)
         T:assert(player:value().frame == "b")
         nw.system.animation():update(2.5, ecs_world)
         T:assert(player:value().frame == "c")
+    end)
+
+    T("slices", function(T)
+        local slices = {
+            body = spatial(0, 0, 20, 10),
+            attack = spatial(0, 0, 10, 20)
+        }
+
+        nw.system.animation().update_slices(entity, slices)
+
+        local entity_slices = ecs_world:get_component_table(
+            nw.system.animation().component.animation_slice:ensure(entity.id)
+        )
+
+        T:assert(entity_slices:size() == 2)
+
     end)
 end)
