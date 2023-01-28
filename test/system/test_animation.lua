@@ -50,6 +50,14 @@ T("animation", function(T)
             local entity_slices = ecs_world:get_component_table(relation)
             T:assert(entity_slices:size() == 0)
         end)
+    end)
 
+    T("on_update", function(T)
+        local dst = {}
+        nw.system.animation().set_on_update(entity, function()
+            dst.called = true
+        end)
+        nw.system.animation():update(0.0, ecs_world)
+        T:assert(dst.called)
     end)
 end)

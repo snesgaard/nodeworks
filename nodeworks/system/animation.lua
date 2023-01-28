@@ -10,6 +10,10 @@ function component.hitbox_slices(slices)
     return slices or {}
 end
 
+function component.on_animation_update(func)
+    return func
+end
+
 component.animation_slice = nw.component.relation()
 
 local assemble = {}
@@ -71,8 +75,7 @@ Animation.component = component
 function Animation.on_entity_destroyed(id, values_destroyed, ecs_world)
     local relation = component.animation_slice:get(id)
     if not relation then return end
-    local others = ecs_world:get_component_table(relation)
-        :keys()
+    local others = ecs_world:get_component_table(relation):keys()
 
     for _, id in ipairs(others) do ecs_world:destroy(id) end
 end
@@ -106,6 +109,8 @@ function Animation:update_entity(entity, player, dt)
     local is_done = player:done()
     player:update(dt)
     local next_value = player:value()
+    local func = entity:get(component.on_animation_update)
+    if func then func(entity, next_value, prev_value) end
     on_update(entity, next_value, prev_value)
     if player:done() and not is_done then
         self:emit("on_animation_done", entity, player.animation)
@@ -117,6 +122,10 @@ function Animation:update(dt, ecs_world)
     for id, player in pairs(animation_table) do
         self:update_entity(ecs_world:entity(id), player, dt)
     end
+end
+
+function Animation.set_on_update(entity, func)
+    entity:set(component.on_animation_update, func)
 end
 
 function Animation:player(entity)
