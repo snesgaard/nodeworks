@@ -55,6 +55,14 @@ local function on_update(entity, value, prev_value)
     end
 end
 
+local function slice_update_from_frame(entity, frame, assembly)
+    local body_slices = dict()
+    for id, _ in pairs(frame.slices) do
+        body_slices[id] = frame:get_slice(id, "body")
+    end
+    update_slices(entity, body_slices, assembly)
+end
+
 local Animation = nw.system.base()
 
 Animation.update_slices = update_slices
