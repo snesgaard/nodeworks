@@ -9,6 +9,7 @@ rh.ease = require(... .. ".core.ease")
 rh.Task = require(... .. ".core.task")
 rh.task = rh.Task.create
 rh.animation = require(... .. ".core.animation")
+rh.compute = require(... .. ".core.computation")
 
 local BASE = ...
 
