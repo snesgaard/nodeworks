@@ -13,7 +13,6 @@ end
 local function pop_record(co)
     local co = co or (coroutine.running() or "__main__")
     local r = peek_record(co)
-    local co = coroutine.running() or "__main__"
     records[co] = nil
     return r
 end
