@@ -40,7 +40,10 @@ T("animation", function(T)
 
         nw.system.animation().update_slices(entity, slices)
 
-        local relation = nw.system.animation().component.animation_slice:ensure(entity.id)
+        local relation = nw.system.animation()
+            .component
+            .animation_slice
+            :ensure(entity.id)
 
         local entity_slices = ecs_world:get_component_table(relation)
         T:assert(entity_slices:size() == 2)
