@@ -46,7 +46,12 @@ function Status:is_success() return self._is_success end
 function Status:is_failure() return self._is_failure end
 
 function Status:resume(...)
-    return Status.create(self.co, coroutine.resume(self.co, ...))
+    if not self._conmsumed then
+        self._conmsumed = true
+        return Status.create(self.co, coroutine.resume(self.co, ...))
+    else
+        errorf("Tried to resume already consumed computation")
+    end
 end
 
 function Status:values() return unpack(self._values) end
@@ -65,5 +70,7 @@ local API = class()
 function API:__call(...) return compute(...) end
 
 function API.enter(...) return enter_computation(...) end
+
+function API.record_storage() return records end
 
 return API.create()
