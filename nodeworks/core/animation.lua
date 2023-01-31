@@ -222,7 +222,7 @@ local function sequence(seq)
     local time = 0
 
     for _, s in ipairs(seq) do
-        local n = {value=s.value, time=time}
+        local n = dict{value=s.value, time=time}
         table.insert(nodes, n)
         time = time + s.dt
     end
