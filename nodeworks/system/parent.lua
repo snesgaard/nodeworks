@@ -4,54 +4,41 @@ local Parent = nw.system.base()
 
 local component = {}
 
-function component.parent(p) return p end
+component.children = nw.component.relation(function(num) return num end)
 
-function component.children(c) return c or dict() end
+function component.parent(parent) return parent end
 
-local function orphan(parent, child)
-    if not parent or not child then return end
+function component.child_order_number(v) return v or 0 end
 
-    local children = parent:ensure(component.children)
-    if children[child] then
+function Parent.set_parent(child, parent)
+    local prev_parent = child:get(component.parent)
+    if prev_parent then
+        child:remove(component.children:ensure(prev_parent))
+    end
+    if parent then
+        local order_num = parent:ensure(component.child_order_number)
+        parent:set(component.child_order_number, order_num + 1)
+
+
+        child:set(component.parent, parent.id)
+        child:set(component.children:ensure(parent.id), order_num)
+    else
         child:remove(component.parent)
-        children[child] = nil
-    end
-
-end
-
-local function adopt(parent, child)
-    if not parent or not child then return end
-
-    local children = parent:ensure(component.children)
-    children[child] = true
-    child:set(component.parent, parent)
-
-    local on_entity_destroyed = parent:world().on_entity_destroyed
-    on_entity_destroyed.parent = on_entity_destroyed.parent or Parent.on_entity_destroyed
-end
-
-function Parent.on_entity_destroyed(id, destroyed_values, ecs_world)
-    local children = destroyed_values[component.children]
-    if not children then return end
-
-    for child, _ in pairs(children) do
-        if child:get(nw.component.die_with_parent) then
-            child:destroy()
-        end
     end
 end
 
-function Parent.set_parent(entity, parent)
-    orphan(entity:get(component.parent), entity)
-    adopt(parent, entity)
+function Parent.get_children(entity)
+    local pc = component.children:ensure(entity.id)
+    return entity:world():get_component_table(pc)
 end
 
-function Parent.get_parent(entity)
-    return entity:get(component.parent)
+function Parent.get_children_in_order(entity)
+    local children_table = Parent.get_children(entity)
+    return children_table
+        :keys()
+        :sort(function(a, b) return children_table[a] < children_table[b] end)
 end
 
-function Parent.children(entity)
-    return entity:ensure(component.children)
-end
+function Parent.get_parent(entity) return entity:get(component.parent) end
 
 return Parent.from_ctx

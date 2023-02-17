@@ -4,55 +4,46 @@ local parent = nw.system.parent()
 
 T("parenting", function(T)
     local ecs_world = nw.ecs.entity.create()
+    local foo = ecs_world:entity()
+    local bar = ecs_world:entity()
+    local baz = ecs_world:entity()
 
-    local c = ecs_world:entity()
-    local p1 = ecs_world:entity()
-    local p2 = ecs_world:entity()
+    T("single_child", function(T)
+        parent.set_parent(bar, foo)
+        T:assert(parent.get_parent(foo) == nil)
+        T:assert(parent.get_parent(bar) == foo.id)
 
-    T:assert(parent.children(c):size() == 0)
-    T:assert(parent.children(p1):size() == 0)
-    T:assert(parent.children(p2):size() == 0)
+        T:assert(parent.get_children(foo):keys() == list(bar.id))
+        T:assert(parent.get_children(bar):keys() == list())
 
-    c:assemble(parent.set_parent, p1)
+        T("remove", function(T)
+            parent.set_parent(bar)
+            
+            T:assert(parent.get_parent(foo) == nil)
+            T:assert(parent.get_parent(bar) == nil)
 
-    T:assert(parent.get_parent(c) == p1)
-    T:assert(parent.children(p1):size() == 1)
-    T:assert(parent.children(p1)[c])
-
-    T("orphan", function(T)
-        c:assemble(parent.set_parent)
-
-        T:assert(not parent.get_parent(c))
-        T:assert(parent.children(p1):size() == 0)
-        T:assert(not parent.children(p1)[c])
+            T:assert(parent.get_children(foo):keys() == list())
+            T:assert(parent.get_children(bar):keys() == list())
+        end)
     end)
 
-    T("adopt", function(T)
-        c:assemble(parent.set_parent, p2)
+    T("two_children", function(T)
+        parent.set_parent(bar, foo)
+        parent.set_parent(baz, foo)
 
-        T:assert(parent.get_parent(c) == p2)
-
-        T:assert(parent.children(p1):size() == 0)
-        T:assert(not parent.children(p1)[c])
-
-        T:assert(parent.children(p2):size() == 1)
-        T:assert(parent.children(p2)[c])
+        T:assert(parent.get_children_in_order(foo) == list(bar.id, baz.id))
     end)
 
-    T("die_with_parent", function(T)
-        c:set(nw.component.die_with_parent)
+    T("change_parent", function(T)
+        parent.set_parent(bar, foo)
+        parent.set_parent(bar, baz)
 
-        p1:destroy()
+        T:assert(parent.get_parent(foo) == nil)
+        T:assert(parent.get_parent(bar) == baz.id)
+        T:assert(parent.get_parent(baz) == nil)
 
-        T:assert(not c:get(nw.component.die_with_parent))
-    end)
-
-    T("second child", function(T)
-        local c2 = ecs_world:entity()
-            :assemble(parent.set_parent, p1)
-
-        T:assert(parent.children(p1):size() == 2)
-        T:assert(parent.children(p1)[c])
-        T:assert(parent.children(p1)[c2])
+        T:assert(parent.get_children_in_order(foo) == list())
+        T:assert(parent.get_children_in_order(bar) == list())
+        T:assert(parent.get_children_in_order(baz) == list(bar.id))
     end)
 end)
