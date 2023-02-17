@@ -45,6 +45,7 @@ require "test.system.test_decision"
 require "test.system.test_parent"
 require "test.system.test_follow"
 require "test.system.test_animation"
+require "test.system.test_event"
 
 require "test.core.tree"
 require "test.core.test_animation"
