@@ -27,4 +27,15 @@ T("test_event", function(T)
         local events = ecs_world:get_component_table(component.foo)
         T:assert(not events[id])
     end)
+
+    T("create_destroy", function(T)
+        local function assemble(entity)
+            entity:set(component.foo, 2)
+        end
+
+        local id = nw.system.entity():make(ecs_world, assemble)
+        nw.system.entity():spin(ecs_world)
+
+        T:assert(ecs_world:get(component.foo, id))
+    end)
 end)
