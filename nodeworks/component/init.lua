@@ -351,4 +351,6 @@ function components.task(t) return t or nw.task() end
 
 function components.decision(d) return d end
 
+function components.only_single_frame() return true end
+
 return components

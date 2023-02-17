@@ -46,4 +46,11 @@ T("entity", function(T)
             ecs_world_copy:get_component_table((component_a)) == prev_comp_table
         )
     end)
+
+    T("destroy", function(T)
+        ecs_world:set(component_a, id, 2)
+        T:assert(ecs_world:get_component_table(component_a):keys():size() == 1)
+        ecs_world:destroy(id)
+        T:assert(ecs_world:get_component_table(component_a):keys():size() == 0)
+    end)
 end)
