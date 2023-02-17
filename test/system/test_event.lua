@@ -37,5 +37,10 @@ T("test_event", function(T)
         nw.system.entity():spin(ecs_world)
 
         T:assert(ecs_world:get(component.foo, id))
+
+        nw.system.entity():destroy(ecs_world, id)
+        nw.system.entity():spin(ecs_world)
+
+        T:assert(not ecs_world:get(component.foo, id))
     end)
 end)
