@@ -12,6 +12,9 @@ function component.child_order_number(v) return v or 0 end
 
 function Parent.set_parent(child, parent)
     local prev_parent = child:get(component.parent)
+
+    if parent == prev_parent then return end
+
     if prev_parent then
         child:remove(component.children:ensure(prev_parent))
     end

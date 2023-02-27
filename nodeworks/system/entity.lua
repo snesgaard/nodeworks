@@ -2,23 +2,37 @@ local nw = require "nodeworks"
 
 local component = {}
 
-function component.create_request(id, func, ...)
-    return {func = func, args = {...}, id = id}
+function component.create_request(order, id, func, ...)
+    return {func = func, args = {...}, id = id, order = order}
 end
 
 function component.destroy_request(id)
     return {id = id}
 end
 
+function component.order(o) return o or 0 end
+
 component.event = nw.component.relation(function(...) return list(...) end)
 
 local Entity = nw.system.base()
 
+function Entity:id_gen(ecs_world)
+    return {}
+end
+
+function Entity:order_num(ecs_world)
+    local entity = ecs_world:entity("__entity_sys__")
+    local order = entity:ensure(component.order)
+    entity:set(component.order, order + 1)
+    return order
+end
+
 function Entity:make(ecs_world, ...)
-    local id = {}
+    local id = self:id_gen(ecs_world)
+    local order_num = self:order_num(ecs_world)
 
     ecs_world:entity()
-        :set(component.create_request, id, ...)
+        :set(component.create_request, order_num, id, ...)
         :set(nw.component.only_single_frame)
 
     return id
@@ -32,8 +46,11 @@ end
 
 function Entity:spin(ecs_world)
     local destroy_requests = ecs_world:get_component_table(component.destroy_request):values()
-    local create_requests = ecs_world:get_component_table(component.create_request):values()
     local only_single_frame = ecs_world:get_component_table(nw.component.only_single_frame):keys()
+    local create_requests = ecs_world:get_component_table(component.create_request)
+        :values()
+        :sort(function(a, b) return a.order_num < b.order_num end)
+
 
     for _, id in ipairs(only_single_frame) do
         ecs_world:destroy(id)
