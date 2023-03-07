@@ -49,7 +49,7 @@ function Entity:spin(ecs_world)
     local only_single_frame = ecs_world:get_component_table(nw.component.only_single_frame):keys()
     local create_requests = ecs_world:get_component_table(component.create_request)
         :values()
-        :sort(function(a, b) return a.order_num < b.order_num end)
+        :sort(function(a, b) return a.order < b.order end)
 
 
     for _, id in ipairs(only_single_frame) do
@@ -63,6 +63,8 @@ function Entity:spin(ecs_world)
     for _, cr in ipairs(create_requests) do
         ecs_world:entity(cr.id):assemble(cr.func, unpack(cr.args))
     end
+
+    return create_requests:size()
 end
 
 local function assemble_from_event_comp(entity, event_component, ...)
