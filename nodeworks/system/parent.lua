@@ -44,4 +44,9 @@ end
 
 function Parent.get_parent(entity) return entity:get(component.parent) end
 
+function Parent.spawn(entity, id)
+    return entity:world():entity(id)
+        :assemble(Parent.set_parent, entity)
+end
+
 return Parent.from_ctx
