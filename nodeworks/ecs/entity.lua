@@ -148,7 +148,7 @@ end
 
 function entity_table:ensure(component, id, ...)
     local value = self:get(component, id)
-    if value then return value end
+    if value ~= nil then return value end
     local next_value = component(...)
     raw_set_component(self, component, id, next_value)
     return next_value
