@@ -49,4 +49,14 @@ function Parent.spawn(entity, id)
         :assemble(Parent.set_parent, entity)
 end
 
+function Parent.destroy(entity)
+    local children = Parent.get_children(entity)
+    for id, _ in pairs(children) do
+        local e = entity:world():entity(id)
+        print("destroy child", e)
+        Parent.destroy(e)
+    end
+    entity:destroy()
+end
+
 return Parent.from_ctx
