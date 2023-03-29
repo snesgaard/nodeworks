@@ -108,7 +108,9 @@ end
 local function raw_set_component(self, component, id, value)
     handle_copy_on_write(self, component)
     local c = fetch_component(self, component)
+    local prev_value = c[id]
     c[id] = value
+    if type(prev_value) == "table" and prev_value.destroy then prev_value:destroy() end
     return self
 end
 
