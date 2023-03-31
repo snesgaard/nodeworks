@@ -90,6 +90,7 @@ function entity_table:entity(id)
 end
 
 local function fetch_component(self, component)
+    if component == nil then error("component was nil") end
     local c = self.components[component]
     if c then return c end
     local c = dict()
