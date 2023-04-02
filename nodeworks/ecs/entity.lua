@@ -107,6 +107,7 @@ local function handle_copy_on_write(self, component)
 end
 
 local function raw_set_component(self, component, id, value)
+    if id == nil then error("Id was nil") end
     handle_copy_on_write(self, component)
     local c = fetch_component(self, component)
     local prev_value = c[id]
