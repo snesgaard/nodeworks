@@ -18,6 +18,11 @@ function entity:set(component, ...)
     return self
 end
 
+function entity:init(component, ...)
+    self.table:init(component, self.id, ...)
+    return self
+end
+
 function entity:has(component)
     return self.table:has(component, self.id)
 end
@@ -118,6 +123,11 @@ end
 
 function entity_table:set(component, id, ...)
     return raw_set_component(self, component, id, component(...))
+end
+
+function entity_table:init(component, id, ...)
+    if not self:has(component, id) then self:set(component, id, ...) end
+    return self
 end
 
 function entity_table:remove(component, id)

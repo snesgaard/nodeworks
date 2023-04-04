@@ -74,7 +74,8 @@ local function assemble_from_event_comp(entity, event_component, ...)
 end
 
 function Entity:emit(ecs_world, event_component, ...)
-    return self:make(ecs_world, assemble_from_event_comp, event_component, ...)
+    local id = self:make(ecs_world, assemble_from_event_comp, event_component, ...)
+    return event_component(...), id
 end
 
 function Entity:write_event(ecs_world, key, ...)
