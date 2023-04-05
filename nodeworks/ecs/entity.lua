@@ -206,6 +206,52 @@ function entity_table:pool(...)
     return entity
 end
 
+local function get_component_table(comp, ecs_world) return ecs_world:get_component_table(comp) or dict() end
+local function sort_by_size(a, b) return a:size() < b:size() end
+local function is_id_in_all(id, component_tables)
+    for _, cb in ipairs(component_tables) do
+        if not cb[id] then return false end
+    end
+
+    return true
+end
+
+function entity_table:filter_id_on_component(components)
+    local component_tables = components
+        :map(get_component_table, self)
+        :sort(sort_by_size)
+    
+    return component_tables
+        :head()
+        :keys()
+        :filter(is_id_in_all, component_tables)
+end
+
+local function perform_component_lookup(comp, ecs_world, id)
+    return ecs_world:get(comp, id)
+end
+
+local function join_iter(id_to_value, key)
+    local next_key, next_value = next(id_to_value, key)
+    if next_value then
+        return next_key, unpack(next_value)
+    else
+        return next_key
+    end
+end
+
+function entity_table:join(...)
+    local components = list(...)
+    local ids = self:filter_id_on_component(components)
+    local id_to_value = dict()
+
+    for _, id in ipairs(ids) do
+        id_to_value[id] = components:map(perform_component_lookup, self, id)
+    end
+
+    return join_iter, id_to_value
+end
+
 function entity_table:table(component)
     return self:get_component_table(component)
 end
