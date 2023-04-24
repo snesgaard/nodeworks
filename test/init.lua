@@ -42,3 +42,4 @@ require "test.ecs.world"
 require "test.ecs.stack"
 
 require "test.system.event"
+require "test.system.timer"

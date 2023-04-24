@@ -367,4 +367,6 @@ function components.only_single_frame() return true end
 
 function components.should_be_destroyed() return true end
 
+function components.is_done() return true end
+
 return components
