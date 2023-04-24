@@ -130,4 +130,19 @@ T("test_world", function(T)
         T:assert(world:has(component.bar, "yes"))
         T:assert(world:has(component.foo, "yes"))
     end)
+
+    T("view", function(T)
+        local id = "foo"
+        local id2 = "bar"
+
+        world:set(component.foo, id, 1):set(component.foo, id2, 2)
+
+        local observed_values = {}
+        for id, value in world:view_table(component.foo) do
+            observed_values[id] = value
+        end
+
+        T:assert(observed_values[id] == component.foo(1))
+        T:assert(observed_values[id2] == component.foo(2))
+    end)
 end)

@@ -103,4 +103,8 @@ function World:assemble(values, id)
     return self
 end
 
+function World:view_table(component)
+    return next, self:get_table(component)
+end
+
 return World.create

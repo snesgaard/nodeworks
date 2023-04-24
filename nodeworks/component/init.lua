@@ -96,6 +96,10 @@ end
 
 components.timer = timer.create
 
+function components.die_on_timer_done() return true end
+
+function components.on_timer_done(func) return func end
+
 --------------------------------------------------
 
 local tick = {}
@@ -360,5 +364,7 @@ function components.task(t) return t or nw.task() end
 function components.decision(d) return d end
 
 function components.only_single_frame() return true end
+
+function components.should_be_destroyed() return true end
 
 return components
