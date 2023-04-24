@@ -60,8 +60,10 @@ function Entity:spin(ecs_world)
         ecs_world:destroy(dr.id)
     end
 
-    for _, cr in ipairs(create_requests) do
-        ecs_world:entity(cr.id):assemble(cr.func, unpack(cr.args))
+    for index, cr in ipairs(create_requests) do
+        ecs_world:entity(cr.id)
+            :set(nw.component.order, index)
+            :assemble(cr.func, unpack(cr.args))
     end
 
     return create_requests:size()
