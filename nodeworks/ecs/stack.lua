@@ -50,6 +50,7 @@ local methods = {
     {"ensure", false},
     {"get_table", false},
     {"has", false},
+    {"view_table", false},
 }
 
 for _, m in ipairs(methods) do declare_method(unpack(m)) end
