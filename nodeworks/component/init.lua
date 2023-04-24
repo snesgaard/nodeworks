@@ -81,6 +81,14 @@ function timer:time_left_normalized()
     return self.time / self.duration
 end
 
+function timer:normalized()
+    return self:time_left_normalized()
+end
+
+function timer:inverse_normalized()
+    return 1 - self:normalized()
+end
+
 function timer:finish()
     self.time = 0
     return self

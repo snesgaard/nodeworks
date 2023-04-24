@@ -333,4 +333,9 @@ function list:__eq(other)
     return true
 end
 
+function list:visit(f, ...)
+  if f then f(self, ...) end
+  return self
+end
+
 return list

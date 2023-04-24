@@ -71,7 +71,9 @@ function frame:get_slice(slice_key, origin_key)
     local origin_slice = self.slices[origin_key] or spatial()
     local slice = self.slices[slice_key]
     if not slice then return end
-    return slice:relative(origin_slice)
+    local slice_to_pos = frame.slice_to_pos or Spatial.center
+    local p = slice_to_pos(origin_slice)
+    return slice:move(-p.x, -p.y)
 end
 
 return frame

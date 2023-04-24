@@ -12,6 +12,9 @@ function component.child_order_number(v) return v or 0 end
 
 function Parent.set_parent(child, parent)
     local prev_parent = child:get(component.parent)
+
+    if parent == prev_parent then return end
+
     if prev_parent then
         child:remove(component.children:ensure(prev_parent))
     end
@@ -40,5 +43,20 @@ function Parent.get_children_in_order(entity)
 end
 
 function Parent.get_parent(entity) return entity:get(component.parent) end
+
+function Parent.spawn(entity, id)
+    return entity:world():entity(id)
+        :assemble(Parent.set_parent, entity)
+end
+
+function Parent.destroy(entity)
+    local children = Parent.get_children(entity)
+    for id, _ in pairs(children) do
+        local e = entity:world():entity(id)
+        print("destroy child", e)
+        Parent.destroy(e)
+    end
+    entity:destroy()
+end
 
 return Parent.from_ctx
