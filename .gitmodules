@@ -1,0 +1,15 @@
+[submodule "third/knife"]
+	path = nodeworks/third/knife
+	url = https://github.com/airstruck/knife
+[submodule "third/moonshine"]
+	path = nodeworks/third/moonshine
+	url = https://github.com/vrld/moonshine
+[submodule "third/Simple-Tiled-Implementation"]
+	path = nodeworks/third/Simple-Tiled-Implementation
+	url = https://github.com/karai17/Simple-Tiled-Implementation
+[submodule "third/SUIT"]
+	path = nodeworks/third/SUIT
+	url = https://github.com/vrld/SUIT
+[submodule "third/bump.lua"]
+	path = nodeworks/third/bump
+	url = https://github.com/kikito/bump.lua
