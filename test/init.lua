@@ -1,3 +1,5 @@
+nw = require "nodeworks"
+T = nw.third.knife.test
 
 function isclose(a, b, tol)
     tol = tol or 1e-5
@@ -35,3 +37,4 @@ require "test.core.tree"
 require "test.core.test_animation"
 require "test.core.test_computation"
 
+require "test.ecs.id"

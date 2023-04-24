@@ -1,0 +1,6 @@
+T("test_id", function(T)
+    T:assert(nw.ecs.id.strong("foo") == "foo[1]")
+    T:assert(nw.ecs.id.strong("foo") == "foo[2]")
+    T:assert(nw.ecs.id.strong("bar") == "bar[1]")
+    T:assert(tostring(nw.ecs.id.weak("gen")) == "__WeakID[gen]")
+end)
