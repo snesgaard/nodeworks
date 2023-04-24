@@ -15,7 +15,7 @@ T("test_event", function(T)
     end)
 
     T("single_event", function(T)
-        local id = nw.system.entity():emit(ecs_world, component.foo, 3)
+        local _, id = nw.system.entity():emit(ecs_world, component.foo, 3)
 
         nw.system.entity():spin(ecs_world)
 

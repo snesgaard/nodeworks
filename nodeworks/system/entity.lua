@@ -62,7 +62,6 @@ function Entity:spin(ecs_world)
 
     for index, cr in ipairs(create_requests) do
         ecs_world:entity(cr.id)
-            :set(nw.component.order, index)
             :assemble(cr.func, unpack(cr.args))
     end
 
