@@ -17,6 +17,11 @@ function stack.push()
     return self
 end
 
+function stack.clear()
+    self.stack = list(self.current())
+    return self
+end
+
 function stack:__call() return self:current() end
 
 local function declare_method(key, return_refence_to_stack)
