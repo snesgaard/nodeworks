@@ -39,3 +39,4 @@ require "test.core.test_computation"
 
 require "test.ecs.id"
 require "test.ecs.world"
+require "test.ecs.stack"
