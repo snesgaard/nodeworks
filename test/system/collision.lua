@@ -19,6 +19,8 @@ T("test_collision", function(T)
         T:assert(#cols == 1)
         local colinfo = unpack(cols)
         T:assert(colinfo.type == "cross")
+        event.spin()
+        T:assert(event.get("move"):size() == 1)
     end)
 
     T("move_and_collide", function(T)
