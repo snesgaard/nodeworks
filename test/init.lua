@@ -43,3 +43,4 @@ require "test.ecs.stack"
 
 require "test.system.event"
 require "test.system.timer"
+require "test.system.collision"

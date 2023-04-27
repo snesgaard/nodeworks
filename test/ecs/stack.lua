@@ -5,6 +5,8 @@ local component = {}
 function component.foo(v) return v or 0 end
 
 T("test_stack", function(T)
+    stack.reset()
+
     local id = "yes"
 
     T:assert(stack.size() == 1)

@@ -9,20 +9,25 @@ function stack.size() return stack.stack:size() end
 
 function stack.pop()
     if 1 < stack.stack:size() then stack.stack[#stack.stack] = nil end
-    return self
+    return stack
 end
 
 function stack.push()
     table.insert(stack.stack, stack.current():copy())
-    return self
+    return stack
 end
 
 function stack.clear()
-    self.stack = list(self.current())
-    return self
+    stack.stack = list(stack.current())
+    return stack
 end
 
-function stack:__call() return self:current() end
+function stack:__call() return stack:current() end
+
+function stack.reset()
+    stack.stack = list(nw.ecs.world())
+    return stack
+end
 
 local function declare_method(key, return_refence_to_stack)
     stack[key] = function(...)
@@ -32,7 +37,7 @@ local function declare_method(key, return_refence_to_stack)
 
         if return_refence_to_stack then
             f(world, ...)
-            return self
+            return stack
         else
             return f(world, ...)
         end
