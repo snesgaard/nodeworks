@@ -36,6 +36,7 @@ require "test.core.test_task"
 require "test.core.tree"
 require "test.core.test_animation"
 require "test.core.test_computation"
+require "test.core.test_video"
 
 require "test.ecs.id"
 require "test.ecs.world"
