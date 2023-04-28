@@ -10,12 +10,14 @@ function component.sprite_state(state, time)
     }
 end
 
+function component.map(map) return map or {} end
+
 local system_sprite_state = {}
 
 function system_sprite_state.update_once(id, sprite_state, dt)
     sprite_state.time = sprite_state.time + dt
 
-    local sprite_state_map = stack.ensure(nw.component.sprite_state_map, id)
+    local sprite_state_map = stack.ensure(component.map, id)
     local video = sprite_state_map[sprite_state.state]
     if not video then return end
 
@@ -51,11 +53,13 @@ function system_sprite_state.is_done(id)
     local sprite_state = stack.ensure(component.sprite_state, id)
     if not sprite_state then return true end
 
-    local sprite_state_map = stack.ensure(nw.component.sprite_state_map, id)
+    local sprite_state_map = stack.ensure(component.map, id)
     local video = sprite_state_map[sprite_state.state]
     if not video then return true end
 
     return video:is_done(sprite_state.time)
 end
+
+system_sprite_state.map = component.map
 
 return system_sprite_state
