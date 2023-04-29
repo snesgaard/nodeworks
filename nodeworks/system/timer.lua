@@ -27,10 +27,16 @@ function systemtimer.update(dt)
 end
 
 function systemtimer.spin()
-    for _, dt in system.event.view("update") do
+    for _, dt in nw.system.event.view("update") do
         systemtimer.update(dt)
         -- TODO Decide on whehter to delete entities here
     end
+end
+
+function systemtimer.is_done(id)
+    local timer = stack.get(nw.component.timer, id)
+    if not timer then return true end
+    return timer:done()
 end
 
 return systemtimer

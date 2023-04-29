@@ -47,7 +47,7 @@ end
 local methods = {
     {"set", true},
     {"init", true},
-    {"asemble", true},
+    {"assemble", true},
     {"visit", true},
     {"remove", true},
     {"destroy", true},

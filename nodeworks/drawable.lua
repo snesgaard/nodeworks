@@ -1,7 +1,9 @@
+local nw = require "nodeworks"
+local stack = nw.ecs.stack
 local drawables = {}
 
-function drawables.push_color(entity, opacity)
-    local color = entity % nw.component.color
+function drawables.push_color(id, opacity)
+    local color = stack.get(nw.component.color, id)
     local opacity = opacity or 1
     if color then
         local r, g, b, a = color[1], color[2], color[3], color[4]
@@ -11,8 +13,8 @@ function drawables.push_color(entity, opacity)
     end
 end
 
-function drawables.push_font(entity)
-    local font = entity % nw.component.font
+function drawables.push_font(id)
+    local font = stack.get(nw.component.font, id)
     if not font then return end
     gfx.setFont(font)
 end
@@ -22,66 +24,13 @@ function drawables.push_state(entity)
     drawables.push_font(entity)
 end
 
-function drawables.push_transform(entity)
-    local pos = entity:get(nw.component.position)
+function drawables.push_transform(id)
+    local pos = stack.get(nw.component.position, id)
     if pos then gfx.translate(pos.x, pos.y) end
-    local mirror = entity:get(nw.component.mirror)
+    local mirror = stack.get(nw.component.mirror, id)
     if mirror then gfx.scale(-1, 1) end
-    local scale = entity:get(nw.component.scale)
+    local scale = stack.get(nw.component.scale, id)
     if scale then gfx.scale(scale.x, scale.y) end
-end
-
-function drawables.animation(entity)
-    gfx.push()
-    drawables.push_transform(entity)
-    drawables.push_state(entity)
-
-    local frame = nw.system.animation():get(entity)
-    if frame then
-        frame:draw("body")
-    else
-        gfx.rectangle("fill", -5, -10, 10, 10)
-    end
-
-    gfx.pop()
-end
-
-function drawables.body(entity)
-    local body = entity % nw.component.hitbox
-    if not body then return end
-
-    gfx.push("all")
-    drawables.push_transform(entity)
-    drawables.push_state(entity)
-
-    drawables.push_color(entity, 0.5)
-    gfx.rectangle("fill", body:unpack())
-    drawables.push_color(entity)
-    gfx.rectangle("line", body:unpack())
-
-    gfx.pop()
-end
-
-function drawables.particles(entity)
-    local particles = entity % nw.component.particles
-    if not particles then return end
-
-    gfx.push("all")
-    drawables.push_transform(entity)
-    drawables.push_state(entity)
-    gfx.draw(particles, 0, 0)
-    gfx.pop()
-end
-
-function drawables.frame(entity)
-    local frame = entity % nw.component.frame
-    if not frame then return end
-
-    gfx.push("all")
-    drawables.push_transform(entity)
-    drawables.push_state(entity)
-    frame:draw("body")
-    gfx.pop()
 end
 
 return drawables
