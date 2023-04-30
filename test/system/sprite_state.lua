@@ -11,5 +11,4 @@ T("sprite_state", function(T)
     stack.set(sprite_state.map, id, state_map)
     T:assert(stack.get(sprite_state.map, id) == state_map)
 
-    sprite_state.play(id, "idle")
 end)
