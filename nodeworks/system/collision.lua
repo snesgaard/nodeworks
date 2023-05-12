@@ -85,7 +85,7 @@ function CollisionFilter:__call(item, other)
 
     if self.filter then return self.filter(item.id, other.id) end
 
-    local default_filter = collision_filter.get_default_filter()
+    local default_filter = collision.get_default_filter()
     if default_filter then
         return default_filter(item.id, other.id)
     else
