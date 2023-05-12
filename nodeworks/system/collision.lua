@@ -155,4 +155,8 @@ function collision.flip(id, filter)
     return collision.flip_to(id, not mirror, filter)
 end
 
+function collision.draw()
+    bump_debug.draw_world(collision.get_bump_world())
+end
+
 return collision
