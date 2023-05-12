@@ -1,303 +1,158 @@
 local nw = require "nodeworks"
+local stack = nw.ecs.stack
 
-local GLOBAL = "__collision__"
-
-local filter_caller = class()
-
-function filter_caller.create(ecs_world)
-    return setmetatable({ecs_world=ecs_world}, filter_caller)
-end
-
-function filter_caller:set_filter(filter)
-    self.filter = filter
-end
-
-function filter_caller:__call(...)
-    if self.filter then return self.filter(self.ecs_world, ...) end
-end
-
-local function do_nothing_filter() return false end
-
-local function forward_transform(hitbox, position, mirror)
-    local hitbox = hitbox or spatial()
-    local position = position or vec2()
-
-    if mirror then hitbox = hitbox:hmirror() end
-
-    return hitbox:move(position.x, position.y)
-end
-
-local function forward_transform_from_entity(entity)
-    return forward_transform(
-        entity % nw.component.hitbox,
-        entity % nw.component.position,
-        entity % nw.component.mirror
-    )
-end
-
-local function get_state(entity)
-    return entity:get(nw.component.hitbox),
-        entity:ensure(nw.component.position, 0, 0),
-        entity:get(nw.component.mirror)
-end
-
-local function get_bump_world(ecs_world)
-    if not ecs_world:has(nw.component.bump_world, GLOBAL) then
-        ecs_world:set(nw.component.bump_world, GLOBAL, nw.third.bump.newWorld())
-    end
-    return ecs_world:get(nw.component.bump_world, GLOBAL)
-end
-
-local function add_entity_to_world(entity)
-    local hitbox = entity % nw.component.hitbox
-    local bump_world = get_bump_world(entity:world())
-
-    if not hitbox or not bump_world then return end
-
-    local world_hb = forward_transform_from_entity(entity)
-
-    if not bump_world:hasItem(entity.id) then
-        bump_world:add(entity.id, world_hb:unpack())
+local function compute_model_offset(hitbox, mirror)
+    local x, y, h, w = hitbox:unpack()
+    if mirror then
+        return -x - w, y
     else
-        bump_world:update(entity.id, world_hb:unpack())
+        return x, y
     end
 end
 
-local function read_bump_hitbox(ecs_world, id)
-    local bump_world = get_bump_world(ecs_world)
-    if not bump_world then return end
-    if not bump_world:hasItem(id) then return end
-    return spatial(bump_world:getRect(id))
+local component = {}
+
+function component.bump_membership(id, hitbox)
+    return {
+        id = id,
+        hitbox = hitbox
+    }
 end
 
-local Collision = class()
+function component.hitbox_type(type) return type end
 
-Collision.get_bump_world = get_bump_world
+function component.collision_filter(filter) return filter end
 
-function Collision.create()
-    return setmetatable({}, Collision)
+function component.bump_world() 
+    local weak_keys = {__mode = "k"}
+    local bump_world = nw.third.bump.newWorld()
+    bump_world.rects = setmetatable({}, weak_keys)
+    return bump_world
 end
 
-function Collision:on_moved(entity, real_dx, real_dy, collision_infos)
+local collision = {}
 
+function collision.get_bump_world()
+    return stack.ensure(component.bump_world, collision)
 end
 
-function Collision:on_collision(entity, collision_infos)
+function collision.unregister(id)
+    local bump_membership = stack.get(component.bump_membership, id)
+    if not bump_membership then return end
 
+    local bump_world = collision.get_bump_world()
+    if bump_world:hasItem(bump_membership) then bump_world:remove(bump_membership) end
+
+    stack.remove(component.bump_membership, id).remove(component.hitbox_type, id)
+    return collision
 end
 
-function Collision:on_mirror(entity, mirror, collision_infos)
+function collision.register(id, hitbox, hitbox_type)
+    collision.unregister(id)
 
-end
-
-function Collision:move_to_state(entity, hitbox, pos, mirror, filter)
-    if not hitbox or not pos then
-        local prev_pos = entity:ensure(nw.component.position, 0, 0)
-        local x = pos and pos.x or 0
-        local y = pos and pos.y or 0
-        entity:set(nw.component.position, x, y)
-        return x - prev_pos.x, y - prev_pos.y, {}
+    local bump_membership = stack
+        .set(component.hitbox_type, id, hitbox_type)
+        .ensure(component.bump_membership, id, id, hitbox)
+    
+    local bump_world = collision.get_bump_world()
+    if bump_world:hasItem(bump_membership) then
+        errorf("Item %s was already registered somehow", tostring(id))
     end
 
-    local bump_world = get_bump_world(entity:world())
-    local next_hitbox = forward_transform(hitbox, pos, mirror)
+    local pos = stack.ensure(nw.component.position, id)
+    local x, y, w, h = bump_membership.hitbox:unpack()
+    bump_world:add(bump_membership, x + pos.x, y + pos.y, w, h)
 
-    local x, y = bump_world:getRect(entity.id)
-
-    local ecs_world = entity:world()
-    local caller = ecs_world:ensure(
-        filter_caller.create, "__global__", ecs_world
-    )
-    local entity_filter = filter or entity:get(nw.component.collision_filter)
-    caller:set_filter(entity_filter or self.default_filter)
-
-    local ax, ay, col_info = bump_world:move(
-        entity.id, next_hitbox.x, next_hitbox.y, caller
-    )
-
-    self:update_position(entity)
-
-    if #col_info > 0 then self:on_collision(entity, col_info) end
-
-    local dx, dy = ax - x, ay - y
-
-    return dx, dy, col_info
+    return collision
 end
 
-function Collision:update_position(entity)
-    local hb, pos, mirror = get_state(entity)
-    local world_rect_expected = forward_transform(hb, pos, mirror)
-    local bump_world = get_bump_world(entity:world())
-    local x, y = bump_world:getRect(entity.id)
-
-    local dx, dy = world_rect_expected.x - x, world_rect_expected.y - y
-
-    entity:set(nw.component.position, pos.x - dx, pos.y - dy)
-    self:on_moved(entity, dx, dy, col_info)
+function collision.set_default_filter(filter)
+    stack.set(component.collision_filter, collision, filter)
+    return collision
 end
 
-function Collision:move_to(entity, x, y, filter)
-    local bump_world = get_bump_world(entity:world())
-    local hb, pos, mirror = get_state(entity)
-    local pos_next = vec2(x, y)
-
-    local dx, dy, col_info = self:move_to_state(
-        entity, hb, pos_next, mirror, filter
-    )
-
-    return pos.x + dx, pos.y + dy, col_info
+function collision.get_default_filter()
+    return stack.get(component.collision_filter, collision)
 end
 
-function Collision:move_hitbox_to(entity, x, y, filter)
-    local bump_world = get_bump_world(entity:world())
-    local hb, pos, mirror = get_state(entity)
-    local hb_next = spatial(x, y, hb.w, hb.h)
+local CollisionFilter = class()
 
-    entity:set(nw.component.hitbox, hb_next:unpack())
-    local dx, dy, col_info = self:move_to_state(
-        entity, hb_next, pos, mirror, filter
-    )
+function CollisionFilter:set_filter(filter) self.filter = filter end
 
+function CollisionFilter:__call(item, other)
+    -- If no bump membership is present, the other cannot collide
+    if not stack.has(component.bump_membership, other.id) then return end
 
-    return col_info
-end
+    if self.filter then return self.filter(item.id, other.id) end
 
-function Collision:mirror_to(entity, mirror_next, filter)
-    local bump_world = get_bump_world(entity:world())
-    local hb, pos, mirror = get_state(entity)
-
-    if mirror == mirror_next then return {} end
-
-    entity:set(nw.component.mirror, mirror_next)
-    local dx, dy, col_info = self:move_to_state(
-        entity, hb, pos, mirror_next, filter
-    )
-
-
-    self:on_mirror(entity, mirror_next)
-
-    return col_info
-end
-
-function Collision:move(entity, dx, dy, filter)
-    local pos = entity:ensure(nw.component.position)
-
-    local ax, ay, col_info = self:move_to(
-        entity, pos.x + dx, pos.y + dy, filter
-    )
-
-    return ax - pos.x, ay - pos.y, col_info
-end
-
-function Collision:warp_to(entity, x, y)
-    return self:move_to(entity, x, y, do_nothing_filter)
-end
-
-function Collision:warp(entity, dx, dy)
-    return self:move(entity, dx, dy, do_nothing_filter)
-end
-
-function Collision:move_hitbox(entity, dx, dy, filter)
-    local hb = entity:ensure(nw.component.hitbox)
-
-    return self:move_hitbox_to(entity, hb.x + dx, hb.y + dy, filter)
-end
-
-function Collision:mirror(entity, filter)
-    local mirror = entity:get(nw.component.mirror)
-    return self:mirror_to(entity, not mirror, filter)
-end
-
-function Collision:class()
-    return Collision
-end
-
-function Collision.default_filter()
-    return "slide"
-end
-
-function Collision.on_entity_destroyed(id, values_destroyed, ecs_world)
-    local bump_world = get_bump_world(ecs_world)
-    if bump_world and bump_world:hasItem(id) then bump_world:remove(id) end
-end
-
-function Collision.read_bump_hitbox(entity)
-    return read_bump_hitbox(entity:world(), entity.id)
-end
-
-local default_instance = Collision.create()
-
-local assemble = {}
-
-Collision.assemble = assemble
-
-function assemble.set_hitbox(entity, ...)
-    entity:set(nw.component.hitbox, ...)
-    local prev_world = entity % nw.component.bump_world
-
-    if prev_world and prev_world:hasItem(entity.id) then
-        prev_world:remove(entity.id)
-    end
-
-    add_entity_to_world(entity)
-end
-
-function assemble.init_entity(entity, x, y, hitbox)
-    local bump_world = get_bump_world(entity:world())
-
-    entity
-        :assemble(assemble.set_hitbox, hitbox:unpack())
-
-    default_instance:warp_to(entity, x, y)
-
-    local on_entity_destroyed = entity:world().on_entity_destroyed
-
-    if not on_entity_destroyed.collision then
-        on_entity_destroyed.collision = Collision.on_entity_destroyed
+    local default_filter = collision_filter.get_default_filter()
+    if default_filter then
+        return default_filter(item.id, other.id)
+    else
+        return "cross"
     end
 end
 
-local WorldCollision = inherit(Collision)
-
-function WorldCollision.create(world)
-    local this = Collision.create()
-    this.world = world
-    return setmetatable(this, WorldCollision)
-end
-
-function WorldCollision:on_moved(entity, dx, dy)
-    self.world:emit("moved", entity, dx, dy)
-end
-
-function WorldCollision:on_collision(entity, collision_infos)
-    for _, col_info in ipairs(collision_infos) do
-        col_info.ecs_world = entity:world()
-        self.world:emit("collision", col_info)
+function collision.move_to(id, x, y, filter)
+    local bump_membership = stack.get(component.bump_membership, id)
+    if not bump_membership then
+        stack.set(nw.component.position, x, y)
+        return x, y, list()
     end
+
+    local filter_functor = stack.ensure(CollisionFilter.create, collision)
+    filter_functor:set_filter(filter)
+
+    local mirror = stack.get(nw.component.mirror, id)
+    local dx, dy = compute_model_offset(bump_membership.hitbox, mirror)
+    local ax, ay, cols = collision.get_bump_world():move(
+        bump_membership, x + dx, y + dy, filter_functor
+    )
+
+    local ax = ax - dx
+    local ay = ay - dy
+    stack.set(nw.component.position, id, ax, ay)
+
+    nw.system.event.emit("move", ax, ay, cols)
+
+    return ax, ay, cols
 end
 
-function WorldCollision:on_mirror(entity, mirror)
-    self.world:emit("mirror", entity, mirror)
+function collision.move(id, dx, dy, filter)
+    local pos = stack.ensure(nw.component.position, id)
+    local x, y = dx + pos.x, dy + pos.y
+    local ax, ay, cols = collision.move_to(id, x, y, filter)
+    return ax - pos.x, ay - pos.y, cols
 end
 
-return function(ctx)
-    if not ctx then return default_instance end
+local function nil_filter() end
 
-    local world = ctx.world or ctx
-    world[Collision] = world[Collision] or WorldCollision.create(world)
-    return world[Collision]
+function collision.warp_to(id, x, y)
+    collision.move_to(id, x, y, nil_filter)
+    return collision
 end
 
---[[
-
-function ecs_world.on_entity_destroyed.collision(id, values_destroyed)
-    local bump_world = values_destroyed[nw.component.bump_world]
-    if bump_world and bump_world:has(id) then bump_world:remove(id) end
+function collision.warp(id, dx, dy)
+    collision.move(id, dx, dy, nil_filter)
+    return collision
 end
 
-collision(ctx):move_to(entity, 100, 100)
-ecs_world:entity():assemble(collision().init_entity, x, y, hitbox, bump_world)
+function collision.get_world_hitbox(id)
+    local bump_membership = stack.get(component.bump_membership, id)
+    if not bump_membership then return end
+    return collision.get_bump_world():getRect(bump_membership)
+end
 
-ctx:collision():move_to(entity, 100, 100)
-ecs_world:entity():assemble(collision(ctx):init_entity(), x, y, hitbox, bump_world)
-]]--
+function collision.flip_to(id, mirror, filter)
+    stack.set(nw.component.mirror, id, mirror)
+    local pos = stack.ensure(nw.component.position, id)
+    local _, _, cols = collision.move(id, pos.x, pos.y, filter)
+    return cols
+end
+
+function collision.flip(id, filter)
+    local mirror = stack.get(nw.component.mirror, id)
+    return collision.flip_to(id, not mirror, filter)
+end
+
+return collision

@@ -53,7 +53,9 @@ function Spatial.__div(s1, s2)
     end
 end
 
-
+function Spatial.__eq(item, other)
+    return item.x == other.x and item.y == other.y and item.w == other.w and item.h == other.h
+end
 
 function Spatial:sanitize()
     return Spatial.create(

@@ -1,110 +1,148 @@
-local nw = require "nodeworks"
-local T = nw.third.knife.test
+local component = {}
 
-local components = {}
+function component.foo(v) return v or 0 end
 
-function components.a(value) return value or 1 end
-function components.b(value) return value or 2 end
-function components.was_pushed(val) return val or 0 end
+function component.bar(v) return (v or 0) + 1 end
 
-local system_a = nw.ecs.system(components.a, components.b)
+function component.tar(v) return {value = v or 0} end
 
-function system_a.on_pushed(world, pool)
-    world:singleton()
-        :set(
-            components.was_pushed,
-            world:singleton():ensure(components.was_pushed) + 1
-        )
-end
+T("test_world", function(T)
+    local world = nw.ecs.world()
 
-function system_a.on_poped(world, pool)
-    world:singleton()
-        :set(
-            components.was_pushed,
-            world:singleton():ensure(components.was_pushed) - 1
-        )
-end
+    T("test_get_set", function(T)
+        local id = "yesman"
 
-function system_a.add_with_repeat(world, pool, value)
-    for _, entity in ipairs(pool) do
-        entity[components.a] = entity[components.a] + value
-    end
+        T:assert(world:get(component.foo, id) == nil)
+        
+        world:set(component.foo, id)
+        T:assert(world:get(component.foo, id) == component.foo())
 
-    world:event("add", value)
-end
+        world:set(component.foo, id, 22)
+        T:assert(world:get(component.foo, id) == component.foo(22))
 
-function system_a.add(world, pool, value)
-    for _, entity in ipairs(pool) do
-        entity[components.a] = entity[components.a] + value
-    end
-end
-
-local system_b = nw.ecs.system(components.b)
-
-function system_b.add(world, pool, value)
-
-end
-
-local scene = {}
-
-function scene.on_push(ctx)
-    ctx.a = ctx:entity()
-        :set(components.a)
-        :set(components.b)
-
-    ctx.b = ctx:entity()
-        :set(components.b)
-end
-
-T("ecs.world", function(T)
-    local world = nw.ecs.world{system_a, system_b}
-    world:push(scene)
-    local ctx = world:find(scene)
-
-    T("spawn entity", function(T)
-        -- needs to be 3 because of the spawned entties and the singleton
-        T:assert(#ctx.dirty_entities == 3)
-
-        ctx:handle_dirty()
-
-        T:assert(#ctx.dirty_entities == 0)
-        T:assert(#ctx.entities == 3)
-
-        ctx.b:set(components.a)
-
-        T:assert(#ctx.dirty_entities == 1)
-        T:assert(#ctx.entities == 3)
-
-        ctx:handle_dirty()
-
-        T:assert(#ctx.dirty_entities == 0)
-        T:assert(#ctx.entities == 3)
+        world:set(component.bar, id, 23)
+        T:assert(world:get(component.bar, id) == component.bar(23))
     end)
 
-    ctx:handle_dirty()
+    T("test ensure", function(T)
+        local id = "yesman"
+        local v = 23
 
-    T("push", function(T)
-        T:assert(ctx.pools[system_a]:size() == 1)
-        T:assert(ctx.pools[system_b]:size() == 2)
-
-        T:assert(ctx:singleton():has(components.was_pushed))
-        T:assert(ctx:singleton():get(components.was_pushed) == 1)
+        T:assert(world:ensure(component.foo, id, v) == component.foo(v))
+        T:assert(world:ensure(component.foo, id, v + 1) == component.foo(v))
     end)
 
-    T("pop", function(T)
-        world:pop()
-        T:assert(world.scene_stack:size() == 0)
+    T("test_has", function(T)
+        local id = "yesman"
+
+        T:assert(not world:has(component.foo, id))
+        world:set(component.foo, id)
+        T:assert(world:has(component.foo, id))
     end)
 
-    T("event", function(T)
-        local value = 2
-        world:event("add_with_repeat", value)
-        T:assert(ctx.a:get(components.a) == components.a() + value * 2)
+    T("test_init", function(T)
+        local id = "yesman"
+
+        world:init(component.foo, id, 23):init(component.foo, id)
+
+        T:assert(world:get(component.foo, id) == component.foo(23))
     end)
 
-    T("cache", function(T)
-        T:assert(world:from_cache("foo"):peek() == nil)
-        world:to_cache("foo", 1)
-        T:assert(world:from_cache("foo"):peek() == 1)
+    T("test_gc", function(T)
+        local weak_id = {}
+        local strong_id = "yes"
+
+        world:set(component.foo, weak_id)
+        world:set(component.foo, strong_id)
+        T:assert(world:get_table(component.foo):size() == 2)
+
+        weak_id = nil
+        collectgarbage()
+        T:assert(world:get_table(component.foo):size() == 1)
+    end)
+
+    T("test_copy", function(T)
+        local id = "yes"
+        local id2 = "no"
+
+        world
+            :set(component.foo, id)
+            :set(component.foo, id2, 1)
+
+        local next_world = world:copy()
+        T:assert(next_world:get_table(component.foo) == world:get_table(component.foo))
+        
+        next_world:set(component.foo, id, 23)
+        T:assert(next_world:get_table(component.foo) ~= world:get_table(component.foo))
+        T:assert(next_world:get(component.foo, id) ~= world:get(component.foo, id))
+        T:assert(next_world:get(component.foo, id2) == world:get(component.foo, id2))
+    end)
+
+    T("test_copy_deep", function(T)
+        local id = "yes"
+
+        world:set(component.tar, id)
+        local next_world = world:copy():set(component.tar, id, 2)
+
+        T:assert(world:get(component.tar, id) ~= next_world:get(component.tar, id))
+        T:assert(world:get(component.tar, id).value == 0)
+        T:assert(next_world:get(component.tar, id).value == 2)
+    end)
+
+    T("test_destroy", function(T)
+        local id = "yes"
+
+        world:set(component.tar, id):set(component.foo, id)
+        world:destroy(id)
+        T:assert(not world:has(component.tar, id))
+        T:assert(not world:has(component.foo, id))
+    end)
+
+    T("test_remove", function(T)
+        local id = "yes"
+        world:set(component.tar, id):remove(component.tar, id)
+        T:assert(not world:has(component.tar, id))
+    end)
+
+    T("visit", function(T)
+        local id = "foo"
+
+        local function visiter(self, id)
+            self
+                :set(component.tar, id)
+                :set(component.bar, id)
+                :set(component.foo, id)
+        end
+
+        world:visit(visiter, id)
+    end)
+
+    T("assemble", function(T)
+        local values = {
+            {component.tar},
+            {component.bar},
+            {component.foo}
+        }
+
+        world:assemble(values, "yes")
+
+        T:assert(world:has(component.tar, "yes"))
+        T:assert(world:has(component.bar, "yes"))
+        T:assert(world:has(component.foo, "yes"))
+    end)
+
+    T("view", function(T)
+        local id = "foo"
+        local id2 = "bar"
+
+        world:set(component.foo, id, 1):set(component.foo, id2, 2)
+
+        local observed_values = {}
+        for id, value in world:view_table(component.foo) do
+            observed_values[id] = value
+        end
+
+        T:assert(observed_values[id] == component.foo(1))
+        T:assert(observed_values[id2] == component.foo(2))
     end)
 end)

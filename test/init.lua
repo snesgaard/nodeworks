@@ -1,4 +1,5 @@
-on_event_test = require "test.event_listener"
+nw = require "nodeworks"
+T = nw.third.knife.test
 
 function isclose(a, b, tol)
     tol = tol or 1e-5
@@ -32,32 +33,17 @@ require "test.core.pool"
 require "test.core.event_queue"
 require "test.core.result"
 require "test.core.test_task"
-
-require "test.ecs.entity"
-require "test.ecs.promise"
-require "test.ecs.reducer"
-require "test.system.collision"
-require "test.system.tween"
-require "test.system.camera"
-require "test.system.motion"
-require "test.system.script"
-require "test.system.test_decision"
-require "test.system.test_parent"
-require "test.system.test_follow"
-require "test.system.test_animation"
-require "test.system.test_event"
-
 require "test.core.tree"
 require "test.core.test_animation"
 require "test.core.test_computation"
---[[
-require "test.ecs.pool"
-require "test.ecs.system"
-require "test.ecs.world"
+require "test.core.test_video"
 
-require "test.system.root_motion"
-require "test.system.collision_contact"
-require "test.system.input_buffer"
-require "test.system.input_remap"
-require "test.system.ai"
-]]--
+require "test.ecs.id"
+require "test.ecs.world"
+require "test.ecs.stack"
+
+require "test.system.event"
+require "test.system.timer"
+require "test.system.collision"
+require "test.system.input"
+require "test.system.sprite_state"

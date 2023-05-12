@@ -1,217 +1,110 @@
-local nw = require "nodeworks"
-local debug = require  "debug"
+local WeakTable = {__mode = "k", __index = Dictionary}
 
-local weak_table = {__mode = "v"}
-
-local CONSTANTS = {EMPTY_LIST = {}, TERMINATE = {}}
-
-local context = {}
-context.__index = context
-
-function context.create(world, system, ...)
-    return setmetatable(
-        {
-            co = coroutine.create(
-                function(...)
-                    system(...)
-                    coroutine.yield(CONSTANTS.TERMINATE)
-                end
-            ),
-            args = {...},
-            system = system,
-            world = world,
-            observers = setmetatable({}, weak_table), -- Needs to be weakly reference
-            alive = true
-        },
-        context
-    )
+function WeakTable.instance()
+    return setmetatable({}, WeakTable)
 end
 
-function context:__tostring() return "Context" end
+local World = class()
 
-function context:__call(...) return self.world:ensure(...) end
+function World.constructor(previous_components)
+    local this = {
+        component_tables = {},
+        copy_on_write = {},
+    }
 
-function context:resume()
-    if self.co then
-        local status, msg = coroutine.resume(self.co, self, unpack(self.args))
-        if not status then
-            print(debug.traceback(self.co))
-            error(msg)
-        elseif msg == CONSTANTS.TERMINATE then
-            self.co = nil
-            self.alive = false
+    if previous_components then
+        for comp, tab in pairs(previous_components) do
+            this.component_tables[comp] = tab
+            this.copy_on_write[comp] = true
         end
     end
 
-    return self
+    return this
 end
 
-function context:is_alive() return self.alive end
+function World:copy() return World.create(self.component_tables) end
 
-function context:listen(event)
-    self.observers[event] = self.observers[event] or nw.ecs.promise.observable()
-    return self.observers[event]
-end
-
-function context:emit(...)
-    self.world:emit(...)
-    return self
-end
-
-function context:parse_single_event(event_key, event_data)
-    local obs = self.observers[event_key]
-    if not obs or event_data.consumed then return false end
-    obs:emit(event_data)
-    return true
-end
-
-function context:clear()
-    for _, obs in pairs(self.observers) do obs:clear_chain() end
-    return self
-end
-
-function context:kill()
-    self.alive = false
-    return self:resume()
-end
-
-function context:yield(...)
-    if self.alive then return coroutine.yield(...) end
-end
-
-function context:kill_all_but_this()
-    local world = self.world
-
-    for _, ctx in ipairs(world.context) do
-        if ctx ~= self then ctx:kill() end
+function World:get_table(component, respect_cow)
+    if type(component) ~= "function" then
+        errorf("Component must be a function, but was %s", type(component))
+    end
+ 
+    local c = self.component_tables[component]
+    if not c then
+        local c = WeakTable.instance()
+        self.component_tables[component] = c
+        return c
     end
 
-    world:remove_dead_systems()
+    if not self.copy_on_write[component] or not respect_cow then return c end
+    
+    local next_c = deepcopy(c)
 
+    self.copy_on_write[component] = nil
+    self.component_tables[component] = next_c
+    return next_c
+
+end
+
+function World:get(component, id)
+    return self:get_table(component)[id]
+end
+
+function World:set(component, id, ...)
+    local c = self:get_table(component, true)
+    local value = component(...)
+    c[id] = value
     return self
 end
 
-function context:to_cache(...)
-    self.world:to_cache(...)
+function World:has(component, id)
+    local v = self:get(component, id)
+    return v ~= nil
+end
+
+function World:ensure(component, id, ...)
+    self:init(component, id, ...)
+    return self:get(component, id)
+end
+
+function World:init(component, id, ...)
+    if not self:has(component, id) then self:set(component, id, ...) end
     return self
 end
 
-function context:from_cache(...) return self.world:from_cache(...) end
-
-function context:paused() return false end
-
-function context:spin(func, ...)
-    local func = func or function() end
-    while self:is_alive() do
-        local ret = func(self, ...)
-        if ret then return ret end
-        self:yield()
-    end
-end
-
-local world = {}
-world.__index = world
-
-function world.create()
-    return setmetatable(
-        {
-            events = list(),
-            context = {},
-            queue = event_queue(),
-            cached = {}
-        },
-        world
-    )
-end
-
-function world:__tostring() return "World" end
-
-function world:push(system, ...)
-    local ctx = context.create(self, system, ...)
-    table.insert(self.context, ctx)
-    return ctx:resume()
-end
-
-function world:emit(event_key, ...)
-    if self.verbose then
-        print("event", event_key, ...)
-    end
-    table.insert(self.events, {key = event_key, data = {...}})
+function World:remove(component, id)
+    local c = self:get_table(component)
+    c[id] = nil
     return self
 end
 
-function world:to_cache(key, ...)
-    self:from_cache(key):emit{...}
+function World:destroy(id)
+    for _, tab in pairs(self.component_tables) do tab[id] = nil end
+end
+
+function World:visit(func, ...)
+    if type(func) ~= "function" then
+        errorf("Visiter must be function, but was %s", type(func))
+    end
+    func(self, ...)
     return self
 end
 
-function world:from_cache(key)
-    if not self.cached[key] then
-        self.cached[key] = nw.ecs.promise.observable():latest()
+local function assemble_format(id, comp, ...)
+    return comp, id, ...
+end
+
+function World:assemble(values, id)
+    for _, v in ipairs(values) do
+        if type(v) ~= "table" then errorf("Values must be tables") end
+        local c = v[1]
+        if c then self:set(assemble_format(id, unpack(v))) end
     end
-    return self.cached[key]
+    return self
 end
 
-function world:pop_events()
-    local e = self.events
-    if #e <= 0 then return e end
-    self.events = list()
-    return e
+function World:view_table(component)
+    return next, self:get_table(component)
 end
 
-function world:has_events()
-    for _, _ in pairs(self.events) do return true end
-    return false
-end
-
-function world:remove_dead_systems()
-    for i = #self.context, 1, -1 do
-        local ctx = self.context[i]
-        if not ctx:is_alive() then table.remove(self.context, i) end
-    end
-end
-
-function world:spin(force_run)
-    local events = self:pop_events()
-
-    if events:empty() and not force_run then return end
-
-    for _, ctx in ipairs(self.context) do
-        if not ctx:paused() then
-            local activate = false
-
-            for _, e in ipairs(events) do
-                activate = ctx:parse_single_event(e.key, e.data) or activate
-                activate = ctx:parse_single_event(world.ALL_EVENT, e) or activate
-            end
-
-            if activate or force_run then
-                ctx:resume()
-                ctx:clear()
-            end
-        end
-    end
-
-    self:remove_dead_systems()
-
-    return self:spin()
-end
-
-function world:find(system)
-    local ctx = List.filter(
-        self.context, function(c) return c.system == system end
-    )
-    return ctx:unpack()
-end
-
-function world:ensure(system, ...)
-    local ctx = self:find(system)
-    if ctx then return ctx end
-    return self:push(system, ...)
-end
-
-world.Context = context
-
-world.ALL_EVENT = {}
-
-return world
+return World.create

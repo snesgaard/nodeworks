@@ -1,12 +1,26 @@
 local nw = require "nodeworks"
+local event = nw.system.event
 
-local particle_system = nw.ecs.system(nw.component.particles)
+local particles = {}
 
-function particle_system.update(world, pool, dt)
-    for _, entity in ipairs(pool) do
-        particle_system % nw.component.particles
-        particle_system:update(dt)
+function particles.update_once(id, p, dt)
+    p:update(dt)
+end
+
+function particles.update(dt)
+    for id, p in stack.view_table(nw.component.particles) do
+        particles.update_once(id, p, dt)
     end
 end
 
-return particle_system
+function particles.spin()
+    for _, dt in event.view("update") do particles.update(dt) end
+end
+
+function particles.empty(id)
+    local p = stack.get(nw.component.particles, id)
+    if not p then return true end
+    return p:getCount() == 0
+end
+
+return particles

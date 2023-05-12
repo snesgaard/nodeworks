@@ -1,12 +1,9 @@
-local World = require(... .. ".world")
+local rh = {}
 
-return {
-  entity = require(... .. ".entity"),
-  world = World.create,
-  World = World,
-  --assemblage = require(... .. ".assemblage"),
-  --system = require(... .. ".system"),
-  pool = require(... .. ".pool"),
-  promise = require(... .. ".promise"),
-  reducer = require(... .. ".reducer")
-}
+local BASE = ...
+
+function rh.__index(t, k)
+    return require(BASE .. "." .. k)
+end
+
+return setmetatable(rh, rh)
