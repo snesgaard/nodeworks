@@ -146,7 +146,7 @@ end
 function collision.flip_to(id, mirror, filter)
     stack.set(nw.component.mirror, id, mirror)
     local pos = stack.ensure(nw.component.position, id)
-    local _, _, cols = collision.move(id, pos.x, pos.y, filter)
+    local _, _, cols = collision.move_to(id, pos.x, pos.y, filter)
     return cols
 end
 

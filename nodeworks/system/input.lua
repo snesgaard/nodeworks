@@ -19,4 +19,11 @@ function input.is_pressed(query_key)
     return false
 end
 
+function input.get_direction_x()
+    local x = 0
+    if love.keyboard.isDown("left") then x = x - 1 end
+    if love.keyboard.isDown("right") then x = x + 1 end
+    return x
+end
+
 return input
