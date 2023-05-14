@@ -76,7 +76,17 @@ T("test_collision", function(T)
         T:assert(#cols == 0)
         
         collectgarbage()
-        T:assert(collision.get_bump_world():countItems() == 1)    
+        --T:assert(collision.get_bump_world():countItems() == 1)
+    end)
+
+    T("implicit_garbage_collection", function(T)
+        local id3 = {}
+        collision.register(id3, spatial(0, 0, 1, 1))
+        T:assert(collision.get_bump_world():countItems() == 3)
+        
+        id3 = nil
+        collectgarbage()
+        T:assert(collision.get_bump_world():countItems() == 2)
     end)
 
     T("flipping", function(T)
