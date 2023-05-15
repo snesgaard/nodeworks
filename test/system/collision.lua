@@ -76,7 +76,7 @@ T("test_collision", function(T)
         T:assert(#cols == 0)
         
         collectgarbage()
-        --T:assert(collision.get_bump_world():countItems() == 1)
+        T:assert(collision.get_bump_world():countItems() == 1)
     end)
 
     T("implicit_garbage_collection", function(T)

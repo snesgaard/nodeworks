@@ -12,7 +12,6 @@ end
 
 local component = {}
 
-
 function component.bump_membership(id, hitbox)
     return {
         hitbox = hitbox
