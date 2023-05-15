@@ -2,7 +2,7 @@ local nw = require "nodeworks"
 local stack = nw.ecs.stack
 
 local function compute_model_offset(hitbox, mirror)
-    local x, y, h, w = hitbox:unpack()
+    local x, y, w, h = hitbox:unpack()
     if mirror then
         return -x - w, y
     else
@@ -10,9 +10,12 @@ local function compute_model_offset(hitbox, mirror)
     end
 end
 
+local function round(v) return math.floor(v + 0.5) end
+
 local component = {}
 
 function component.bump_membership(id, hitbox)
+    local hitbox = spatial(hitbox.x, hitbox.y, round(hitbox.w), round(hitbox.h))
     return {
         hitbox = hitbox
     }
@@ -139,6 +142,12 @@ function collision.get_world_hitbox(id)
     local bump_membership = stack.get(component.bump_membership, id)
     if not bump_membership or not collision.get_bump_world():hasItem(id) then return end
     return collision.get_bump_world():getRect(id)
+end
+
+function collision.get_model_hitbox(id)
+    local bump_membership = stack.get(component.bump_membership, id)
+    if not bump_membership then return end
+    return bump_membership.hitbox:unpack()
 end
 
 function collision.flip_to(id, mirror, filter)
