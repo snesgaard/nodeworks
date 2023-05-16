@@ -20,6 +20,11 @@ function Video.constructor(frames, init_time)
     }
 end
 
+function Video:speed(speed)
+    self.playback_speed = speed
+    return self
+end
+
 function Video:set_time(time)
     self.time = time or 0
     return self
@@ -49,7 +54,8 @@ function Video:is_done(time)
 end
 
 function Video:argframe(time, do_loop)
-    local time = time or self.time
+    local s = self.playback_speed or 1
+    local time = s * (time or self.time)
     local do_loop = do_loop or self.do_loop
     if do_loop then
         time = arithmetic_fmod(time, self.total_time)
