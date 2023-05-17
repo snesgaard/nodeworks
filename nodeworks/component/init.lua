@@ -258,6 +258,8 @@ function RelationalComponent:size()
     return Dictionary.size(self.data)
 end
 
+function RelationalComponent:__call(id) return self:ensure(id) end
+
 components.relation = RelationalComponent.create
 
 ---------------------------------------
