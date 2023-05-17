@@ -97,4 +97,38 @@ T("test_collision", function(T)
         T:assert(not stack.get(nw.component.mirror, id))
         T:assert(spatial(collision.get_world_hitbox(id)) == spatial(0, 0, 10, 10))
     end)
+
+    T("oneway_in_y", function(T)
+        local id3 = {}
+
+        collision.register(id3, spatial(0, 100, 10, 10))
+
+        local ax, ay, col = collision.move_to(id3, 0, -200, function() return "oneway" end)
+        T:assert(ax == 0)
+        T:assert(ay == -200)
+        T:assert(#col == 1)
+        local colinfo = unpack(col)
+        T:assert(colinfo.item == id3)
+        T:assert(colinfo.type == "cross")
+
+        local ax, ay, col = collision.move_to(id3, 0, 200, function() return "oneway" end)
+        T:assert(ax == 0)
+        T:assert(ay == -110)
+        T:assert(#col == 1)
+        local colinfo = unpack(col)
+        T:assert(colinfo.item == id3)
+        T:assert(colinfo.type == "slide")
+    end)
+
+    T("oneway_in_x", function(T)
+        local ax, ay, colinfo = collision.move_to(id, 1000, 0, function() return "oneway" end)
+        T:assert(ax == 1000)
+        T:assert(ay == 0)
+        T:assert(#colinfo == 1)
+
+        local ax, ay, colinfo = collision.move_to(id, 0, 0, function() return "oneway" end)
+        T:assert(ax == 0)
+        T:assert(ay == 0)
+        T:assert(#colinfo == 1)
+    end)
 end)

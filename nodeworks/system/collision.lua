@@ -25,10 +25,22 @@ function component.hitbox_type(type) return type end
 
 function component.collision_filter(filter) return filter end
 
+local function oneway_response(world, col, ...)
+    local nx, ny = col.normal.x, col.normal.y
+    if nx == 0 and ny == -1 then
+        col.type = "slide"
+        return nw.third.bump.responses.slide(world, col, ...)
+    else
+        col.type = "cross"
+        return nw.third.bump.responses.cross(world, col, ...)
+    end
+end
+
 function component.bump_world() 
     local weak_keys = {__mode = "k"}
     local bump_world = nw.third.bump.newWorld()
     bump_world.rects = setmetatable({}, weak_keys)
+    bump_world:addResponse("oneway", oneway_response)
     return bump_world
 end
 
