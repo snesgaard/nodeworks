@@ -50,7 +50,8 @@ end
 
 function Video:is_done(time)
     local time = time or self.time
-    return self.total_time <= time
+    local s = self.playback_speed or 1
+    return self.total_time <= time * s
 end
 
 function Video:argframe(time, do_loop)
