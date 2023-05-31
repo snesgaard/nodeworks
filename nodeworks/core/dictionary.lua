@@ -109,7 +109,7 @@ function dictionary:fuse(...)
     local ret = dictionary.create()
     for _, d in ipairs{self, ...} do
         for k, v in pairs(d) do
-            ret[k] = ret[k] or v
+            if ret[k] == nil then ret[k] = v end
         end
     end
     return ret
