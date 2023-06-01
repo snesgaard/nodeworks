@@ -178,4 +178,21 @@ function collision.draw()
     bump_debug.draw_world(collision.get_bump_world())
 end
 
+function collision.query(rect, filter)
+    local bump_world = collision.get_bump_world()
+    return bump_world:queryRect(rect.x, rect.y, rect.w, rect.h, filter)
+end
+
+function collision.from_local(id, rect)
+    local mirror = stack.get(nw.component.mirror, id)
+    local pos = stack.get(nw.component.position, id) or vec2()
+    local x, y = compute_model_offset(rect, mirror)
+
+    return spatial(x + pos.x, y + pos.y, rect.w, rect.h)
+end
+
+function collision.query_local(id, rect, filter)
+    return collision.query(collision.from_local(id, rect), filter)
+end
+
 return collision
