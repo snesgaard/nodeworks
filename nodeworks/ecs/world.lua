@@ -72,6 +72,12 @@ function World:init(component, id, ...)
     return self
 end
 
+function World:map(component, id, func, ...)
+    local v = self:ensure(component, id)
+    self:set(component, id, func(v, ...))
+    return self
+end
+
 function World:remove(component, id)
     local c = self:get_table(component)
     local col = nw.system.collision
