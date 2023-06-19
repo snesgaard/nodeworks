@@ -56,7 +56,8 @@ local methods = {
     {"get_table", false},
     {"has", false},
     {"view_table", false},
-    {"map", true}
+    {"map", true},
+    {"destroy_table", true}
 }
 
 for _, m in ipairs(methods) do declare_method(unpack(m)) end

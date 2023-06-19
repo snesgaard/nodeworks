@@ -119,4 +119,9 @@ function World:view_table(component)
     return next, self:get_table(component)
 end
 
+function World:destroy_table(compoennt)
+    self.component_tables[compoennt] = nil
+    return self
+end
+
 return World.create
