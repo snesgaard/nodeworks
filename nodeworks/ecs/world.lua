@@ -72,14 +72,26 @@ function World:init(component, id, ...)
     return self
 end
 
+function World:map(component, id, func, ...)
+    local v = self:ensure(component, id)
+    self:set(component, id, func(v, ...))
+    return self
+end
+
 function World:remove(component, id)
     local c = self:get_table(component)
+    local col = nw.system.collision
+    local v = c[id]
     c[id] = nil
+    if v and component == col.component.bump_membership then
+        col.unregister(id)
+    end
+
     return self
 end
 
 function World:destroy(id)
-    for _, tab in pairs(self.component_tables) do tab[id] = nil end
+    for comp, tab in pairs(self.component_tables) do self:remove(comp, id) end
 end
 
 function World:visit(func, ...)
@@ -105,6 +117,11 @@ end
 
 function World:view_table(component)
     return next, self:get_table(component)
+end
+
+function World:destroy_table(compoennt)
+    self.component_tables[compoennt] = nil
+    return self
 end
 
 return World.create

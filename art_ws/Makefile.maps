@@ -1,12 +1,12 @@
 src=$(wildcard src/*.tmx)
 lua=$(addprefix ./build/, $(notdir $(src:.tmx=.lua)))
 tilesets=$(shell find tileset -name *.tsx)
-tiled_cmd=~/gamedev/Tiled-1.7.2-x86_64.AppImage
+tiled_cmd=~/tiled.AppImage
 
 all: create_build_dirs $(lua)
 
 build/%.lua: src/%.tmx $(tilesets) $(tiled_cmd)
-	@$(tiled_cmd) --export-map "lua" --embed-tilesets $< $@
+	$(tiled_cmd) --export-map lua $< $@ --resolve-types-and-properties --detach-templates --embed-tilesets
 
 create_build_dirs:
 	@mkdir -p build

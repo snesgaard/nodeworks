@@ -21,7 +21,8 @@ end
 function decorate(dst, src, overwrite)
     for key, value in pairs(src) do
         local is_function = type(value) == "function"
-        if is_function then
+        local is_callable = type(value) == "table" and value.__call
+        if is_function or is_callable then
             if not dst[key] or overwrite then
                 dst[key] = value
             else

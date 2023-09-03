@@ -39,4 +39,9 @@ function systemtimer.is_done(id)
     return timer:done()
 end
 
+function systemtimer.get(id)
+    local timer = stack.get(nw.component.timer, id)
+    return timer
+end
+
 return systemtimer

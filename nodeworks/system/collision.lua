@@ -2,7 +2,7 @@ local nw = require "nodeworks"
 local stack = nw.ecs.stack
 
 local function compute_model_offset(hitbox, mirror)
-    local x, y, h, w = hitbox:unpack()
+    local x, y, w, h = hitbox:unpack()
     if mirror then
         return -x - w, y
     else
@@ -10,11 +10,13 @@ local function compute_model_offset(hitbox, mirror)
     end
 end
 
+local function round(v) return math.floor(v + 0.5) end
+
 local component = {}
 
 function component.bump_membership(id, hitbox)
+    local hitbox = spatial(hitbox.x, hitbox.y, round(hitbox.w), round(hitbox.h))
     return {
-        id = id,
         hitbox = hitbox
     }
 end
@@ -23,25 +25,36 @@ function component.hitbox_type(type) return type end
 
 function component.collision_filter(filter) return filter end
 
+local function oneway_response(world, col, ...)
+    local nx, ny = col.normal.x, col.normal.y
+    if nx == 0 and ny == -1 then
+        col.type = "slide"
+        return nw.third.bump.responses.slide(world, col, ...)
+    else
+        col.type = "cross"
+        return nw.third.bump.responses.cross(world, col, ...)
+    end
+end
+
 function component.bump_world() 
     local weak_keys = {__mode = "k"}
     local bump_world = nw.third.bump.newWorld()
     bump_world.rects = setmetatable({}, weak_keys)
+    bump_world:addResponse("oneway", oneway_response)
     return bump_world
 end
 
 local collision = {}
+
+collision.component = component
 
 function collision.get_bump_world()
     return stack.ensure(component.bump_world, collision)
 end
 
 function collision.unregister(id)
-    local bump_membership = stack.get(component.bump_membership, id)
-    if not bump_membership then return end
-
     local bump_world = collision.get_bump_world()
-    if bump_world:hasItem(bump_membership) then bump_world:remove(bump_membership) end
+    if bump_world:hasItem(id) then bump_world:remove(id) end
 
     stack.remove(component.bump_membership, id).remove(component.hitbox_type, id)
     return collision
@@ -55,13 +68,13 @@ function collision.register(id, hitbox, hitbox_type)
         .ensure(component.bump_membership, id, id, hitbox)
     
     local bump_world = collision.get_bump_world()
-    if bump_world:hasItem(bump_membership) then
+    if bump_world:hasItem(id) then
         errorf("Item %s was already registered somehow", tostring(id))
     end
 
     local pos = stack.ensure(nw.component.position, id)
     local x, y, w, h = bump_membership.hitbox:unpack()
-    bump_world:add(bump_membership, x + pos.x, y + pos.y, w, h)
+    bump_world:add(id, x + pos.x, y + pos.y, w, h)
 
     return collision
 end
@@ -81,13 +94,13 @@ function CollisionFilter:set_filter(filter) self.filter = filter end
 
 function CollisionFilter:__call(item, other)
     -- If no bump membership is present, the other cannot collide
-    if not stack.has(component.bump_membership, other.id) then return end
+    if not stack.has(component.bump_membership, other) then return end
 
-    if self.filter then return self.filter(item.id, other.id) end
+    if self.filter then return self.filter(item, other) end
 
-    local default_filter = collision_filter.get_default_filter()
+    local default_filter = collision.get_default_filter()
     if default_filter then
-        return default_filter(item.id, other.id)
+        return default_filter(item, other)
     else
         return "cross"
     end
@@ -95,7 +108,7 @@ end
 
 function collision.move_to(id, x, y, filter)
     local bump_membership = stack.get(component.bump_membership, id)
-    if not bump_membership then
+    if not collision.get_bump_world():hasItem(id) or not bump_membership then
         stack.set(nw.component.position, x, y)
         return x, y, list()
     end
@@ -106,7 +119,7 @@ function collision.move_to(id, x, y, filter)
     local mirror = stack.get(nw.component.mirror, id)
     local dx, dy = compute_model_offset(bump_membership.hitbox, mirror)
     local ax, ay, cols = collision.get_bump_world():move(
-        bump_membership, x + dx, y + dy, filter_functor
+        id, x + dx, y + dy, filter_functor
     )
 
     local ax = ax - dx
@@ -139,20 +152,47 @@ end
 
 function collision.get_world_hitbox(id)
     local bump_membership = stack.get(component.bump_membership, id)
+    if not bump_membership or not collision.get_bump_world():hasItem(id) then return end
+    return collision.get_bump_world():getRect(id)
+end
+
+function collision.get_model_hitbox(id)
+    local bump_membership = stack.get(component.bump_membership, id)
     if not bump_membership then return end
-    return collision.get_bump_world():getRect(bump_membership)
+    return bump_membership.hitbox:unpack()
 end
 
 function collision.flip_to(id, mirror, filter)
     stack.set(nw.component.mirror, id, mirror)
     local pos = stack.ensure(nw.component.position, id)
-    local _, _, cols = collision.move(id, pos.x, pos.y, filter)
+    local _, _, cols = collision.move_to(id, pos.x, pos.y, filter)
     return cols
 end
 
 function collision.flip(id, filter)
     local mirror = stack.get(nw.component.mirror, id)
     return collision.flip_to(id, not mirror, filter)
+end
+
+function collision.draw()
+    bump_debug.draw_world(collision.get_bump_world())
+end
+
+function collision.query(rect, filter)
+    local bump_world = collision.get_bump_world()
+    return bump_world:queryRect(rect.x, rect.y, rect.w, rect.h, filter)
+end
+
+function collision.from_local(id, rect)
+    local mirror = stack.get(nw.component.mirror, id)
+    local pos = stack.get(nw.component.position, id) or vec2()
+    local x, y = compute_model_offset(rect, mirror)
+
+    return spatial(x + pos.x, y + pos.y, rect.w, rect.h)
+end
+
+function collision.query_local(id, rect, filter)
+    return collision.query(collision.from_local(id, rect), filter)
 end
 
 return collision

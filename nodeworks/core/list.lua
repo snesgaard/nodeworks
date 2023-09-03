@@ -307,7 +307,7 @@ function list:print()
     return self
 end
 
-function list:empty() return self:size() == 0 end
+function list:empty() return List.size(self) == 0 end
 
 local function default_max_comp(a, b) return a < b end
 
