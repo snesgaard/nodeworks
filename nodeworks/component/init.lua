@@ -52,53 +52,19 @@ end
 
 ---
 
-local timer = {}
-timer.__index = timer
-
-function timer.create(duration, time)
-    duration = duration or 0
-    return setmetatable({duration=duration or 0, time=time or duration}, timer)
+function components.timer(duration, time)
+    local clock = nw.system.time.clock
+    return {
+        duration = duration,
+        time = time or clock.get()
+    }
 end
-
-function timer:update(dt)
-    if self.time > 0 then self.time = self.time - dt end
-    return self:done()
-end
-
-function timer:overshoot()
-    return math.max(0, -self.time)
-end
-
-function timer:reset()
-    self.time = self.duration
-end
-
-function timer:done()
-    return self.time <= 0
-end
-
-function timer:time_left_normalized()
-    return self.time / self.duration
-end
-
-function timer:normalized()
-    return self:time_left_normalized()
-end
-
-function timer:inverse_normalized()
-    return 1 - self:normalized()
-end
-
-function timer:finish()
-    self.time = 0
-    return self
-end
-
-components.timer = timer.create
 
 function components.die_on_timer_done() return true end
 
 function components.on_timer_done(func) return func end
+
+function components.time(t) return t or 0 end
 
 --------------------------------------------------
 
@@ -156,37 +122,18 @@ end
 
 --- SPRITE ANIMATION-----------------
 
-function components.animation_map(atlas, animation_id_from_tag)
-    local animation_map = {}
-
-    for id, tag in pairs(animation_id_from_tag) do
-        animation_map[id] = atlas:get_animation(tag)
-        if not animation_map[id] then
-            error("Could not find animation:", tag)
-        end
-    end
-
-    return animation_map
-end
-
-function components.index(i) return i or 0 end
-function components.frame_sequence(s) return s or {} end
-function components.animation_args(playing, once, mode, id)
+function components.puppet_state(key, args)
+    local clock = nw.system.time.clock
     return {
-        playing=playing or false,
-        once=once or false,
-        mode=mode or "forward",
-        id=id
+        name = key or "idle",
+        data = nw.ecs.id.weak("statedata"),
+        time = clock.get(),
+        magic = {},
+        args = args,
     }
 end
 
-function components.animation_state(frames, once)
-    return {
-        frames = frames,
-        time = 0,
-        once = once
-    }
-end
+function components.puppet_state_map(map) return map or dict() end
 
 ----------------------------------------
 

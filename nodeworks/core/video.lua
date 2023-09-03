@@ -49,6 +49,7 @@ function Video:update(dt)
 end
 
 function Video:is_done(time)
+    if self.do_loop then return false end
     local time = time or self.time
     local s = self.playback_speed or 1
     return self.total_time <= time * s
