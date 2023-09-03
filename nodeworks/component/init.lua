@@ -52,53 +52,19 @@ end
 
 ---
 
-local timer = {}
-timer.__index = timer
-
-function timer.create(duration, time)
-    duration = duration or 0
-    return setmetatable({duration=duration or 0, time=time or duration}, timer)
+function components.timer(duration, time)
+    local clock = nw.system.time.clock
+    return {
+        duration = duration,
+        time = time or clock.get()
+    }
 end
-
-function timer:update(dt)
-    if self.time > 0 then self.time = self.time - dt end
-    return self:done()
-end
-
-function timer:overshoot()
-    return math.max(0, -self.time)
-end
-
-function timer:reset()
-    self.time = self.duration
-end
-
-function timer:done()
-    return self.time <= 0
-end
-
-function timer:time_left_normalized()
-    return self.time / self.duration
-end
-
-function timer:normalized()
-    return self:time_left_normalized()
-end
-
-function timer:inverse_normalized()
-    return 1 - self:normalized()
-end
-
-function timer:finish()
-    self.time = 0
-    return self
-end
-
-components.timer = timer.create
 
 function components.die_on_timer_done() return true end
 
 function components.on_timer_done(func) return func end
+
+function components.time(t) return t or 0 end
 
 --------------------------------------------------
 
