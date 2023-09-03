@@ -122,37 +122,18 @@ end
 
 --- SPRITE ANIMATION-----------------
 
-function components.animation_map(atlas, animation_id_from_tag)
-    local animation_map = {}
-
-    for id, tag in pairs(animation_id_from_tag) do
-        animation_map[id] = atlas:get_animation(tag)
-        if not animation_map[id] then
-            error("Could not find animation:", tag)
-        end
-    end
-
-    return animation_map
-end
-
-function components.index(i) return i or 0 end
-function components.frame_sequence(s) return s or {} end
-function components.animation_args(playing, once, mode, id)
+function components.puppet_state(key, args)
+    local clock = nw.system.time.clock
     return {
-        playing=playing or false,
-        once=once or false,
-        mode=mode or "forward",
-        id=id
+        name = key or "idle",
+        data = nw.ecs.id.weak("statedata"),
+        time = clock.get(),
+        magic = {},
+        args = args,
     }
 end
 
-function components.animation_state(frames, once)
-    return {
-        frames = frames,
-        time = 0,
-        once = once
-    }
-end
+function components.puppet_state_map(map) return map or dict() end
 
 ----------------------------------------
 
