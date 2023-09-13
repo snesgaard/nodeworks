@@ -36,11 +36,36 @@ local function oneway_response(world, col, ...)
     end
 end
 
+local orginal_bounce = nw.third.bump.responses.bounce
+
+local function clamp_to_zero(n, t)
+    local t = t or 1
+    return math.abs(n) < t and 0 or n
+end
+
+local function reflect_velocity(normal, velocity, bounce)
+    local bounce = bounce or 1
+    local v = math.min(0, velocity:dot(normal))
+    local dx, dy = v * normal.x, v * normal.y
+    local next_vx, next_vy = velocity.x - (1 + bounce) * dx, velocity.y - (1 + bounce) * dy
+    return clamp_to_zero(next_vx), clamp_to_zero(next_vy)
+end
+
+
+local function bounce_response(world, col, ...)
+    local v = stack.get(nw.component.velocity, col.item)
+    if v then
+        v.x, v.y = reflect_velocity(col.normal, v, stack.get(nw.component.bouncy, col.item))
+    end
+    return orginal_bounce(world, col, ...)
+end
+
 function component.bump_world() 
     local weak_keys = {__mode = "k"}
     local bump_world = nw.third.bump.newWorld()
     bump_world.rects = setmetatable({}, weak_keys)
     bump_world:addResponse("oneway", oneway_response)
+    bump_world:addResponse("bounce", bounce_response)
     return bump_world
 end
 
