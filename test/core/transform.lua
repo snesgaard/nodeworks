@@ -1,8 +1,8 @@
 T("transform", function(T)
-    local t = transform(1, 2, 4, 8)
+    local t = transform(1, 2, -4, 8)
     T:assert(t.x == 1)
     T:assert(t.y == 2)
-    T:assert(t.sx == 4)
+    T:assert(t.sx == -4)
     T:assert(t.sy == 8)
 
     local identity = t * t:invert()
