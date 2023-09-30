@@ -79,6 +79,11 @@ function collision.register(id, hitbox, hitbox_type)
     return collision
 end
 
+function collision.has_item(id)
+    local bump_world = collision.get_bump_world()
+    return bump_world:hasItem(id)
+end
+
 function collision.set_default_filter(filter)
     stack.set(component.collision_filter, collision, filter)
     return collision
@@ -109,7 +114,7 @@ end
 function collision.move_to(id, x, y, filter)
     local bump_membership = stack.get(component.bump_membership, id)
     if not collision.get_bump_world():hasItem(id) or not bump_membership then
-        stack.set(nw.component.position, x, y)
+        stack.set(nw.component.position, id, x, y)
         return x, y, list()
     end
 
@@ -193,6 +198,18 @@ end
 
 function collision.query_local(id, rect, filter)
     return collision.query(collision.from_local(id, rect), filter)
+end
+
+function collision.spin()
+    for id, hb in stack.view_table(nw.component.hitbox) do
+        if not collision.has_item(id) then
+            collision.register(id, hb)
+            local p = stack.get(nw.component.position, id)
+            if p then collision.warp_to(id, p.x, p.y) end
+            local m = stack.get(nw.component.mirror, id)
+            collision.flip_to(id, m, nil_filter)
+        end
+    end
 end
 
 return collision

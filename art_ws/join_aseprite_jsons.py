@@ -85,7 +85,6 @@ def main():
     for index, frame in frames:
         frame_to_index[frame['filename']] = index
 
-
     new_tags = []
     new_slices = []
     for path in sprite_path:
