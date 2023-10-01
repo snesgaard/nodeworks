@@ -36,11 +36,40 @@ local function oneway_response(world, col, ...)
     end
 end
 
+local function overlap(ix, iw, ox, ow)
+    local ix1 = ix
+    local ix2 = ix + iw
+    local ox1 = ox
+    local ox2 = ox + ow
+
+    return math.min(math.abs(ix1 - ox2), math.abs(ix2 - ox1))
+end
+
+local function x_overlap(item_rect, other_rect)
+    return overlap(item_rect.x, item_rect.w, other_rect.x, other_rect.w)
+end
+
+local function y_overlap(item_rect, other_rect)
+    return overlap(item_rect.y, item_rect.h, other_rect.y, other_rect.h)
+end
+
+local function better_slide_response(world, col, ...)
+    local corner_touch = x_overlap(col.itemRect, col.otherRect) < 1e-10 and y_overlap(col.itemRect, col.otherRect) < 1e-10
+    if corner_touch then 
+        col.type = "cross"
+        return nw.third.bump.responses.cross(world, col, ...)
+    else
+        col.type = "slide"
+        return nw.third.bump.responses.slide(world, col, ...)
+    end
+end
+
 function component.bump_world() 
     local weak_keys = {__mode = "k"}
     local bump_world = nw.third.bump.newWorld()
     bump_world.rects = setmetatable({}, weak_keys)
     bump_world:addResponse("oneway", oneway_response)
+    bump_world:addResponse("better_slide", better_slide_response)
     return bump_world
 end
 

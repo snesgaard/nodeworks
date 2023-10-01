@@ -33,4 +33,13 @@ function drawables.push_transform(id)
     if scale then gfx.scale(scale.x, scale.y) end
 end
 
+function drawables.hitbox(id)
+    local x, y, w, h = collision.get_world_hitbox(id)
+    if not x then return end
+    gfx.push("all")
+    drawables.push_state(id)
+    gfx.rectangle("line", x, y, w, h)
+    gfx.pop()
+end
+
 return drawables
