@@ -95,4 +95,14 @@ T("ai", function(T)
             T:assert(dst.value == 1)
         end)
     end)
+
+    T("invert", function(T)
+        local dst = {value=true}
+
+        local n = ai.invert(
+            ai.condition(function() return dst.value end)
+        )
+
+        T:assert(ai.run(n) == "failure")
+    end)
 end)
