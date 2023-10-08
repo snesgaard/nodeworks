@@ -373,4 +373,6 @@ function components.should_be_destroyed() return true end
 
 function components.is_done() return true end
 
+function components.node_status() return {} end
+
 return components
