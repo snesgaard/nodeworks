@@ -157,5 +157,6 @@ function ai.cooldown(duration)
 end
 
 ai.run = run_node
+ai.assembly = assembly
 
 return ai

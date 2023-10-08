@@ -1,5 +1,17 @@
 local ai = nw.system.ai
 
+function ai.assembly.geq(node)
+    return node.a >= node.b and "success" or "failure"
+end
+
+function ai.geq(a, b)
+    return {
+        type = "geq",
+        a = a,
+        b = b
+    }
+end
+
 T("ai", function(T)
     stack.reset()
 
@@ -119,4 +131,10 @@ T("ai", function(T)
         dst.value = true
         T:assert(ai.run(n) == "success")
     end)
+
+    T("extension", function(T)
+        T:assert(ai.run(ai.geq(1, 3)) == "failure")
+        T:assert(ai.run(ai.geq(3, 1)) == "success")
+    end)
+
 end)
