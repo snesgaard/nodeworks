@@ -97,12 +97,26 @@ T("ai", function(T)
     end)
 
     T("invert", function(T)
-        local dst = {value=true}
+        local dst = {value = true}
 
         local n = ai.invert(
             ai.condition(function() return dst.value end)
         )
 
         T:assert(ai.run(n) == "failure")
+        dst.value = false
+        T:assert(ai.run(n) == "success")
+    end)
+
+    T("wait_until", function(T)
+        local dst = {value = false}
+
+        local n = ai.wait_until(
+            ai.condition(function() return dst.value end)
+        )
+
+        T:assert(ai.run(n) == "pending")
+        dst.value = true
+        T:assert(ai.run(n) == "success")
     end)
 end)
