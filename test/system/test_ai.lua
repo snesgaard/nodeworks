@@ -146,4 +146,45 @@ T("ai", function(T)
         T:assert(ai.run(ai.geq(3, 1)) == "success")
     end)
 
+    T("parallel", function(T)
+        local dst = {}
+        local bt = ai.parallel {
+            ai.action(function() dst.a = true end),
+            ai.action(function() dst.b = true end)
+        }
+        local status = ai.run(bt)
+        T:assert(status == "success")
+        T:assert(dst.a)
+        T:assert(dst.b)
+
+        T("concurrent-parallel", function(T)
+            local dst = {}
+            
+            local bt = ai.parallel {
+                ai.action(function() dst.a = true end),
+                ai.sequence{
+                    ai.action(function() dst.b = true end),
+                    ai.wait_until(
+                        ai.condition(function() return dst.go end)
+                    ),
+                    ai.action(function() dst.c = true end)
+                }
+            }
+
+            local status = ai.run(bt)
+            T:assert(status == "pending")
+            T:assert(dst.a)
+            T:assert(dst.b)
+            T:assert(not dst.c)
+
+            dst.go = true
+
+            local status = ai.run(bt)
+            T:assert(status == "success")
+            T:assert(dst.a)
+            T:assert(dst.b)
+            T:assert(dst.c)
+        end)
+    end)
+
 end)

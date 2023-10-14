@@ -85,6 +85,27 @@ function assembly.wait_until(node)
     return status == "success" and "success" or "pending"
 end
 
+function assembly.parallel(node)
+    local node_status = stack.ensure(nw.component.node_status, node)
+
+    for index, child in ipairs(node.children) do
+        node_status[index] = node_status[index] or "pending"
+        if node_status[index] == "pending" then
+            node_status[index] = run_node(child)
+        end
+    end
+
+    for _, status in ipairs(node_status) do
+        if status == "pending" then return "pending" end
+    end
+
+    for _, status in ipairs(node_status) do
+        if status == "success" then return "success" end
+    end
+
+    return "failure"
+end
+
 local ai = {}
 
 function ai.sequence(args)
@@ -155,6 +176,13 @@ end
 
 function ai.cooldown(duration)
     return ai.condition(cooldown_condition, nw.ecs.id.weak("cooldown"))
+end
+
+function ai.parallel(children) 
+    return {
+        type = "parallel",
+        children = children
+    }
 end
 
 ai.run = run_node
