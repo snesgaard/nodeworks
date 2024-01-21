@@ -2,9 +2,11 @@ local frame = {}
 frame.__index = frame
 
 function frame:__tostring()
-    local x, y, w, h = self.quad:getViewport()
+    local x, y, w, h = self:get_view_port()
     local dt = self:get_dt()
-    return string.format("Frame(%.1f, %.1f, %.1f, %.1f, %1.2f ms)", x, y, w, h, dt * 1000)
+    return string.format(
+        "Frame(%.1f, %.1f, %.1f, %.1f, %1.2f ms)", x, y, w, h, dt * 1000
+    )
 end
 
 function frame.create(image, slices, quad, offset)
@@ -37,6 +39,12 @@ end
 function frame:size()
     local x, y, w, h = self.quad:getViewport()
     return w, h
+end
+
+function frame:get_view_port()
+    if not self.quad then return 0, 0, 0, 0 end
+
+    return self.quad:getViewport()
 end
 
 function frame:args(origin, x, y, ...)

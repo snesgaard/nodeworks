@@ -62,7 +62,6 @@ function Video:argframe(time, do_loop)
     if do_loop then
         time = arithmetic_fmod(time, self.total_time)
     end
-
     for index, frame in ipairs(self.frames) do
         time = time - frame.dt
         if time < 0 then return index end

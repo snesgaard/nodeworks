@@ -135,6 +135,16 @@ end
 
 function components.puppet_state_map(map) return map or dict() end
 
+function components.sprite_state(name, time, do_loop)
+    return dict{
+        time = time,
+        name = name,
+        do_loop = do_loop
+    }
+end
+
+function components.sprite_state_map(m) return m or dict() end
+
 ----------------------------------------
 
 --- COLLISSION ------------------------
