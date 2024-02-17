@@ -33,4 +33,57 @@ function drawables.push_transform(id)
     if scale then gfx.scale(scale.x, scale.y) end
 end
 
+function drawables.tiled_layer(id)
+    local layer = stack.get(nw.component.tiled_layer, id)
+    if not layer then return end
+
+    gfx.push("all")
+    
+    drawables.push_state(id)
+    drawables.push_transform(id)
+
+    layer:draw()
+
+    gfx.pop()
+end
+
+function drawables.scrolling_texture(id)
+    local image = stack.get(nw.component.image, id)
+    if not image then return end
+
+    local wrap_mode = stack.get(nw.component.wrap_mode, id)
+    
+    image:setWrap(
+        wrap_mode.repeatx and "repeat" or "clampzero",
+        wrap_mode.repeaty and "repeat" or "clampzero"
+    )
+
+    gfx.push("all")
+    
+    drawables.push_state(id)
+    drawables.push_transform(id)
+    
+    local lx, ly = gfx.transformPoint(0, 0)
+    local ux, uy = gfx.transformPoint(image:getWidth(), image:getHeight())
+
+    local w, h = math.abs(lx - ux), math.abs(ly - uy)
+    
+    
+    local quad = gfx.newQuad(
+        -lx, -ly,
+        gfx.getWidth(), gfx.getHeight(),
+        w, h
+    )
+    
+    local sx = gfx.getWidth() / image:getWidth()
+    local sy = gfx.getHeight() / image:getHeight()
+
+    local sx, sy = 1, 1
+
+    gfx.origin()
+    gfx.draw(image, quad, 0, 0, 0, sx, sy)
+
+    gfx.pop()
+end
+
 return drawables

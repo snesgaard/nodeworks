@@ -286,6 +286,12 @@ end
 
 function components.parallax(sx, sy) return vec2(sx or 1, sy or 1) end
 
+function components.wrap_mode(repeatx, repeaty) 
+    return {
+        repeatx=repeatx or false, repeaty=repeaty or false
+    }
+end
+
 ----------------------
 
 function components.input_buffer() return {} end
