@@ -47,6 +47,8 @@ function drawables.tiled_layer(id)
     gfx.pop()
 end
 
+local scroll_squad = gfx.newQuad(0, 0, 1, 1, 1, 1)
+
 function drawables.scrolling_texture(id)
     local image = stack.get(nw.component.image, id)
     if not image then return end
@@ -68,20 +70,16 @@ function drawables.scrolling_texture(id)
 
     local w, h = math.abs(lx - ux), math.abs(ly - uy)
     
-    
-    local quad = gfx.newQuad(
+    scroll_squad:setViewport(
         -lx, -ly,
         gfx.getWidth(), gfx.getHeight(),
         w, h
     )
-    
-    local sx = gfx.getWidth() / image:getWidth()
-    local sy = gfx.getHeight() / image:getHeight()
 
     local sx, sy = 1, 1
 
     gfx.origin()
-    gfx.draw(image, quad, 0, 0, 0, sx, sy)
+    gfx.draw(image, scroll_squad, 0, 0, 0, sx, sy)
 
     gfx.pop()
 end

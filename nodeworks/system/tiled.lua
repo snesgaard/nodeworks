@@ -33,19 +33,7 @@ local function load_tilelayer(index, layer, tile_properties)
     end
 end
 
-local function load_object(object, index, layer)
-    stack.assemble(
-        {
-            {collision.register, object.id, spatial(0, 0, object.width, object.height)},
-            {collision.warp_to, object.id, object.x + layer.offsetx, object.y + layer.offsety}
-        },
-        object.id
-    )
-
-    return object.id
-end
-
-local function load_objectgroup(index, layer)
+local function load_objectgroup(index, layer, load_object)
     if layer.type ~= "objectgroup" then return end
 
     layer.entities = list()
@@ -76,6 +64,8 @@ local tiled = {}
 
 function tiled.tile_properties(properties) end
 
+function tiled.load_object(object, index, layer) end
+
 local function layer_color(color)
     if not color then return 1, 1, 1 end
 
@@ -99,7 +89,7 @@ function tiled.load(path)
         local id = layer
 
         load_tilelayer(index, layer, tiled.tile_properties)
-        load_objectgroup(index, layer)
+        load_objectgroup(index, layer, tiled.load_object)
         load_imagelayer(index, layer, id)
 
         stack.assemble(
