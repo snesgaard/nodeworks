@@ -18,4 +18,6 @@ function rh.__index(t, k)
     return require(BASE .. "." .. k)
 end
 
+rh.third = require(... .. ".third")
+
 return setmetatable(rh, rh)
