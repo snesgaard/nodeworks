@@ -109,7 +109,7 @@ end
 function collision.move_to(id, x, y, filter)
     local bump_membership = stack.get(component.bump_membership, id)
     if not collision.get_bump_world():hasItem(id) or not bump_membership then
-        stack.set(nw.component.position, x, y)
+        stack.set(nw.component.position, id, x, y)
         return x, y, list()
     end
 

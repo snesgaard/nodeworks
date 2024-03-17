@@ -1,14 +1,13 @@
 local clock = nw.system.time.clock
+local collision = nw.system.collision
 
-local state_resolver = {}
-
-function state_resolver.DEFAULT(id, state_map, state)
-    return state_map[state.name]
-end
+local puppet_animator = {}
 
 local function slice_ids()
     return {}
 end
+
+local function magic_component(m) return m end
 
 local function none_filter() return end
 
@@ -22,17 +21,14 @@ local function create_slice_hitboxes(id, key, slice, magic, properties)
 
     local predefined_c = {
         {nw.component.is_ghost},
-        {nw.component.magic, magic},
+        {magic_component, magic},
         {nw.component.name, key},
         {nw.component.owner, id}
     }
 
-    if stack.get(nw.component.player_controlled, id) then
-        stack.set(nw.component.player_controlled, s_id)
-    end
-
     stack.assemble(predefined_c, s_id)
-    stack.assemble(tiled.assemble_from_properties(properties), s_id)
+    local prop = puppet_animator.slice_properties(properties, id)
+    if prop then stack.assemble(prop, s_id) end
 
     collision.register(s_id, slice)
     collision.warp_to(s_id, p.x, p.y)
@@ -44,7 +40,7 @@ end
 local function clean_hitboxes(id, frame_slices, magic)
     local slice_ids = stack.ensure(slice_ids, id)
     for _, id in pairs(slice_ids) do
-        local prev_magic = stack.get(nw.component.magic, id)
+        local prev_magic = stack.get(magic_component, id)
         if prev_magic and prev_magic ~= magic then
             stack.destroy(id)
         else
@@ -53,14 +49,14 @@ local function clean_hitboxes(id, frame_slices, magic)
     end
 end
 
-local puppet_animator = {}
+function puppet_animator.slice_properties(properties, owner_id)
+end
 
 function puppet_animator.spin_once(id, state, dt)
     local state_map = stack.get(nw.component.puppet_state_map, id) or dict()
     local state_time = state.time
     
-    local f = state_resolver[state.name] or state_resolver.DEFAULT
-    local video = f(id, state_map, state)
+    local video = state_map[state.name]
     if not video then return end
     local time = clock.get() - state_time
     
@@ -78,9 +74,18 @@ function puppet_animator.spin_once(id, state, dt)
     end
 end
 
+function puppet_animator.play(id, key)
+    local state_map = stack.get(nw.component.state_map, id)
+    if not state_map[key] then
+        errorf("Tried to play animation, but it wasn't there: id = %s, key = %s", tostring(id), tostring(key))
+    end
+    stack.set(nw.component.puppet_state, id, key)
+end
+
 function puppet_animator.update(dt)
     for id, state in stack.view_table(nw.component.puppet_state) do
         puppet_animator.spin_once(id, state, dt)
+        state.time = state.time
     end
 end
 
@@ -93,8 +98,7 @@ function puppet_animator.is_done(id)
     if not state then return true end
     local state_map = stack.get(nw.component.puppet_state_map, id)
 
-    local f = state_resolver[state.name] or state_resolver.DEFAULT
-    local video = f(id, state_map, state)
+    local video = state_map[state.name]
     if not video then return end
     local time = clock.get() - state.time
     return video:is_done(time)
@@ -105,10 +109,6 @@ function puppet_animator.ensure(id, key)
     if state and state.name == key then return false end
     stack.set(nw.component.puppet_state, id, key)
     return true
-end
-
-function puppet_animator.state_resolver()
-    return state_resolver
 end
 
 return puppet_animator

@@ -276,6 +276,8 @@ end
 
 function components.frame(frame) return frame end
 
+function components.video(video) return video end
+
 function components.shader(shader) return shader end
 
 function components.shader_uniforms(uniforms) return uniforms end
@@ -321,6 +323,16 @@ function components.camera(slack, slack_type, max_move)
 end
 
 function components.target(id) return id end
+
+function components.is_following(leader_id) return leader_id end
+
+function components.follow_position(v)
+    return v or (v == nil)
+end
+
+function components.follow_mirror(v)
+    return v or (v == nil)
+end
 
 ---
 

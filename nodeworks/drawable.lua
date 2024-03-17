@@ -47,6 +47,20 @@ function drawables.tiled_layer(id)
     gfx.pop()
 end
 
+function drawables.frame(id)
+    local frame = stack.get(nw.component.frame, id)
+    if not frame then return end
+
+    gfx.push("all")
+
+    drawables.push_state(id)
+    drawables.push_transform(id)
+
+    frame:draw("body", 0, 0)
+
+    gfx.pop()
+end
+
 local scroll_squad = gfx.newQuad(0, 0, 1, 1, 1, 1)
 
 function drawables.scrolling_texture(id)
