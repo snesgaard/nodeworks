@@ -10,9 +10,9 @@ local DEFAULT_SCALE = vec2(1, 1)
 function tf.entity(id, mirror_override)
     local p = stack.get(nw.component.position, id) or DEFAULT_POSITION
     local r = stack.get(nw.component.rotation, id) or 0
-    local s = stack.get(nw.component.scale, id) or DEFAULT_SCALE
-    local o = stack.get(nw.component.origin, id) or DEFAULT_POSITION
-    return tf.transform(p.x, p.y, r, s.x, s.y, o.x, o.y)
+    local sx = stack.get(nw.component.mirror, id) and -1 or 1
+    local sy = 1
+    return tf.transform(p.x, p.y, r, sx, sy)
 end
 
 function tf.between(from, to)

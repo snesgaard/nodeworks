@@ -46,28 +46,14 @@ T("tf", function(T)
     end)
 
     T("scale", function(T)
-        local sx, sy = 2, 3
-        stack.set(nw.component.scale, id, sx, sy)
+        stack.set(nw.component.mirror, id, true)
         local expected_matrix = list(
-            sx, 0, 0, 0,
-            0, sy, 0, 0,
+            -1, 0, 0, 0,
+            0, 1, 0, 0,
             0, 0, 1, 0,
             0, 0, 0, 1
         )
     
-        T:assert(is_close(get_matrix(id), expected_matrix))
-    end)
-
-    T("origin", function(T)
-        local ox, oy = 4, 5
-        stack.set(nw.component.origin, id, ox, oy)
-
-        local expected_matrix = list(
-            1, 0, 0, -ox,
-            0, 1, 0, -oy,
-            0, 0, 1, 0,
-            0, 0, 0, 1
-        )
         T:assert(is_close(get_matrix(id), expected_matrix))
     end)
 
