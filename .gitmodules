@@ -1,0 +1,3 @@
+[submodule "3rd/knife"]
+	path = 3rd/knife
+	url = https://github.com/airstruck/knife
