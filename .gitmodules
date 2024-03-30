@@ -1,3 +1,6 @@
 [submodule "3rd/knife"]
 	path = 3rd/knife
 	url = https://github.com/airstruck/knife
+[submodule "3rd/json.lua"]
+	path = 3rd/json.lua
+	url = https://github.com/rxi/json.lua

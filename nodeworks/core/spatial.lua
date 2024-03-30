@@ -5,8 +5,12 @@ local vec2 = require(path .. "vec2")
 local misc = require(path .. "misc")
 local errorf = misc.errorf
 
-local Spatial = {}
-Spatial.__index = Spatial
+---@class Spatial
+---@field x number
+---@field y number
+---@field w number
+---@field h number
+local Spatial = misc.class()
 
 function Spatial.__tostring(s)
     return string.format(
@@ -14,6 +18,11 @@ function Spatial.__tostring(s)
     )
 end
 
+---@param x number
+---@param y number
+---@param w number
+---@param h number
+---@return Spatial
 function Spatial.create(x, y, w, h)
     return setmetatable(
         {x = x or 0, y = y or 0, w = w or 0, h = h or 0}, Spatial
@@ -385,4 +394,4 @@ function Spatial.is_equal(a, b)
     return a.x == b.x and a.y == b.y and a.w == b.w and a.h == b.h
 end
 
-return Spatial
+return Spatial.create

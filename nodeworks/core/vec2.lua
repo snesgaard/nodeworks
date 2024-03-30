@@ -1,16 +1,23 @@
 local math = require "math"
 
+---@module "misc"
+local misc = require "nodeworks.core.misc"
+
 ---@class vec2
 ---@field x number
 ---@field y number
-local vec2 = {}
+---@operator add(vec2): vec2
+---@operator sub(vec2): vec2
+---@operator mul(vec2): vec2
+---@operator mul(number): vec2
+local vec2 = misc.class()
 
 ---@param x number
 ---@param y number
 ---@return vec2
 local function create(x, y)
     local this = {x = x or 0, y = y or 0}
-    return setmetatable(this, {__index = vec2})
+    return setmetatable(this, vec2)
 end
 
 
@@ -110,12 +117,6 @@ end
 
 function vec2.unpack(v)
     return v.x, v.y
-end
-
-function vec2.clamp(v, low, up)
-    return create(
-        math.clamp(v.x, low.x, up.x), math.clamp(v.y, low.y, up.y)
-    )
 end
 
 function vec2.max(v1, v2)
