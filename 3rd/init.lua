@@ -1,5 +1,5 @@
 local third =  {
-    ---@module "3rd.knife.knife.test"
+    ---@module "knife.knife.test"
     test = require(... .. ".knife.knife.test")
 }
 

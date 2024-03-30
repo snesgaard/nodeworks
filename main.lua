@@ -1,3 +1,5 @@
+local love = require("love")
+
 function love.load(args)
     local example = unpack(args)
 
