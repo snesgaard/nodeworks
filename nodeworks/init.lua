@@ -8,5 +8,11 @@ return {
     ---@module "atlas"
     atlas = require(... .. ".core.atlas"),
     ---@module "misc"
-    misc = require(... .. ".core.misc")
+    misc = require(... .. ".core.misc"),
+    ecs = {
+        ---@module "id"
+        id = require(... .. ".ecs.id"),
+        ---@module "world"
+        world = require(... .. ".ecs.world")
+    }
 }
