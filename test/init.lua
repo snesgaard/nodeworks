@@ -4,3 +4,4 @@ require (... .. ".core.test_list")
 require (... .. ".core.test_atlas")
 
 require (... .. ".ecs.test_world")
+require (... .. ".ecs.test_stack")

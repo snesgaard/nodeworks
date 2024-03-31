@@ -36,4 +36,13 @@ T("world", function(T)
 
     T:assert(not world:has(component.foo, id))
     T:assert(world:get(component.foo, id) == nil)
+
+    T("gc", function(T)
+        local a = {}
+        world:set(component.foo, a)
+        T:assert(world:count(component.foo) == 1)
+        a = nil
+        collectgarbage()
+        T:assert(world:count(component.foo) == 0)
+    end)
 end)

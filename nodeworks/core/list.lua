@@ -68,4 +68,23 @@ function list.reduce(l, f, init, ...)
     return r
 end
 
+---@generic T
+---@param l T[]
+---@return T|nil
+function list.head(l) return l[1] end
+
+---@generic T
+---@param l T[]
+---@return T|nil
+function list.tail(l) return l[#l] end
+
+---@generic T
+---@param l T[]
+---@return T[]
+function list.body(l)
+    local r = {}
+    for i = 2, #l do table.insert(r, l[i]) end
+    return r
+end
+
 return list

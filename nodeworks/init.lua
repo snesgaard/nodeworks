@@ -13,6 +13,8 @@ return {
         ---@module "id"
         id = require(... .. ".ecs.id"),
         ---@module "world"
-        world = require(... .. ".ecs.world")
+        world = require(... .. ".ecs.world"),
+        ---@module "stack"
+        stack = require(... .. ".ecs.stack")
     }
 }

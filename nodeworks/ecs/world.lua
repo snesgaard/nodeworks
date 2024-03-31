@@ -32,9 +32,10 @@ end
 
 function World:copy() return World.new(self.component_tables) end
 
----@param component any
+---@generic R
+---@param component fun(...): R
 ---@param respect_cow boolean
----@return table
+---@return table<any, R>
 function World:get_table(component, respect_cow)
     if type(component) ~= "function" then
         misc.errorf("Component must be a function, but was %s", type(component))
@@ -105,11 +106,15 @@ function World:init(component, id, ...)
     return self
 end
 
+---@generic R
+---@param component fun(...): R
+---@param id any
 function World:remove(component, id)
     local c = self:get_table(component, true)
     local v = c[id]
     c[id] = nil
 
+    print("REMEMBER collision unregister")
     --local col = nw.system.collision
     --if v and component == col.component.bump_membership then
     --   col.unregister(id)
@@ -118,14 +123,28 @@ function World:remove(component, id)
     return self
 end
 
+---@param id any
 function World:destroy(id)
     for comp, tab in pairs(self.component_tables) do self:remove(comp, id) end
+end
+
+---@generic R
+---@param component fun(...): R
+---@return integer
+function World:count(component)
+    local t = self:get_table(component, false)
+    local i = 0
+    for _, _ in pairs(t) do i = i + 1 end
+    return i
 end
 
 local function assemble_format(id, comp, ...)
     return comp, id, ...
 end
 
+---@param values table
+---@param id any
+---@return World
 function World:assemble(values, id)
     for _, v in ipairs(values) do
         if type(v) ~= "table" then misc.errorf("Values must be tables") end
@@ -143,6 +162,9 @@ function World:view_table(component)
     return next, self:get_table(component, false)
 end
 
+---@generic R
+---@param component fun(...): R
+---@return World
 function World:destroy_table(component)
     self.component_tables[component] = nil
     return self
