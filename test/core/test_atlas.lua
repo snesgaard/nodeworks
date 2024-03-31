@@ -704,6 +704,7 @@ T("atlas", function(T)
                     },
                     {
                         name = "bar",
+                        data = "{\"hit\": 22}",
                         keys = {
                             {
                                 frame = 0,
@@ -730,6 +731,8 @@ T("atlas", function(T)
 
         for _, frame in ipairs(atlas.frames) do
             T:assert(frame.slices.foo == nw.spatial(0, 0, 10, 10))
+            T:assert(frame.slice_data.foo)
+            T:assert(frame.slice_data.bar.hit == 22)
         end
 
         T:assert(atlas.frames[1].slices.bar == nw.spatial(0, 0, 10, 10))
