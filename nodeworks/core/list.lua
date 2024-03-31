@@ -47,4 +47,25 @@ function list.sublist(l, from, to)
     return r
 end
 
+---@generic T
+---@param l T[]
+---@return integer
+function list.size(l) return #l end
+
+---@generic T
+---@generic R
+---@param l T[]
+---@param f fun(R, T, ...): R
+---@param init R
+---@param ... any
+---@return R
+function list.reduce(l, f, init, ...)
+    local r = init
+    for _, v in ipairs(l) do
+        r = f(r, v, ...)
+    end
+
+    return r
+end
+
 return list
