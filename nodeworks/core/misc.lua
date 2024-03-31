@@ -48,4 +48,36 @@ function misc.inherit(c, this)
     return i
 end
 
+---@param w integer
+---@param h integer
+---@param f fun(w, h, ...): nil
+---@param ... any
+---@return love.Canvas
+function misc.prerender(w, h, f, ...)
+    local args = {...}
+    local prev_c = love.graphics.getCanvas()
+    local c = love.graphics.newCanvas(w, h)
+    love.graphics.setCanvas({c, stencil=true})
+    love.graphics.push()
+    love.graphics.origin()
+    f(w, h, unpack(args))
+    love.graphics.pop()
+    love.graphics.setCanvas(prev_c)
+    return c
+end
+
+function misc.dict_to_string(d)
+    local l = {}
+    for key, val in pairs(d) do
+      l[#l + 1] = tostring(key) .. ": " .. tostring(val)
+    end
+    if #l == 0 then return "{}" end
+    local s = "{"
+    for i = 1, #l - 1 do
+      s = s .. tostring(l[i]) .. ", "
+    end
+    s = s .. tostring(l[#l]) .. "}"
+    return s
+  end
+
 return misc
