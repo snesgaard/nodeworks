@@ -31,4 +31,10 @@ T("list", function(T)
             T:assert(thefilter(v))
         end
     end)
+
+    T("reduce", function(T)
+        local a = {1, 2, 3}
+        local b = nw.list.reduce(a, function(x, y) return x + y end, 0)
+        T:assert(b == 6)
+    end)
 end)
