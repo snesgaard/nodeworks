@@ -80,6 +80,20 @@ function misc.dict_to_string(d)
     return s
 end
 
+function misc.tostring(x)
+    if type(x) == "table" then
+        return misc.dict_to_string(x)
+    else
+        return tostring(x)
+    end
+end
+
+function misc.print(...)
+    local args = {...}
+    for i, x in ipairs(args) do args[i] = misc.tostring(x) end
+    print(unpack(args))
+end
+
 function misc.deepcopy(orig, copies)
     copies = copies or {}
     local orig_type = type(orig)

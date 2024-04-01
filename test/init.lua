@@ -5,3 +5,5 @@ require (... .. ".core.test_atlas")
 
 require (... .. ".ecs.test_world")
 require (... .. ".ecs.test_stack")
+
+require (... .. ".system.test_event")

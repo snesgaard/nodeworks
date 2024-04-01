@@ -9,6 +9,8 @@ return {
     atlas = require(... .. ".core.atlas"),
     ---@module "misc"
     misc = require(... .. ".core.misc"),
+    ---@module "dict"
+    dict = require(... .. ".core.dict"),
     ecs = {
         ---@module "id"
         id = require(... .. ".ecs.id"),
@@ -16,5 +18,9 @@ return {
         world = require(... .. ".ecs.world"),
         ---@module "stack"
         stack = require(... .. ".ecs.stack")
+    },
+    system = {
+        ---@module "nodeworks.system.event"
+        event = require(... .. ".system.event")
     }
 }
