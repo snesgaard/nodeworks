@@ -48,8 +48,15 @@ function event.swap()
     local eb = stack.ensure(event_back, system_id)
     stack.remove(event_back, system_id)
     stack.set(event_front, system_id, eb)
-    -- If any messages are present, return true!
+    -- If any messages are present, r   eturn true!
     return not dict.is_empty(eb)
+end
+
+
+---@param f fun(...: any): nil
+---@param ... any
+function event.spin(f, ...)
+    while event.swap() do f(...) end
 end
 
 return event

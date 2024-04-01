@@ -11,6 +11,10 @@ return {
     misc = require(... .. ".core.misc"),
     ---@module "dict"
     dict = require(... .. ".core.dict"),
+    ---@module "component"
+    component = require(... .. ".component"),
+    ---@module "event_type"
+    event_type = require(... .. ".event_type"),
     ecs = {
         ---@module "id"
         id = require(... .. ".ecs.id"),
@@ -21,6 +25,8 @@ return {
     },
     system = {
         ---@module "nodeworks.system.event"
-        event = require(... .. ".system.event")
+        event = require(... .. ".system.event"),
+        ---@module "nodeworks.system.time"
+        time = require(... .. ".system.time"),
     }
 }

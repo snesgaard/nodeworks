@@ -5,6 +5,7 @@ local misc = require "nodeworks.core.misc"
 ---@module "world"
 local world = require "nodeworks.ecs.world"
 
+---@alias Id string|integer|table
 
 local state = {
     world = world()
@@ -25,7 +26,7 @@ end
 
 ---@generic R
 ---@param component fun(...): R
----@param id any
+---@param id Id
 ---@return R|nil
 function stack.get(component, id)
     return state.world:get(component, id)
@@ -33,7 +34,7 @@ end
 
 ---@generic R
 ---@param component fun(...): R
----@param id any
+---@param id Id
 ---@param ... any
 function stack.set(component, id, ...)
     state.world:set(component, id, ...)
@@ -42,7 +43,7 @@ end
 
 ---@generic R
 ---@param component fun(...): R
----@param id any
+---@param id Id
 ---@return boolean
 function stack.has(component, id)
     return state.world:has(component, id)
@@ -50,7 +51,7 @@ end
 
 ---@generic R
 ---@param component fun(...): R
----@param id any
+---@param id Id
 ---@param ... any
 ---@return R
 function stack.ensure(component, id, ...)
@@ -59,21 +60,21 @@ end
 
 ---@generic R
 ---@param component fun(...): R
----@param id any
+---@param id Id
 function stack.remove(component, id)
     state.world:remove(component, id)
     return stack
 end
 
 ---@generic R
----@param id any
+---@param id Id
 function stack.destroy(id)
     state.world:destroy(id)
     return stack
 end
 
 ---@param values table
----@param id any
+---@param id Id
 function stack.assemble(values, id)
     state.world:assemble(values, id)
     return stack
