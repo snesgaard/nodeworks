@@ -57,7 +57,7 @@ end
 ---@param ... any
 function event.spin(f, ...)
     while event.swap() do
-        if f then f() end
+        if f then f(...) end
     end
 end
 
