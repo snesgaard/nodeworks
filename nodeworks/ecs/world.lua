@@ -111,20 +111,15 @@ end
 ---@param id any
 function World:remove(component, id)
     local c = self:get_table(component, true)
-    local v = c[id]
     c[id] = nil
-
-    print("REMEMBER collision unregister")
-    --local col = nw.system.collision
-    --if v and component == col.component.bump_membership then
-    --   col.unregister(id)
-    --end
 
     return self
 end
 
 ---@param id any
 function World:destroy(id)
+    local col = require("nodeworks.system.collision")
+    col.unregister(id)
     for comp, tab in pairs(self.component_tables) do self:remove(comp, id) end
 end
 

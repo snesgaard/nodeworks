@@ -69,12 +69,12 @@ function private_component.bump_world()
     return bump_world
 end
 
-local collision = {}
+local collision = {a = nil}
 
 local system_id = "__system_collision__"
 
 function collision.get_bump_world()
-    return stack.ensure(component.private_component, system_id)
+    return stack.ensure(private_component.bump_world, system_id)
 end
 
 ---@param id Id
