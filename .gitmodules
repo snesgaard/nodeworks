@@ -5,5 +5,5 @@
 	path = 3rd/json
 	url = https://github.com/rxi/json.lua
 [submodule "3rd/bump.lua"]
-	path = 3rd/bump.lua
+	path = 3rd/bump
 	url = https://github.com/kikito/bump.lua.git
