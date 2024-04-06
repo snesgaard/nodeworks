@@ -55,7 +55,7 @@ end
 ---@param ... any
 ---@return R
 function stack.ensure(component, id, ...)
-    return state.world:ensure(component, id)
+    return state.world:ensure(component, id, ...)
 end
 
 ---@generic R

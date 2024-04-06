@@ -28,5 +28,7 @@ return {
         event = require(... .. ".system.event"),
         ---@module "nodeworks.system.time"
         time = require(... .. ".system.time"),
+        ---@module "nodeworks.system.collision"
+        collision = require(... .. ".system.collision")
     }
 }

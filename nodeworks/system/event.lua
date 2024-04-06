@@ -53,10 +53,12 @@ function event.swap()
 end
 
 
----@param f fun(...: any): nil
+---@param f (fun(...: any): nil)|nil
 ---@param ... any
 function event.spin(f, ...)
-    while event.swap() do f(...) end
+    while event.swap() do
+        if f then f() end
+    end
 end
 
 return event

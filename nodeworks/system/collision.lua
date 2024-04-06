@@ -22,6 +22,9 @@ local event_type = require "nodeworks.event_type"
 ---@field touch table
 ---@field itemRect table
 ---@field otherRect table
+---@field type string
+---@field item Id
+---@field other Id
 
 
 ---@param hitbox Spatial
@@ -43,6 +46,7 @@ local function round(v) return math.floor(v + 0.5) end
 
 local private_component = {}
 
+---@param hitbox Spatial
 function private_component.bump_membership(hitbox)
     local hitbox = spatial(hitbox.x, hitbox.y, round(hitbox.w), round(hitbox.h))
     return {hitbox = hitbox}
@@ -117,12 +121,12 @@ function collision.filter(item, other) return "cross" end
 ---@param id Id
 ---@param x number
 ---@param y number
----@param filter fun(item: Id, other: Id): string
+---@param filter (fun(item: Id, other: Id): string)|nil
 ---@return number ax Arrival x coordinate
 ---@return number ay Arrival y coordinate
 ---@return CollisionInfo[] collision_info List of collisions
 function collision.move_to(id, x, y, filter)
-    local bump_membership = stack.get(component.bump_membership, id)
+    local bump_membership = stack.get(private_component.bump_membership, id)
     if not collision.get_bump_world():hasItem(id) or not bump_membership then
         stack.set(component.position, id, x, y)
         return x, y, {}
@@ -132,7 +136,7 @@ function collision.move_to(id, x, y, filter)
 
     local dx, dy = compute_model_offset(bump_membership.hitbox, mirror)
     local ax, ay, cols = collision.get_bump_world():move(
-        id, x + dx, y + dy, filter
+        id, x + dx, y + dy, filter or collision.filter
     )
 
     local ax = ax - dx
@@ -147,7 +151,7 @@ end
 ---@param id Id
 ---@param dx number
 ---@param dy number
----@param filter fun(item: Id, other: Id): string
+---@param filter (fun(item: Id, other: Id): string)|nil
 ---@return number dx Relative move x
 ---@return number dy Relative move y
 ---@return CollisionInfo[] collision_info List of collisions
@@ -188,7 +192,7 @@ end
 
 ---@param id Id
 ---@param mirror boolean
----@param filter fun(item: Id, other: Id): string
+---@param filter (fun(item: Id, other: Id): string)|nil
 ---@return CollisionInfo[]
 function collision.flip_to(id, mirror, filter)
     stack.set(component.mirror, id, mirror)
@@ -198,7 +202,7 @@ function collision.flip_to(id, mirror, filter)
 end
 
 ---@param id Id
----@param filter fun(item: Id, other: Id): string
+---@param filter (fun(item: Id, other: Id): string)|nil
 ---@return CollisionInfo[]
 function collision.flip(id, filter)
     local mirror = stack.get(component.mirror, id)
@@ -214,7 +218,8 @@ end
 ---@return Id[]
 function collision.query(rect, filter)
     local bump_world = collision.get_bump_world()
-    return bump_world:queryRect(rect.x, rect.y, rect.w, rect.h, filter)
+    local ids, _ bump_world:queryRect(rect.x, rect.y, rect.w, rect.h, filter)
+    return ids
 end
 
 

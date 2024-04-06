@@ -8,3 +8,4 @@ require (... .. ".ecs.test_stack")
 
 require (... .. ".system.test_event")
 require (... .. ".system.test_time")
+require (... .. ".system.test_collision")
