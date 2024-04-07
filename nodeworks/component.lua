@@ -39,4 +39,12 @@ end
 ---@param r number|nil
 function component.rotation(r) return r or 0 end
 
+
+--- GRAPHICS
+
+---@param p love.ParticleSystem
+function component.particles(p) return p end
+
+function component.die_on_particle_empty() return true end
+
 return component

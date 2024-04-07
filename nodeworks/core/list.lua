@@ -16,7 +16,6 @@ function list.map(l, f, ...)
     return r
 end
 
-
 ---@generic T
 ---@param l T[]
 ---@param f fun(T, ...): boolean
