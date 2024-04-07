@@ -87,4 +87,27 @@ function list.body(l)
     return r
 end
 
+---@generic T
+---@param a T
+---@param b T
+---@return boolean
+local function is_equal(a, b) return a == b end
+
+---@generic T
+---@param self T[]
+---@param other T[]
+---@param maybe_cmp (fun(a: T, b: T, ...: any): boolean)|nil
+---@param ... any
+---@return boolean
+function list.compare(self, other, maybe_cmp, ...)
+    if #self ~= #other then return false end
+
+    local cmp = maybe_cmp or is_equal
+    for i = 1, #self do
+        if not cmp(self[i], other[i], ...) then return false end
+    end
+
+    return true
+end
+
 return list

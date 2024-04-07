@@ -29,6 +29,8 @@ return {
         ---@module "nodeworks.system.time"
         time = require(... .. ".system.time"),
         ---@module "nodeworks.system.collision"
-        collision = require(... .. ".system.collision")
+        collision = require(... .. ".system.collision"),
+        ---@module "nodeworks.system.tf"
+        tf = require(... .. ".system.tf")
     }
 }

@@ -36,4 +36,7 @@ function component.mirror(m)
     return m
 end
 
+---@param r number|nil
+function component.rotation(r) return r or 0 end
+
 return component
