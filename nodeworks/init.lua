@@ -1,4 +1,6 @@
 return {
+    ---@module "nodeworks.core.video"
+    video = require(... .. ".core.video"),
     ---@module "vec2"
     vec2 = require(... .. ".core.vec2"),
     ---@module "spatial"

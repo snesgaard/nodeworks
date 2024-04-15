@@ -29,7 +29,7 @@ end
 local Video = misc.class()
 
 ---@param frames frame[]
----@param init_time number
+---@param init_time number|nil
 ---@return Video
 function Video.new(frames, init_time)
     local frames = frames or list()
@@ -101,4 +101,4 @@ function Video:frame_from_index(index)
     return self.frames[index]
 end
 
-return Video
+return Video.new

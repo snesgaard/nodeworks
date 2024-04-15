@@ -47,4 +47,21 @@ function component.particles(p) return p end
 
 function component.die_on_particle_empty() return true end
 
+---@param m table<string, Video>
+function component.animation_map(m) return m end
+
+---@param video Video
+---@param init_time number
+---@param name string
+function component.animation(video, init_time, name) 
+    return {
+        video = video,
+        init_time = init_time,
+        name = name
+    } 
+end
+
+---@param f frame
+function component.frame(f) return f end
+
 return component
