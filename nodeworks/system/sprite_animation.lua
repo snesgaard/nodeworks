@@ -55,7 +55,6 @@ function sprite_animation.update_single_entity(id, maybe_animation)
 
     local pos = stack.get(component.position, id) or vec2(0, 0)
     local mirror = stack.get(component.mirror, id)
-    print("ADD FOLLOW to ANIMATION WHEN FOLLOW HAS BEEN IMPLEMENTED")
     -- Create new slices
     for name, rect in pairs(frame.slices) do
         -- Generate ID
@@ -66,6 +65,8 @@ function sprite_animation.update_single_entity(id, maybe_animation)
         collision.register(sid, rect)
         collision.warp_to(sid, pos.x, pos.y)
         collision.flip_to(sid, mirror, nil_filter)
+        -- Follow the parent
+        stack.set(component.is_following(id), sid)
         -- Store id
         slice_dict[name] = sid
 
@@ -74,6 +75,7 @@ function sprite_animation.update_single_entity(id, maybe_animation)
             frame.slice_data[name] or {}
         )
         if assembly then stack.assemble(assembly, sid) end
+
     end
 end
 
