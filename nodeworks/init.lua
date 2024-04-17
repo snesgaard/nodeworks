@@ -33,6 +33,8 @@ return {
         ---@module "nodeworks.system.collision"
         collision = require(... .. ".system.collision"),
         ---@module "nodeworks.system.tf"
-        tf = require(... .. ".system.tf")
+        tf = require(... .. ".system.tf"),
+        ---@module "nodeworks.system.sprite_animation",
+        sprite_animation = require (... .. ".system.sprite_animation")
     }
 }

@@ -5,6 +5,9 @@ local T = third.test
 ---@module "nodeworks"
 local nw = require "nodeworks"
 
+local pa = nw.system.sprite_animation
+local time = nw.system.time
+
 local stack = nw.ecs.stack
 
 local idle = {
@@ -18,8 +21,8 @@ local hit = {
 }
 
 local state_map = {
-    idle = Video.create(idle):loop(),
-    hit = Video.create(hit):once()
+    idle = nw.video(idle):loop(),
+    hit = nw.video(hit):once()
 }
 
 T("test_sprite_animator", function(T)
@@ -31,13 +34,13 @@ T("test_sprite_animator", function(T)
 
     T("is_done", function(T)
         T:assert(not pa.is_done(id))
-        clock.update(10)
+        time.update(10)
         T:assert(not pa.is_done(id))
 
         stack.set(nw.component.puppet_state, id, "hit")
 
         T:assert(not pa.is_done(id))
-        clock.update(10)
+        time.update(10)
         T:assert(pa.is_done(id))
     end)
 
@@ -53,7 +56,7 @@ T("test_sprite_animator", function(T)
         T:assert(stack.has(nw.component.frame, id))
         T:assert(stack.get(nw.component.frame, id) == idle[1])
 
-        clock.update(1.5)
+        time.update(1.5)
         pa.update()
         T:assert(stack.get(nw.component.frame, id) == idle[2])
 
@@ -61,7 +64,7 @@ T("test_sprite_animator", function(T)
         pa.update()
         T:assert(stack.get(nw.component.frame, id) == hit[1])
 
-        clock.update(1.5)
+        time.update(1.5)
         pa.update()
         T:assert(stack.get(nw.component.frame, id) == hit[2])
         
