@@ -129,6 +129,7 @@ function collision.move_to(id, x, y, filter)
     local bump_membership = stack.get(private_component.bump_membership, id)
     if not collision.get_bump_world():hasItem(id) or not bump_membership then
         stack.set(component.position, id, x, y)
+        event.emit(event_type.move, id, x, y, {})
         return x, y, {}
     end
 
@@ -143,7 +144,7 @@ function collision.move_to(id, x, y, filter)
     local ay = ay - dy
     stack.set(component.position, id, ax, ay)
 
-    event.emit(event_type.move, ax, ay, cols)
+    event.emit(event_type.move, id, ax, ay, cols)
 
     return ax, ay, cols
 end
@@ -198,6 +199,7 @@ function collision.flip_to(id, mirror, filter)
     stack.set(component.mirror, id, mirror)
     local pos = stack.ensure(component.position, id)
     local _, _, cols = collision.move_to(id, pos.x, pos.y, filter)
+    event.emit(event_type.flip_to, id, mirror)
     return cols
 end
 

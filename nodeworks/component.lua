@@ -3,6 +3,8 @@ local vec2 = require "nodeworks.core.vec2"
 
 local component = {}
 
+local metacomponent = {}
+
 --- TIME
 
 ---@param t number|nil
@@ -63,5 +65,20 @@ end
 
 ---@param f frame
 function component.frame(f) return f end
+
+
+local meta_is_following = {}
+
+---@param id Id
+---@return fun(): boolean
+function metacomponent.is_following(id)
+    meta_is_following[id] = meta_is_following[id] or function() return true end
+    return meta_is_following[id]
+end
+
+---@param id Id
+function component.is_following(id)
+    return metacomponent.is_following(id)
+end
 
 return component

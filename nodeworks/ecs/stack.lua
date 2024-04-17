@@ -82,8 +82,8 @@ end
 
 ---@generic R
 ---@param component fun(...): R
----@return fun(table: table<any, R>, key: any): any, R
----@return table<any, R>
+---@return fun(table: table<Id, R>, key: any): Id, R
+---@return table<Id, R>
 function stack.view_table(component)
     return state.world:view_table(component)
 end

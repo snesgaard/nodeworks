@@ -35,6 +35,8 @@ return {
         ---@module "nodeworks.system.tf"
         tf = require(... .. ".system.tf"),
         ---@module "nodeworks.system.sprite_animation",
-        sprite_animation = require (... .. ".system.sprite_animation")
+        sprite_animation = require (... .. ".system.sprite_animation"),
+        ---@module "nodeworks.system.follow"
+        follow = require (... .. ".system.follow"),
     }
 }
