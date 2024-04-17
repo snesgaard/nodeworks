@@ -88,14 +88,16 @@ T("test_sprite_animator", function(T)
         )
 
         T:assert(nw.dict.size(stack.get_table(test_components.foo)) == 0)
-
+        
         nw.system.sprite_animation.play(id, "hit")
         nw.system.sprite_animation.play(id, "idle")
-
+        
+        T:assert(nw.system.collision.get_bump_world():countItems() == 1)
         T:assert(nw.dict.size(stack.get_table(test_components.foo)) == 1)
 
         nw.system.sprite_animation.play(id, "hit")
 
         T:assert(nw.dict.size(stack.get_table(test_components.foo)) == 0)
+        T:assert(nw.system.collision.get_bump_world():countItems() == 0)
     end)
 end)
