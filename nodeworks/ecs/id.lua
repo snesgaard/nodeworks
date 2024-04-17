@@ -5,7 +5,7 @@ local misc = require "nodeworks.core.misc"
 ---@field tag string
 local WeakID = misc.class()
 
----@param tag string
+---@param tag string|nil
 ---@return WeakID
 function WeakID.new(tag)
     return setmetatable({tag=tag or "generic"}, WeakID)
@@ -34,7 +34,7 @@ function id.strong(tag)
     return string.format("%s[%i]", tostring(tag), c)
 end
 
----@param tag string
+---@param tag string|nil
 function id.weak(tag) return WeakID.new(tag) end
 
 return id

@@ -38,7 +38,7 @@ T("world", function(T)
     T:assert(world:get(component.foo, id) == nil)
 
     T("gc", function(T)
-        local a = {}
+        local a = nw.ecs.id.weak()
         world:set(component.foo, a)
         T:assert(world:count(component.foo) == 1)
         a = nil

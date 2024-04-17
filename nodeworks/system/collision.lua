@@ -191,7 +191,7 @@ function collision.get_world_hitbox(id)
 end
 
 ---@param id Id
----@param mirror boolean
+---@param mirror boolean|nil
 ---@param filter (fun(item: Id, other: Id): string)|nil
 ---@return CollisionInfo[]
 function collision.flip_to(id, mirror, filter)

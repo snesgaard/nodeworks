@@ -10,8 +10,8 @@ local spatial = require(path .. "spatial")
 ---@class frame
 ---@field image love.Image
 ---@field quad love.Quad
----@field slices table
----@field slice_data table
+---@field slices table<string, Spatial>
+---@field slice_data table<string, any>
 ---@field offset vec2
 ---@field dt number
 local frame = misc.class()

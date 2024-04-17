@@ -11,19 +11,23 @@ local time = nw.system.time
 local stack = nw.ecs.stack
 
 local idle = {
-    {dt = 1},
-    {dt = 2},
-    {dt = 3}
+    {dt = 1, slices = {foo=nw.spatial(0, 0, 10, 20)}, slice_data = {}},
+    {dt = 2, slices = {bar=nw.spatial(1, 2, 13, 7)}, slice_data = {}},
+    {dt = 3, slices = {}, slice_data = {}}
 }
 local hit = {
-    {dt = 1},
-    {dt = 2}
+    {dt = 1, slices = {}, slice_data = {}},
+    {dt = 2, slices = {}, slice_data = {}}
 }
 
 local state_map = {
     idle = nw.video(idle):loop(),
     hit = nw.video(hit):once()
 }
+
+local test_components = {}
+
+function test_components.foo(a) return a or 0 end
 
 T("test_sprite_animator", function(T)
     stack.clear()
@@ -72,5 +76,26 @@ T("test_sprite_animator", function(T)
             stack.remove(nw.component.animation_map, id)
             pa.update()
         end)
+    end)
+
+    T("slice_properties", function(T)
+        nw.system.sprite_animation.set_slice_assembly(
+            function()
+                return {
+                    {test_components.foo}
+                }
+            end
+        )
+
+        T:assert(nw.dict.size(stack.get_table(test_components.foo)) == 0)
+
+        nw.system.sprite_animation.play(id, "hit")
+        nw.system.sprite_animation.play(id, "idle")
+
+        T:assert(nw.dict.size(stack.get_table(test_components.foo)) == 1)
+
+        nw.system.sprite_animation.play(id, "hit")
+
+        T:assert(nw.dict.size(stack.get_table(test_components.foo)) == 0)
     end)
 end)
