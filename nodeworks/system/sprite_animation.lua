@@ -24,8 +24,6 @@ function sprite_animation.update()
     for id, animation in stack.view_table(component.animation) do
         sprite_animation.update_single_entity(id, animation)        
     end
-
-
 end
 
 function sprite_animation.spin()
@@ -40,7 +38,7 @@ function sprite_animation.play(id, name)
     local animation = map[name]
     if animation == nil then return false end
 
-    stack.set(component.animation, id, animation, time.clock())
+    stack.set(component.animation, id, animation, time.clock(), name)
     sprite_animation.update_single_entity(id)
     return true
 end
