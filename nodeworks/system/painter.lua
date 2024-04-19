@@ -1,7 +1,7 @@
 ---@module "nodeworks.component"
 local component = require "nodeworks.component"
 ---@module "nodeworks.ecs.stack"
-local stack = require "nodeworks.stack"
+local stack = require "nodeworks.ecs.stack"
 ---@module "nodeworks.core.dict"
 local dict = require "nodeworks.core.dict"
 ---@module "nodeworks.core.misc"

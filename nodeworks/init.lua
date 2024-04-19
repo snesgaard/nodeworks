@@ -38,5 +38,7 @@ return {
         sprite_animation = require (... .. ".system.sprite_animation"),
         ---@module "nodeworks.system.follow"
         follow = require (... .. ".system.follow"),
+        ---@module "nodeworks.system.painter"
+        painter = require (... .. ".system.painter")
     }
 }
