@@ -6,7 +6,10 @@ local third =  {
     ---@module "bump"
     bump = require(... .. ".bump.bump"),
     ---@module "bump_debug"
-    bump_debug = require(... .. ".bump_debug")
+    bump_debug = require(... .. ".bump_debug"),
+    ---@module "sti"
+    sti = (... .. ".sti.sti")
 }
+
 
 return third
