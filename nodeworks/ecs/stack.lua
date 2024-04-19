@@ -36,6 +36,16 @@ end
 ---@param component fun(...): R
 ---@param id Id
 ---@param ... any
+---@return R
+function stack.get_or_default(component, id, ...)
+    local v = stack.get(component, id)
+    return v ~= nil and v or component(...)
+end
+
+---@generic R
+---@param component fun(...): R
+---@param id Id
+---@param ... any
 function stack.set(component, id, ...)
     state.world:set(component, id, ...)
     return stack

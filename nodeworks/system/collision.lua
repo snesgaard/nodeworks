@@ -66,9 +66,8 @@ local function oneway_response(world, col, ...)
 end
 
 function private_component.bump_world() 
-    local weak_keys = {__mode = "k"}
     local bump_world = third.bump.newWorld()
-    bump_world.rects = setmetatable({}, weak_keys)
+    bump_world.rects = misc.create_weak_key_table()
     bump_world:addResponse("oneway", oneway_response)
     return bump_world
 end

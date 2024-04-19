@@ -115,4 +115,9 @@ function misc.deepcopy(orig, copies)
     return copy
 end
 
+function misc.create_weak_key_table()
+    local weak_keys = {__mode = "k"}
+    return setmetatable({}, weak_keys)
+end
+
 return misc

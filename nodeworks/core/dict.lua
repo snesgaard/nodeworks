@@ -19,4 +19,24 @@ function dict.size(d)
     return s
 end
 
+---@param d table<any, any>
+---@return any[]
+function dict.keys(d)
+    local r = {}
+
+    for k, _ in pairs(d) do table.insert(r, k) end
+
+    return r
+end
+
+---@param d table<any, any>
+---@return any[]
+function dict.values(d)
+    local r = {}
+    
+    for _, v in pairs(d) do table.insert(r, v) end
+
+    return r
+end
+
 return dict

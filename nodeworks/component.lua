@@ -1,5 +1,21 @@
 ---@module "vec2"
 local vec2 = require "nodeworks.core.vec2"
+---@module "misc"
+local misc = require "nodeworks.core.misc"
+
+local function declare_relation_component()
+    local cache = misc.create_weak_key_table()
+    ---@param id Id
+    ---@return fun(): boolean
+    return function(id)
+        if id == nil then
+            error("Relation was nil")
+        end
+
+        cache[id] = cache[id] or function() return true end
+        return cache[id]
+    end
+end
 
 local component = {}
 
@@ -66,19 +82,16 @@ end
 ---@param f frame
 function component.frame(f) return f end
 
+component.is_following = declare_relation_component()
 
-local meta_is_following = {}
+---@param l number
+---@return number
+function component.layer(l) return l or 0 end
 
----@param id Id
----@return fun(): boolean
-function metacomponent.is_following(id)
-    meta_is_following[id] = meta_is_following[id] or function() return true end
-    return meta_is_following[id]
-end
 
----@param id Id
-function component.is_following(id)
-    return metacomponent.is_following(id)
-end
+---@param d string
+function component.drawable(d) return d end
+
+component.belongs_to = declare_relation_component()
 
 return component
