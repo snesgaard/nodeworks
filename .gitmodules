@@ -7,6 +7,6 @@
 [submodule "3rd/bump.lua"]
 	path = 3rd/bump
 	url = https://github.com/kikito/bump.lua.git
-[submodule "3rd/--help"]
-	path = 3rd/--help
+[submodule "3rd/sti"]
+	path = 3rd/sti
 	url = https://github.com/karai17/Simple-Tiled-Implementation
