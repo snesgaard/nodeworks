@@ -34,9 +34,9 @@ function painter.push_state(id)
 end
 
 function painter.push_transform(id)
-    local pos = stack.get(nw.component.position, id)
+    local pos = stack.get(component.position, id)
     if pos then love.graphics.translate(pos.x, pos.y) end
-    local mirror = stack.get(nw.component.mirror, id)
+    local mirror = stack.get(component.mirror, id)
     if mirror then love.graphics.scale(-1, 1) end
 end
 
@@ -61,12 +61,10 @@ function painter.draw_object_layer(layer_id)
     local object_layer = stack.get(component.object_layer, layer_id)
     if object_layer == nil then return end
 
-    local entities = dict.keys(stack.get_table(component.is_on_layer(layer_id)))
-    table.sort(entities, painter.compare_entities)
-
-    for _, id in ipairs(entities) do
-        painter.draw_entity(id)
-    end
+    love.graphics.push()
+    --painter.push_transform(layer_id)
+    object_layer:draw()
+    love.graphics.pop()
 end
 
 function painter.draw_image_layer(layer_id)

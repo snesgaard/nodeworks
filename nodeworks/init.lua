@@ -39,6 +39,10 @@ return {
         ---@module "nodeworks.system.follow"
         follow = require (... .. ".system.follow"),
         ---@module "nodeworks.system.painter"
-        painter = require (... .. ".system.painter")
+        painter = require (... .. ".system.painter"),
+        ---@module "nodeworks.system.map"
+        map = require (... .. ".system.map"),
+        ---@module "nodeworks.system.camera"
+        camera = require (... .. ".system.camera")
     }
 }

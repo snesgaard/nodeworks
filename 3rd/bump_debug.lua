@@ -10,11 +10,7 @@ local function get_color(key)
     if type(key) ~= "table" then
         return 0, 1, 0
     end
-    if key[nw.component.body] then
-        return 0, 0, 1
-    else
-        return 1, 0, 0
-    end
+    return 1, 0, 0
 end
 
 function debug.draw_world(world, draw_cells)
@@ -39,12 +35,12 @@ function debug.draw_world(world, draw_cells)
 
     for key, rects in pairs(world.rects) do
         local r, g, b = get_color(key)
-        gfx.setColor(r, g, b)
-        gfx.rectangle("line", rects.x, rects.y, rects.w, rects.h)
-        gfx.setColor(r, g, b, 0.3)
-        gfx.rectangle("fill", rects.x, rects.y, rects.w, rects.h)
+        love.graphics.setColor(r, g, b)
+        love.graphics.rectangle("line", rects.x, rects.y, rects.w, rects.h)
+        love.graphics.setColor(r, g, b, 0.3)
+        love.graphics.rectangle("fill", rects.x, rects.y, rects.w, rects.h)
     end
-    gfx.setColor(1, 1, 1)
+    love.graphics.setColor(1, 1, 1)
 end
 
 function debug.world_draw_from_pool(pool)
@@ -67,10 +63,10 @@ function debug.draw_coordinate_systems(pool)
             local x_max = vec2(10, 0) + p
             local y_min = vec2(0, -10) + p
             local y_max = vec2(0, 10) + p
-            gfx.setColor(1, 0, 0)
-            gfx.line(x_min.x, x_min.y, x_max.x, x_max.y)
-            gfx.setColor(0, 1, 0)
-            gfx.line(y_min.x, y_min.y, y_max.x, y_max.y)
+            love.graphics.setColor(1, 0, 0)
+            love.graphics.line(x_min.x, x_min.y, x_max.x, x_max.y)
+            love.graphics.setColor(0, 1, 0)
+            love.graphics.line(y_min.x, y_min.y, y_max.x, y_max.y)
         end
     end
 end
