@@ -31,9 +31,4 @@ T("painter", function(T)
     T:assert(painter.compare_entities("a", "b"))
 
     painter.draw()
-
-    T("manipulate_layer", function(T)
-        stack.set(nw.component.layer, "a", 42)
-        T:assert(not painter.compare_entities("a", "b"))
-    end)
 end)

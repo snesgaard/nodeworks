@@ -57,6 +57,13 @@ end
 ---@param r number|nil
 function component.rotation(r) return r or 0 end
 
+---@param sx number
+---@param sy number
+function component.scale(sx, sy) return vec2(sx, sy) end
+
+---@param px number
+---@param py number
+function component.parallax(px, py) return vec2(px, py) end
 
 --- GRAPHICS
 
@@ -93,5 +100,16 @@ function component.layer(l) return l or 0 end
 function component.drawable(d) return d end
 
 component.belongs_to = declare_relation_component()
+
+--- Layer properties
+
+---@param t table
+function component.tile_layer(t) return t end
+
+---@param o table
+function component.object_layer(o) return o end
+
+---@param i table
+function component.image_layer(i) return i end
 
 return component
