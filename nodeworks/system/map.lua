@@ -10,6 +10,12 @@ local collision = require "nodeworks.system.collision"
 local spatial = require "nodeworks.core.spatial"
 ---@module "nodeworks.ecs.id"
 local ecs_id = require "nodeworks.ecs.id"
+---@module "nodeworks.core.misc"
+local misc = require "nodeworks.core.misc"
+---@module "nodeworks.event_type"
+local event_type = require "nodeworks.event_type"
+---@module "nodeworks.system.event"
+local event = require "nodeworks.system.event"
 
 local map = {}
 
@@ -47,6 +53,8 @@ function map.load_image_layer(layer_id, layer)
     if layer.type ~= "imagelayer" then return end
 
     stack.set(component.image_layer, layer_id, layer)
+
+    
 end
 
 ---@param id Id
@@ -99,6 +107,9 @@ function map.load_tiled(path)
         )
         stack.set(component.layer, layer_id, index)
     end
+
+    local map_id = ecs_id.strong("map")
+    stack.set(component.tiled_map, map_id, tiled_map)
 end
 
 ---@param a Id
@@ -126,6 +137,18 @@ function map.view_layers()
     table.sort(layers, compare_layers)
 
     return ipairs(layers)
+end
+
+function map.update(dt)
+    for _, map in stack.view_table(component.tiled_map) do
+        map:update(dt)
+    end
+end
+
+function map.spin()
+    for _, dt in event.view(event_type.update) do
+        map.update(dt)
+    end
 end
 
 return map

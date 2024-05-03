@@ -8,8 +8,10 @@ local dict = require "nodeworks.core.dict"
 local misc = require "nodeworks.core.misc"
 ---@module "nodeworks.system.camera"
 local camera = require "nodeworks.system.camera"
----@mdoule "nodeworks.system.map"
+---@module "nodeworks.system.map"
 local map = require "nodeworks.system.map"
+---@module "nodeworks.system.time"
+local time = require "nodeworks.system.time"
 
 
 local painter = {}
@@ -63,16 +65,54 @@ function painter.draw_object_layer(layer_id)
 
     love.graphics.push()
     --painter.push_transform(layer_id)
-    object_layer:draw()
+    --object_layer:draw()
     love.graphics.pop()
 end
 
+local scroll_squad = love.graphics.newQuad(0, 0, 1, 1, 1, 1)
 function painter.draw_image_layer(layer_id)
     local image_layer = stack.get(component.image_layer, layer_id)
     if image_layer == nil then return end
+
+    --[[
     love.graphics.push()
     painter.push_transform(layer_id)
-    image_layer:draw()
+    local x = love.graphics.transformPoint(image_layer.offsetx, image_layer.offsety)
+    love.graphics.draw(image_layer.image, 0, 0)
+    love.graphics.pop()
+    ]]--
+
+    local image = image_layer.image
+    local wrap_mode = {
+        repeatx = true,
+        repeaty = false
+    }
+    image:setWrap(
+        wrap_mode.repeatx and "repeat" or "clampzero",
+        wrap_mode.repeaty and "repeat" or "clampzero"
+    )
+
+    love.graphics.push("all")
+    
+    painter.push_transform(layer_id)
+    
+    local lx, ly = love.graphics.transformPoint(0, 0)
+    local ux, uy = love.graphics.transformPoint(image:getWidth(), image:getHeight())
+
+    local w, h = math.abs(lx - ux), math.abs(ly - uy)
+    
+    local hscroll = image_layer.properties.horizontal_time_scroll or 0
+    scroll_squad:setViewport(
+        -lx + time.clock() * hscroll, -ly,
+        love.graphics.getWidth(), love.graphics.getHeight(),
+        w, h
+    )
+
+    local sx, sy = 1, 1
+
+    love.graphics.origin()
+    love.graphics.draw(image, scroll_squad, 0, 0, 0, sx, sy)
+
     love.graphics.pop()
 end
 

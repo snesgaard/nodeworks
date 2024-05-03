@@ -27,6 +27,10 @@ end
 ---@param scale vec2
 ---@param parallax vec2
 function camera.push_transform(pos, scale, parallax)
+    love.graphics.translate(
+        love.graphics.getWidth() / 2,
+        love.graphics.getHeight() / 2
+    )
     love.graphics.scale(scale.x, scale.y)
     love.graphics.translate(-pos.x * parallax.x, -pos.y * parallax.y)
 end

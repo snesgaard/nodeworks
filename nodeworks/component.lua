@@ -112,4 +112,7 @@ function component.object_layer(o) return o end
 ---@param i table
 function component.image_layer(i) return i end
 
+---@param m table
+function component.tiled_map(m) return m end
+
 return component
