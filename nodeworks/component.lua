@@ -132,4 +132,6 @@ function component.behavior_instance(f, id)
     return f(id)
 end
 
+function component.is_camera() return true end
+
 return component

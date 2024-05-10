@@ -24,4 +24,47 @@ function event_type.flip_to(id, mirror)
     }
 end
 
+---@param key string
+---@param is_repeat boolean
+function event_type.keypressed(key, is_repeat)
+    return {
+        key = key,
+        is_repeat = is_repeat
+    }
+end
+
+---@param key string
+function event_type.keyreleased(key)
+    return key
+end
+
+---@param joystick love.Joystick
+---@param button string
+function event_type.gamepadpressed(joystick, button)
+    return {
+        joystick = joystick,
+        button = button
+    }
+end
+
+---@param joystick love.Joystick
+---@param button string
+function event_type.gamepadreleased(joystick, button)
+    return {
+        joystick = joystick,
+        button = button
+    }
+end
+
+---@param joystick love.Joystick
+---@param axis string
+---@param value number
+function event_type.gamepadaxis(joystick, axis, value)
+    return {
+        joystick = joystick,
+        axis = axis,
+        value = value
+    }
+end
+
 return event_type

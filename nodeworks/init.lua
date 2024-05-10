@@ -1,4 +1,4 @@
-return {
+local nw = {
     ---@module "nodeworks.core.video"
     video = require(... .. ".core.video"),
     ---@module "vec2"
@@ -52,3 +52,81 @@ return {
         behavior = require (... .. ".system.behavior")
     }
 }
+
+function nw.shortcuts()
+    stack = nw.ecs.stack
+    system = nw.system
+    component = nw.component
+    event = nw.system.event
+    event_type = nw.event_type
+end
+
+function nw.user_spin()
+end
+
+function nw.spin()
+    while nw.system.event.swap() do
+        nw.system.time.spin()
+        nw.system.sprite_animation.spin()
+        nw.system.follow.spin()
+        nw.system.map.spin()
+        nw.system.behavior.spin()
+        nw.user_spin()
+    end
+end
+
+nw.enable_collision_debug_draw = false
+
+function nw.configure()
+    ---@param dt number
+    function love.update(dt)
+        nw.system.event.emit(nw.event_type.update, dt)
+        nw.spin()
+    end
+
+    function love.draw()
+        for camera_id, _ in stack.view_table(nw.component.is_camera) do
+            nw.system.painter.draw(camera_id)
+
+            if nw.enable_collision_debug_draw then
+                love.graphics.push()
+                local camera_pos, camera_scale = nw.system.camera.get_transform(camera_id)
+                nw.system.camera.push_transform(camera_pos, camera_scale, nw.vec2(1, 1))
+                nw.system.collision.draw()
+                love.graphics.pop()
+            end
+        end
+    end
+
+    ---@param key string
+    ---@param is_repeat boolean
+    function love.keypressed(key, _, is_repeat)
+        nw.system.event.emit(nw.event_type.keypressed, key, is_repeat)
+    end
+
+    ---@param key string
+    function love.keyreleased(key)
+        nw.system.event.emit(nw.event_type.keyreleased, key)
+    end
+
+    ---@param joystick love.Joystick
+    ---@param button string
+    function love.gamepadpressed(joystick, button)
+        nw.system.event.emit(nw.event_type.gamepadpressed, joystick, button)
+    end
+
+    ---@param joystick love.Joystick
+    ---@param button string
+    function love.gamepadreleased(joystick, button)
+        nw.system.event.emit(nw.event_type.gamepadreleased, joystick, button)
+    end
+
+    ---@param joystick love.Joystick
+    ---@param axis string
+    ---@param value number
+    function love.gamepadaxis(joystick, axis, value)
+        nw.system.event.emit(nw.event_type.gamepadaxis, joystick, axis, value)
+    end
+end
+
+return nw
