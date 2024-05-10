@@ -47,6 +47,8 @@ return {
         ---@module "nodeworks.system.camera"
         camera = require (... .. ".system.camera"),
         ---@module "nodeworks.system.resource"
-        resource = require (... .. ".system.resource")
+        resource = require (... .. ".system.resource"),
+        ---@module "nodeworks.system.behavior"
+        behavior = require (... .. ".system.behavior")
     }
 }

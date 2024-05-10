@@ -125,4 +125,11 @@ function component.black_board() return {} end
 ---@param s string
 function component.behavior(s) return s end
 
+---@param f nil|fun(id: Id): table
+---@param id Id
+function component.behavior_instance(f, id)
+    if not f then return end
+    return f(id)
+end
+
 return component

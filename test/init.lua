@@ -16,3 +16,4 @@ require (... .. ".system.test_follow")
 require (... .. ".system.test_painter")
 
 require (... .. ".core.test_ai")
+require (... .. ".system.test_behavior")
