@@ -17,6 +17,8 @@ return {
     component = require(... .. ".component"),
     ---@module "event_type"
     event_type = require(... .. ".event_type"),
+    ---@module "ai"
+    ai = require (... .. ".core.ai"),
     ecs = {
         ---@module "id"
         id = require(... .. ".ecs.id"),
