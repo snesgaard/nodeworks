@@ -122,4 +122,7 @@ function component.node_status() return {} end
 
 function component.black_board() return {} end
 
+---@param s string
+function component.behavior(s) return s end
+
 return component
