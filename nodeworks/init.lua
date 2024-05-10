@@ -85,7 +85,7 @@ function nw.configure()
     end
 
     function love.draw()
-        for camera_id, _ in stack.view_table(nw.component.is_camera) do
+        for camera_id, _ in nw.ecs.stack.view_table(nw.component.is_camera) do
             nw.system.painter.draw(camera_id)
 
             if nw.enable_collision_debug_draw then
