@@ -608,7 +608,7 @@ T("atlas", function(T)
 
             T:assert(animation)
             for i, frame in ipairs(animation) do
-                T:assert(frame == atlas.frames[i + from + 1])
+                T:assert(frame == atlas.frames[i + from])
             end
         end
     end)

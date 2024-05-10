@@ -83,18 +83,15 @@ function painter.draw_object_layer(layer_id)
     --object_layer:draw()
 end
 
-local scroll_squad = love.graphics.newQuad(0, 0, 1, 1, 1, 1)
+function painter.get_scroll_squad()
+    painter.__scroll_quad = painter.__scroll_quad or love.graphics.newQuad(0, 0, 1, 1, 1, 1)
+    return painter.__scroll_quad
+end
+
+
 function painter.draw_image_layer(layer_id)
     local image_layer = stack.get(component.image_layer, layer_id)
     if image_layer == nil then return end
-
-    --[[
-    love.graphics.push()
-    painter.push_transform(layer_id)
-    local x = love.graphics.transformPoint(image_layer.offsetx, image_layer.offsety)
-    love.graphics.draw(image_layer.image, 0, 0)
-    love.graphics.pop()
-    ]]--
 
     local image = image_layer.image
     local wrap_mode = {
@@ -115,8 +112,9 @@ function painter.draw_image_layer(layer_id)
 
     local w, h = math.abs(lx - ux), math.abs(ly - uy)
     
+    local scroll_quad = painter.get_scroll_squad()
     local hscroll = image_layer.properties.horizontal_time_scroll or 0
-    scroll_squad:setViewport(
+    scroll_quad:setViewport(
         -lx + time.clock() * hscroll, -ly,
         love.graphics.getWidth(), love.graphics.getHeight(),
         w, h
@@ -125,7 +123,7 @@ function painter.draw_image_layer(layer_id)
     local sx, sy = 1, 1
 
     love.graphics.origin()
-    love.graphics.draw(image, scroll_squad, 0, 0, 0, sx, sy)
+    love.graphics.draw(image, scroll_quad, 0, 0, 0, sx, sy)
 
     love.graphics.pop()
 end
