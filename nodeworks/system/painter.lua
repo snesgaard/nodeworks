@@ -63,10 +63,24 @@ function painter.draw_object_layer(layer_id)
     local object_layer = stack.get(component.object_layer, layer_id)
     if object_layer == nil then return end
 
-    love.graphics.push()
+    local layer_index = stack.get(component.layer, layer_id)
+
+    if layer_index == nil then return end
+    
+    local entities = stack.get_table(component.is_on_layer(layer_index))
+
+    for id, _ in pairs(entities) do
+        local frame = stack.get(component.frame, id)
+        if frame then
+            love.graphics.push()
+            painter.push_transform(id)
+            frame:draw("body")
+            love.graphics.pop()
+        end
+    end
+
     --painter.push_transform(layer_id)
     --object_layer:draw()
-    love.graphics.pop()
 end
 
 local scroll_squad = love.graphics.newQuad(0, 0, 1, 1, 1, 1)

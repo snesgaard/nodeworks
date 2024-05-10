@@ -14,6 +14,8 @@ local spatial = require(path .. "spatial")
 local love = require "love"
 ---@module "3rd"
 local third = require "3rd"
+---@module "nodeworks.core.video"
+local video = require "nodeworks.core.video"
 
 local gfx = love.graphics
 
@@ -108,6 +110,8 @@ local function new(sheet, path)
     )
 end
 
+---@param path string
+---@return Atlas
 function Atlas.from_file(path)
     local sheet = gfx.newImage(path .. "/atlas.png")
     local data = read_json(path   .. "/atlas.json")
@@ -232,6 +236,8 @@ function Atlas.create(sheet, data)
     return this
 end
 
+---@param name string
+---@return frame[]
 function Atlas:get_animation(name)
     local tag = self.tags[name]
 
@@ -239,11 +245,19 @@ function Atlas:get_animation(name)
         error(string.format("Could not find animation: %s", name))
     end
 
-    local frames_sub = list.sublist(self.frames, tag.from + 1, tag.to + 1)
+    local frames_sub = list.sublist(self.frames, tag.from, tag.to)
 
     return frames_sub
 end
 
+---@param name string
+---@return Video
+function Atlas:get_video(name)
+    return video(self:get_animation(name))
+end
+
+---@param name string
+---@return frame|nil
 function Atlas:get_frame(name)
     return self:get_animation(name)[1]
 end

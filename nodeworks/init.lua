@@ -43,6 +43,8 @@ return {
         ---@module "nodeworks.system.map"
         map = require (... .. ".system.map"),
         ---@module "nodeworks.system.camera"
-        camera = require (... .. ".system.camera")
+        camera = require (... .. ".system.camera"),
+        ---@module "nodeworks.system.resource"
+        resource = require (... .. ".system.resource")
     }
 }

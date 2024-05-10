@@ -95,6 +95,8 @@ component.is_following = declare_relation_component()
 ---@return number
 function component.layer(l) return l or 0 end
 
+component.is_on_layer = declare_relation_component()
+
 
 ---@param d string
 function component.drawable(d) return d end
@@ -114,5 +116,10 @@ function component.image_layer(i) return i end
 
 ---@param m table
 function component.tiled_map(m) return m end
+
+---@return table
+function component.node_status() return {} end
+
+function component.black_board() return {} end
 
 return component

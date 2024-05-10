@@ -64,7 +64,7 @@ function map.object_properties(id, object)
 
 end
 
-function map.load_object_layer(layer_id, layer)
+function map.load_object_layer(index, layer_id, layer)
     if layer.type ~= "objectgroup" then return end
 
     stack.set(component.object_layer, layer_id, layer)
@@ -75,7 +75,8 @@ function map.load_object_layer(layer_id, layer)
 
         stack.assemble(
             {
-                {component.position, layer.offsetx, layer.offsety}
+                {component.position, layer.offsetx, layer.offsety},
+                {component.is_on_layer(index)}
             },
             id
         )
@@ -95,7 +96,7 @@ function map.load_tiled(path)
         local layer_id = index
         map.load_tile_layer(layer_id, tiled_layer)
         map.load_image_layer(layer_id, tiled_layer)
-        map.load_object_layer(layer_id, tiled_layer)
+        map.load_object_layer(index, layer_id, tiled_layer)
 
         stack.assemble(
             {

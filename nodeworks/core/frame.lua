@@ -96,7 +96,7 @@ end
 
 ---@param slice Spatial
 function frame.slice_to_pos(slice)
-    return slice:center()
+    return slice:centerbottom()
 end
 
 function frame:get_slice(slice_key, origin_key)
