@@ -10,9 +10,15 @@ local time = nw.system.time
 
 local stack = nw.ecs.stack
 
+local function declare_get_slice(name)
+    return function(self)
+        return self.slices[name]
+    end
+end
+
 local idle = {
-    {dt = 1, slices = {foo=nw.spatial(0, 0, 10, 20)}, slice_data = {}},
-    {dt = 2, slices = {bar=nw.spatial(1, 2, 13, 7)}, slice_data = {}},
+    {dt = 1, slices = {foo=nw.spatial(0, 0, 10, 20)}, slice_data = {}, get_slice=declare_get_slice("foo")},
+    {dt = 2, slices = {bar=nw.spatial(1, 2, 13, 7)}, slice_data = {}, get_slice=declare_get_slice("bar")},
     {dt = 3, slices = {}, slice_data = {}}
 }
 local hit = {
