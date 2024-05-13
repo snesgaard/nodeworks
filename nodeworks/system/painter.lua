@@ -42,13 +42,6 @@ function painter.push_transform(id)
     if mirror then love.graphics.scale(-1, 1) end
 end
 
-function painter.draw_entity(id)
-    love.graphics.push("all")
-
-    love.graphics.pop()
-end
-
-
 function painter.draw_tile_layer(layer_id)
     local tile_layer = stack.get(component.tile_layer, layer_id)
     if tile_layer == nil then return end
@@ -68,19 +61,48 @@ function painter.draw_object_layer(layer_id)
     if layer_index == nil then return end
     
     local entities = stack.get_table(component.is_on_layer(layer_index))
+    local entity_draw_order = dict.keys(entities)
+    table.sort(
+        entity_draw_order, painter.entity_draw_order_compare
+    )
 
-    for id, _ in pairs(entities) do
-        local frame = stack.get(component.frame, id)
-        if frame then
-            love.graphics.push()
-            painter.push_transform(id)
-            frame:draw("body")
-            love.graphics.pop()
-        end
+    for _, id in ipairs(entity_draw_order) do
+        love.graphics.push("all")
+        painter.push_transform(id)
+        painter.draw_entity(id)
+        love.graphics.pop()
     end
+end
 
-    --painter.push_transform(layer_id)
-    --object_layer:draw()
+local null_pos = component.position(0, 0)
+
+---@param a Id
+---@param b Id
+---@return boolean
+function painter.entity_draw_order_compare(a,  b)
+    local pos_a = stack.get(component.position, a) or null_pos
+    local pos_b = stack.get(component.position, b) or null_pos
+
+    local dx = pos_b.x - pos_a.x
+    if math.abs(dx) > 1 then return dx > 0 end
+
+    local dy = pos_b.y - pos_a.y
+    return dy > 0
+end
+
+---@param id Id
+function painter.draw_entity(id)
+    local frame = stack.get(component.frame, id)
+    if frame then frame:draw("body") end
+
+    local draw_rect = stack.get(component.draw_rect, id)
+    if draw_rect then
+        love.graphics.rectangle(
+            draw_rect.mode,
+            draw_rect.shape.x, draw_rect.shape.y, draw_rect.shape.w, draw_rect.shape.h,
+            draw_rect.round
+        )
+    end
 end
 
 function painter.get_scroll_squad()

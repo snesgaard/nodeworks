@@ -89,6 +89,17 @@ end
 ---@param f frame
 function component.frame(f) return f end
 
+---@param mode string
+---@param shape Spatial
+---@param round number|nil
+function component.draw_rect(mode, shape, round)
+    return {
+        mode = mode,
+        shape = shape,
+        round = round
+    }
+end
+
 component.is_following = declare_relation_component()
 
 ---@param l number
@@ -96,7 +107,6 @@ component.is_following = declare_relation_component()
 function component.layer(l) return l or 0 end
 
 component.is_on_layer = declare_relation_component()
-
 
 ---@param d string
 function component.drawable(d) return d end
