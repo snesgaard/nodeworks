@@ -4,15 +4,26 @@ local stack = require "nodeworks.ecs.stack"
 
 local behavior = {
     ---@type table<string, fun(id: Id): table
-    type = {}
+    type = {},
+    ---@type table<string, boolean>
+    already_warned = {},
 }
 
 function behavior.spin()
     for id, behavior_type in stack.view_table(component.behavior) do
-        local behavior = stack.ensure(
+        local behavior_instance = stack.ensure(
             component.behavior_instance, id, behavior.type[behavior_type], id
         )
-        if behavior then ai.run(behavior) end
+        if behavior_instance then
+            ai.run(behavior_instance)
+        elseif not behavior.already_warned[behavior_type] then
+            behavior.already_warned[behavior_type] = true
+            local msg = string.format(
+                "Unknown behavior type: '%s'. Consider extending 'nw.system.behavior.type'.",
+                behavior_type
+            )
+            print(msg)
+        end
     end
 end
 

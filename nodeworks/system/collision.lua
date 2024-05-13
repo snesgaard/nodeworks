@@ -219,7 +219,7 @@ end
 ---@return Id[]
 function collision.query(rect, filter)
     local bump_world = collision.get_bump_world()
-    local ids, _ bump_world:queryRect(rect.x, rect.y, rect.w, rect.h, filter)
+    local ids, _ = bump_world:queryRect(rect.x, rect.y, rect.w, rect.h, filter)
     return ids
 end
 

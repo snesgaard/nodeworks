@@ -13,7 +13,7 @@ local nw = {
     misc = require(... .. ".core.misc"),
     ---@module "dict"
     dict = require(... .. ".core.dict"),
-    ---@module "component"
+    ---@module "nodeworks.component"
     component = require(... .. ".component"),
     ---@module "event_type"
     event_type = require(... .. ".event_type"),
@@ -53,10 +53,11 @@ local nw = {
     }
 }
 
+nw.stack = nw.ecs.stack
+nw.event = nw.system.event
+
 function nw.shortcuts()
     stack = nw.ecs.stack
-    system = nw.system
-    component = nw.component
     event = nw.system.event
     event_type = nw.event_type
 end

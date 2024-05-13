@@ -56,7 +56,8 @@ function sprite_animation.update_single_entity(id, maybe_animation)
     local pos = stack.get(component.position, id) or vec2(0, 0)
     local mirror = stack.get(component.mirror, id)
     -- Create new slices
-    for name, rect in pairs(frame.slices) do
+    for name, _ in pairs(frame.slices) do
+        local rect = frame:get_slice(name, "body")
         -- Generate ID
         local sid = ecs_id.weak(
             string.format("%s/slice/%s", tostring(id), name)
