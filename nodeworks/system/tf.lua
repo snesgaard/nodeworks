@@ -19,13 +19,15 @@ function tf.transform(x, y, r, sx, sy, ox, oy)
 end
 
 local DEFAULT_POSITION = vec2(0, 0)
+local DEFAULT_SCALE = vec2(1, 1)
 
 ---@param id Id
 function tf.entity(id)
     local p = stack.get(component.position, id) or DEFAULT_POSITION
-    local r = stack.get(component.rotation, id)  or 0
-    local sx = stack.get(component.mirror, id) and -1 or 1
-    local sy = 1
+    local r = stack.get(component.rotation, id) or 0
+    local s = stack.get(component.scale, id) or DEFAULT_SCALE
+    local sx = stack.get(component.mirror, id) and -s.x or s.x
+    local sy = s.y
     local ox, oy = 0, 0
     return tf.transform(p.x, p.y, r, sx, sy, ox, oy)
 end

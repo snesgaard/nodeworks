@@ -49,7 +49,9 @@ local nw = {
         ---@module "nodeworks.system.resource"
         resource = require (... .. ".system.resource"),
         ---@module "nodeworks.system.behavior"
-        behavior = require (... .. ".system.behavior")
+        behavior = require (... .. ".system.behavior"),
+        ---@module "nodeworks.system.mouse"
+        mouse = require (... .. ".system.mouse")
     }
 }
 
@@ -127,6 +129,29 @@ function nw.configure()
     ---@param value number
     function love.gamepadaxis(joystick, axis, value)
         nw.system.event.emit(nw.event_type.gamepadaxis, joystick, axis, value)
+    end
+
+    ---@param x number
+    ---@param y number
+    ---@param button integer
+    function love.mousepressed(x, y, button)
+        nw.system.event.emit(nw.event_type.mousepressed, x, y, button)
+    end
+
+    ---@param x number
+    ---@param y number
+    ---@param button integer
+    function love.mousereleased(x, y, button)
+        nw.system.event.emit(nw.event_type.mousereleased, x, y, button)
+    end
+
+    ---@param x number
+    ---@param y number
+    ---@param dx number
+    ---@param dy number
+    ---@param istouch boolean
+    function love.mousemoved(x, y, dx, dy, istouch)
+        nw.system.event.emit(nw.event_type.mousemoved, x, y, dx, dy)
     end
 end
 

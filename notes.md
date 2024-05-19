@@ -1,10 +1,15 @@
-* !! tilemap loading
-* Camera
-    * !! Basics
-    * Bounds control
-* sprite animation
-* sprite + slice collision
-* painter system
-    * !! Basics
-    * Layer systems
-* !! tilemap parallax
+* Mouse
+    * Events
+        * Pressed
+        * Released
+        * Moved
+        * entity_mouse_pressed
+        * entity_moues_released
+    * Components
+        * is_mouse_interactable
+        * is_hovered
+        * is_down
+    * System
+        * mousepressed
+        * mousemoved
+        * mousereleased

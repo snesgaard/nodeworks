@@ -144,4 +144,8 @@ end
 
 function component.is_camera() return true end
 
+function component.is_mouse_interactable() return true end
+
+function component.is_mouse_hovering() return true end
+
 return component

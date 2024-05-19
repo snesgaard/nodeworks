@@ -14,6 +14,7 @@ require (... .. ".system.test_tf")
 require (... .. ".system.test_sprite_animation")
 require (... .. ".system.test_follow")
 require (... .. ".system.test_painter")
+require (... .. ".system.test_mouse")
 
 require (... .. ".core.test_ai")
 require (... .. ".system.test_behavior")

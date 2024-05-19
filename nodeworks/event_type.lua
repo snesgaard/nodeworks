@@ -67,4 +67,57 @@ function event_type.gamepadaxis(joystick, axis, value)
     }
 end
 
+---@param x number
+---@param y number
+---@param button integer
+function event_type.mousepressed(x, y, button)
+    return {
+        x = x,
+        y = y,
+        button = button
+    }
+end
+
+---@param x number
+---@param y number
+---@param button integer
+function event_type.mousereleased(x, y, button)
+    return {
+        x = x,
+        y = y,
+        button = button
+    }
+end
+
+---@param x number
+---@param y number
+---@param dx number
+---@param dy number
+function event_type.mousemoved(x, y, dx, dy)
+    return {
+        x = x,
+        y = y,
+        dx = dx,
+        dy = dy
+    }
+end
+
+---@param id Id
+function event_type.entity_mousepressed(id, button)
+    return {
+        id = id,
+        button = button
+    }
+end
+
+---@param id Id
+function event_type.entity_mousereleased(id, button)
+    return {
+        id = id,
+        button = button
+    }
+end
+
+function event_type.is_mouse_hovering() return true end
+
 return event_type
