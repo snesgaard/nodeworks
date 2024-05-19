@@ -151,6 +151,7 @@ function painter.draw_image_layer(layer_id)
 end
 
 function painter.draw_layer(layer_id)
+    if stack.get(component.is_hidden, layer_id) then return end
 
     love.graphics.push("all")
     painter.push_state(layer_id)

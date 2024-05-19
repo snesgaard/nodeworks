@@ -102,7 +102,8 @@ function map.load_tiled(path)
             {
                 {component.layer, index},
                 {component.parallax, tiled_layer.parallaxx, tiled_layer.parallaxy},
-                {component.position, tiled_layer.offsetx, tiled_layer.offsety}
+                {component.position, tiled_layer.offsetx, tiled_layer.offsety},
+                {component.is_hidden, not tiled_layer.visible}
             },
             layer_id
         )

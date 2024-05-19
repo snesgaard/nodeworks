@@ -127,6 +127,9 @@ function component.image_layer(i) return i end
 ---@param m table
 function component.tiled_map(m) return m end
 
+---@param v boolean
+function component.is_hidden(v) return v end
+
 ---@return table
 function component.node_status() return {} end
 
