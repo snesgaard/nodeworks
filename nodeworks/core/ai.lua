@@ -115,9 +115,13 @@ function assembly.parallel(node)
         end
     end
 
-    if node.success_required <= success_count then return "success" end
+    if node.success_required <= success_count then
+        stack.destroy(node)
+        return "success"
+    end
     if node.success_required <= success_count + pending_count then return "pending" end
 
+    stack.destroy(node)
     return "failure"
 end
 
