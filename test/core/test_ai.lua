@@ -193,4 +193,112 @@ T("ai", function(T)
         end)
     end)
 
+    T("parallel-any", function(T)
+        local control = {}
+
+        local bt = ai.parallel_any {
+            ai.sequence {
+                ai.wait_until(
+                    ai.condition(function() return control.a ~= nil end)
+                ),
+                ai.condition(function() return control.a end)
+            },
+            ai.sequence {
+                ai.wait_until(
+                    ai.condition(function() return control.b ~= nil end)
+                ),
+                ai.condition(function() return control.b end)
+            },
+        }
+
+        T("pending", function(T)
+            T:assert(ai.run(bt) == "pending")
+        end)
+
+        T("fail", function(T)
+            control.a = false
+            control.b = false
+            T:assert(ai.run(bt) == "failure")
+        end)
+
+        T("a", function(T)
+            T("fail", function(T)
+                control.a = false
+                T:assert(ai.run(bt) == "pending")
+            end)
+            T("success", function(T)
+                control.a = true
+                T:assert(ai.run(bt) == "success")
+            end)
+        end)
+
+        T("b", function(T)
+            T("fail", function(T)
+                control.b = false
+                T:assert(ai.run(bt) == "pending")
+            end)
+            T("success", function(T)
+                control.b = true
+                T:assert(ai.run(bt) == "success")
+            end)
+        end)
+    end)
+
+    T("parallel_all", function(T)
+        local control = {}
+
+        local bt = ai.parallel_all {
+            ai.sequence {
+                ai.wait_until(
+                    ai.condition(function() return control.a ~= nil end)
+                ),
+                ai.condition(function() return control.a end)
+            },
+            ai.sequence {
+                ai.wait_until(
+                    ai.condition(function() return control.b ~= nil end)
+                ),
+                ai.condition(function() return control.b end)
+            },
+        }
+
+        T("pending", function(T)
+            T:assert(ai.run(bt) == "pending")
+        end)
+
+        T("fail", function(T)
+            control.a = false
+            control.b = false
+            T:assert(ai.run(bt) == "failure")
+        end)
+
+        T("success", function(T)
+            control.a = true
+            control.b = true
+            T:assert(ai.run(bt) == "success")
+        end)
+
+        T("a", function(T)
+            T("fail", function(T)
+                control.a = false
+                T:assert(ai.run(bt) == "failure")
+            end)
+            T("success", function(T)
+                control.a = true
+                T:assert(ai.run(bt) == "pending")
+            end)
+        end)
+
+        T("b", function(T)
+            T("fail", function(T)
+                control.b = false
+                T:assert(ai.run(bt) == "failure")
+            end)
+            T("success", function(T)
+                control.b = true
+                T:assert(ai.run(bt) == "pending")
+            end)
+        end)        
+    end)
+
 end)

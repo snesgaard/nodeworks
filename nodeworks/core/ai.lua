@@ -100,13 +100,23 @@ function assembly.parallel(node)
         end
     end
 
-    for _, status in ipairs(node_status) do
-        if status == "pending" then return "pending" end
+    local success_count = 0
+    local pending_count = 0
+    local failure_count = 0
+    local node_count = #node.children
+    
+    for _, status in pairs(node_status) do
+        if status == "success" then
+            success_count = success_count + 1
+        elseif status == "failure" then
+            failure_count = failure_count + 1
+        elseif status == "pending" then
+            pending_count = pending_count + 1
+        end
     end
 
-    for _, status in ipairs(node_status) do
-        if status == "success" then return "success" end
-    end
+    if node.success_required <= success_count then return "success" end
+    if node.success_required <= success_count + pending_count then return "pending" end
 
     return "failure"
 end
@@ -183,11 +193,20 @@ function ai.cooldown(duration)
     return ai.condition(cooldown_condition, ecs_id.weak("cooldown"), duration)
 end
 
-function ai.parallel(children) 
+function ai.parallel(children, success_count)
     return {
         type = "parallel",
-        children = children
+        children = children,
+        success_required = success_count or #children
     }
+end
+
+function ai.parallel_any(children)
+    return ai.parallel(children, 1)
+end
+
+function ai.parallel_all(children)
+    return ai.parallel(children, #children)
 end
 
 ai.run = run_node

@@ -32,7 +32,10 @@ function painter.compare_entities(a, b)
 end
 
 function painter.push_state(id)
-
+    local color = stack.get(component.color, id)
+    if color then
+        love.graphics.setColor(color[1], color[2], color[3], color[4])
+    end
 end
 
 function painter.push_transform(id)
@@ -69,6 +72,7 @@ function painter.draw_object_layer(layer_id)
     for _, id in ipairs(entity_draw_order) do
         love.graphics.push("all")
         painter.push_transform(id)
+        painter.push_state(id)
         painter.draw_entity(id)
         love.graphics.pop()
     end

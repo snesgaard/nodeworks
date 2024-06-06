@@ -71,7 +71,7 @@ function map.load_object_layer(index, layer_id, layer)
 
     layer.ids = {}
     for _, object in ipairs(layer.objects) do
-        local id = ecs_id.weak("object")
+        local id = map.object_id(object.id)
 
         stack.assemble(
             {
@@ -84,6 +84,11 @@ function map.load_object_layer(index, layer_id, layer)
         map.object_properties(id, object)
         table.insert(layer.ids, id)
     end
+end
+
+---@param tiled_id integer
+function map.object_id(tiled_id)
+    return string.format("object/%i", tiled_id)
 end
 
 

@@ -100,6 +100,14 @@ function component.draw_rect(mode, shape, round)
     }
 end
 
+---@param red number|nil
+---@param green number|nil
+---@param blue number|nil
+---@param alpha number|nil
+function component.color(red, green, blue, alpha)
+    return {red or 1, green or 1, blue or 1, alpha or 1}
+end
+
 component.is_following = declare_relation_component()
 
 ---@param l number
