@@ -54,20 +54,19 @@ function painter.draw_tile_layer(layer_id)
     tile_layer:draw()
     love.graphics.pop()
 end
-
+---@param layer_id Id
+---@return Id[]
 function painter.draw_object_layer(layer_id)
     local object_layer = stack.get(component.object_layer, layer_id)
-    if object_layer == nil then return end
+    if object_layer == nil then return {} end
 
     local layer_index = stack.get(component.layer, layer_id)
 
-    if layer_index == nil then return end
+    if layer_index == nil then return {} end
     
     local entities = stack.get_table(component.is_on_layer(layer_index))
     local entity_draw_order = dict.keys(entities)
-    table.sort(
-        entity_draw_order, painter.entity_draw_order_compare
-    )
+    table.sort(entity_draw_order, painter.entity_draw_order_compare)
 
     for _, id in ipairs(entity_draw_order) do
         love.graphics.push("all")
@@ -76,6 +75,8 @@ function painter.draw_object_layer(layer_id)
         painter.draw_entity(id)
         love.graphics.pop()
     end
+
+    return entity_draw_order
 end
 
 local null_pos = component.position(0, 0)

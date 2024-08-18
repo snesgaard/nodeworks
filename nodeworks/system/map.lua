@@ -76,7 +76,8 @@ function map.load_object_layer(index, layer_id, layer)
         stack.assemble(
             {
                 {component.position, layer.offsetx, layer.offsety},
-                {component.is_on_layer(index)}
+                {component.is_on_layer(index)},
+                {component.layer, index}
             },
             id
         )
