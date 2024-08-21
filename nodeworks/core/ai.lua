@@ -27,20 +27,30 @@ local function run_sequence(nodes, node_status, ...)
     for index, node in ipairs(nodes) do
         local status = node_status[index] or "pending"
         if status == "pending" then node_status[index] = run_node(node, ...) end
-        if node_status[index] ~= "success" then return node_status[index] end
+        if node_status[index] ~= "success" then return node_status[index], index end
     end
 
-    return "success"
+    return "success", #nodes
+end
+
+local function run_sequence_defer_from(nodes, index)
+    for i = index, 1, -1 do
+        local n = nodes[i]
+        if n.type == "defer" then n.func(unpack(n.args)) end
+    end
 end
 
 function assembly.sequence(root, ...)
-    local status = run_sequence(
+    local status, index = run_sequence(
         root.nodes,
         stack.ensure(component.node_status, root),
         ...
     )
 
-    if status ~= "pending" then stack.remove(component.node_status, root) end
+    if status ~= "pending" then
+        run_sequence_defer_from(root.nodes, index)
+        stack.remove(component.node_status, root)
+    end
 
     return status
 end
@@ -340,6 +350,18 @@ function ai.declare(name, constructor, executor, resetter)
     assembly[name] = executor
     reset[name] = resetter
 end
+
+---@param func fun(...)
+---@param ... any
+function ai.defer(func, ...)
+    return {
+        type = "defer",
+        func = func,
+        args = {...}
+    }
+end
+
+function assembly.defer() return "success" end
 
 ai.run = run_node
 ai.assembly = assembly

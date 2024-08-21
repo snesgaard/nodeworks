@@ -301,4 +301,34 @@ T("ai", function(T)
         end)        
     end)
 
+    T("defer", function(T)
+        T("on-success-and-pending", function(T)
+            local a = {value = 0}
+            local bt = ai.sequence {
+                ai.action(function() a.value = a.value + 1 end),
+                ai.defer(function() a.value = a.value - 1 end),
+                ai.wait_until(
+                    ai.condition(function() return a.go end)
+                ),
+                ai.action(function() a.done = true end)
+            }
+            T:assert(ai.run(bt) == "pending")
+            T:assert(a.value == 1)
+            a.go = true
+            T:assert(ai.run(bt) == "success")
+            T:assert(a.done)
+            T:assert(a.value == 0)
+        end)
+        T("on-failure", function(T)
+            local a = {value = 0}
+            local bt = ai.sequence {
+                ai.action(function() a.value = a.value + 1 end),
+                ai.defer(function() a.value = a.value - 1 end),
+                ai.condition(function() return false end),
+                ai.defer(function() a.value = a.value - 1 end)
+            }
+            T:assert(ai.run(bt) == "failure")
+            T:assert(a.value == 0)
+        end)
+    end)
 end)
