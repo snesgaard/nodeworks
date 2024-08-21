@@ -9,31 +9,42 @@ local pa = nw.system.sprite_animation
 local time = nw.system.time
 
 local stack = nw.ecs.stack
-
-local function declare_get_slice(name)
-    return function(self)
-        return self.slices[name]
-    end
-end
+local function get_slice(self, name) return self.slices[name] end
 
 local idle = {
-    {dt = 1, slices = {foo=nw.spatial(0, 0, 10, 20)}, slice_data = {}, get_slice=declare_get_slice("foo")},
-    {dt = 2, slices = {bar=nw.spatial(1, 2, 13, 7)}, slice_data = {}, get_slice=declare_get_slice("bar")},
-    {dt = 3, slices = {}, slice_data = {}}
+    {dt = 1, slices = {foo=nw.spatial(0, 0, 10, 20)}, slice_data = {}, get_slice=get_slice},
+    {dt = 2, slices = {bar=nw.spatial(1, 2, 13, 7)}, slice_data = {}, get_slice=get_slice},
+    {dt = 3, slices = {}, slice_data = {}, get_slice=get_slice}
 }
 local hit = {
-    {dt = 1, slices = {}, slice_data = {}},
-    {dt = 2, slices = {}, slice_data = {}}
+    {dt = 1, slices = {}, slice_data = {}, get_slice=get_slice},
+    {dt = 2, slices = {}, slice_data = {}, get_slice=get_slice}
+}
+local foo = {
+    {dt = 1, slices = {baz=nw.spatial(0, 0, 10, 20)}, slice_data={}, get_slice=get_slice},
+    {dt = 1, slices = {baz=nw.spatial(0, 0, 10, 20)}, slice_data={}, get_slice=get_slice},
+    {dt = 1, slices = {}, slice_data={}, get_slice=get_slice},
 }
 
 local state_map = {
     idle = nw.video(idle):loop(),
-    hit = nw.video(hit):once()
+    hit = nw.video(hit):once(),
+    foo = nw.video(foo)
 }
 
 local test_components = {}
 
 function test_components.foo(a) return a or 0 end
+
+function test_components.unique_stuff(v) return v or 0 end
+
+
+function pa.slice_assembly_from_properties()
+    return {
+        {test_components.foo}
+    }
+end
+
 
 T("test_sprite_animator", function(T)
     stack.clear()
@@ -85,16 +96,6 @@ T("test_sprite_animator", function(T)
     end)
 
     T("slice_properties", function(T)
-        nw.system.sprite_animation.set_slice_assembly(
-            function()
-                return {
-                    {test_components.foo}
-                }
-            end
-        )
-
-        T:assert(nw.dict.size(stack.get_table(test_components.foo)) == 0)
-        
         nw.system.sprite_animation.play(id, "hit")
         nw.system.sprite_animation.play(id, "idle")
         
@@ -105,5 +106,24 @@ T("test_sprite_animator", function(T)
 
         T:assert(nw.dict.size(stack.get_table(test_components.foo)) == 0)
         T:assert(nw.system.collision.get_bump_world():countItems() == 0)
+    end)
+
+    T("slice_property_retain", function(T)
+        -- Start animation
+        nw.system.sprite_animation.play(id, "foo")
+        local slice_dict = nw.system.sprite_animation.get_slice_dict(id)
+        -- Get the baz hitboz and set some 
+        local baz_id = slice_dict.baz
+        T:assert(baz_id)
+        stack.set(test_components.unique_stuff, baz_id)
+        -- Advance to next frame in the animation
+        time.update(1.5)
+        pa.update()
+        -- CHeck the component got carried over
+        T:assert(stack.has(test_components.unique_stuff, baz_id))
+        -- Advace to next frame, the baz hitbox should have been deleted
+        time.update(1.0)
+        pa.update()
+        T:assert(not stack.has(test_components.unique_stuff, baz_id))
     end)
 end)

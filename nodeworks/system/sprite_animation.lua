@@ -25,13 +25,57 @@ function private_component.slice_hitbox_dict(t) return t or {} end
 ---@return fun(properties: table<string, any>): table
 function private_component.slice_assembly_from_properties(f) return f end
 
----@param a Id
----@param b Id
-local function nil_filter(a, b) return end
+local function nil_filter() end
+
+local function cross_filter() return "cross" end
 
 local system_id = "__sprite_animation__"
 
+local function get_slice_id(slice_dict, id, name)
+    local i = slice_dict[name]
+    if i then return i end
+
+    local sid = ecs_id.weak(string.format("%s/slice/%s", tostring(id), tostring(name)))
+    slice_dict[name] = sid
+    return sid
+end
+
 local sprite_animation = {}
+
+---@param owner_id Id
+---@return table
+function sprite_animation.get_slice_dict(owner_id)
+    return stack.ensure(private_component.slice_hitbox_dict, owner_id)
+end
+
+function sprite_animation.update_slice_entities(owner_id, slices, slice_data)
+    local slice_dict = stack.ensure(private_component.slice_hitbox_dict, owner_id)
+
+    -- Despawn, if not in current slice list
+    for name, id in pairs(slice_dict) do
+        if not slices[name] then stack.destroy(id) end
+    end
+
+    local pos = stack.get(component.position, owner_id) or vec2(0, 0)
+    local mirror = stack.get(component.mirror, owner_id)
+    -- Update or spawn otherwise
+    for name, slice in pairs(slices) do
+        local id = get_slice_id(slice_dict, owner_id, name)
+        -- Update presence in collision system if needed
+        collision.unregister(id)
+        -- Register and move hitbox to proper position
+        collision.register(id, slice)
+        collision.warp_to(id, pos.x, pos.y)
+        collision.flip_to(id, mirror, nil_filter)
+        -- Set hitbox as being following
+        stack.set(component.is_following(owner_id), id)
+        -- Setup properties
+        local assembly = sprite_animation.slice_assembly_from_properties(slice_data[name] or {})
+        if assembly then stack.assemble(assembly, id) end
+        -- Trigger collisions if needed
+        collision.move(id, 0, 0, cross_filter)
+    end
+end
 
 ---@param id Id
 ---@param maybe_animation? table
@@ -46,38 +90,14 @@ function sprite_animation.update_single_entity(id, maybe_animation)
 
     stack.set(component.frame, id, frame)
 
-    -- Destroy prevous slices
-    local prev_slices = stack.ensure(private_component.slice_hitbox_dict, id)
-    for _, sid in pairs(prev_slices) do stack.destroy(sid) end
-
-    stack.remove(private_component.slice_hitbox_dict, id)
-    local slice_dict = stack.ensure(private_component.slice_hitbox_dict, id)
-
-    local pos = stack.get(component.position, id) or vec2(0, 0)
-    local mirror = stack.get(component.mirror, id)
-    -- Create new slices
+    -- Transform slices to body frame
+    local slices = {}
     for name, _ in pairs(frame.slices) do
-        local rect = frame:get_slice(name, "body")
-        -- Generate ID
-        local sid = ecs_id.weak(
-            string.format("%s/slice/%s", tostring(id), name)
-        )
-        -- Setup hitbox in world space
-        collision.register(sid, rect)
-        collision.warp_to(sid, pos.x, pos.y)
-        collision.flip_to(sid, mirror, nil_filter)
-        -- Follow the parent
-        stack.set(component.is_following(id), sid)
-        -- Store id
-        slice_dict[name] = sid
-
-        -- Populate additional properties if needed
-        local assembly = sprite_animation.slice_assembly_from_properties(
-            frame.slice_data[name] or {}
-        )
-        if assembly then stack.assemble(assembly, sid) end
-
+        slices[name] = frame:get_slice(name, "body")
     end
+
+    -- Update slices
+    sprite_animation.update_slice_entities(id, slices, frame.slice_data)
 end
 
 
@@ -89,11 +109,6 @@ function sprite_animation.slice_assembly_from_properties(properties)
     return maybe_assembly_func(properties)
 end
 
-
----@param assembly_func fun(properties: table<string, any>): table
-function sprite_animation.set_slice_assembly(assembly_func)
-    stack.set(private_component.slice_assembly_from_properties, system_id, assembly_func)
-end
 
 function sprite_animation.update()
     for id, animation in stack.view_table(component.animation) do
