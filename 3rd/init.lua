@@ -8,7 +8,9 @@ local third =  {
     ---@module "bump_debug"
     bump_debug = require(... .. ".bump_debug"),
     ---@module "sti"
-    sti = require (... .. ".sti.sti")
+    sti = require (... .. ".sti.sti"),
+    ---@module "ease"
+    ease = require ( ... .. ".easing.lib.easing")
 }
 
 

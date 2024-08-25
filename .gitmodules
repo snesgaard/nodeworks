@@ -10,3 +10,6 @@
 [submodule "3rd/sti"]
 	path = 3rd/sti
 	url = https://github.com/karai17/Simple-Tiled-Implementation
+[submodule "3rd/easing"]
+	path = 3rd/easing
+	url = https://github.com/emmanueloga/easing
