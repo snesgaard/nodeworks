@@ -1,3 +1,5 @@
+local third = require "3rd"
+
 local nw = {
     ---@module "nodeworks.core.video"
     video = require(... .. ".core.video"),
@@ -52,7 +54,8 @@ local nw = {
         behavior = require (... .. ".system.behavior"),
         ---@module "nodeworks.system.mouse"
         mouse = require (... .. ".system.mouse")
-    }
+    },
+    ease = third.ease
 }
 
 nw.stack = nw.ecs.stack
