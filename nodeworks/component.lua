@@ -159,4 +159,7 @@ function component.is_mouse_interactable() return true end
 
 function component.is_mouse_hovering() return true end
 
+---@param id Id
+function component.owner(id) return id end
+
 return component

@@ -37,4 +37,21 @@ T("list", function(T)
         local b = nw.list.reduce(a, function(x, y) return x + y end, 0)
         T:assert(b == 6)
     end)
+
+    T("compare", function(T)
+        local a = {1, 2, 3}
+        local b = {4, 5}
+        T:assert(nw.list.compare(a, a))
+        T:assert(nw.list.compare(b, b))
+        T:assert(not nw.list.compare(a, b))
+        T:assert(not nw.list.compare(b, a))
+    end)
+
+    T("concat", function(T)
+        local a = {1, 2, 3}
+        local b = {4, 5, 6}
+        local c = nw.list.concat(a, b)
+        local expected = {1, 2, 3, 4, 5, 6}
+        T:assert(nw.list.compare(c, expected))
+    end)
 end)

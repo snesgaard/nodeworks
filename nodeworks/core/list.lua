@@ -109,4 +109,14 @@ function list.compare(self, other, maybe_cmp, ...)
     return true
 end
 
+---@generic T
+---@param self T[]
+---@param other T[]
+---@return T[]
+function list.concat(self, other)
+    local r = {unpack(self)}
+    for _, o in ipairs(other) do r[#r+1] = o end
+    return r
+end
+
 return list

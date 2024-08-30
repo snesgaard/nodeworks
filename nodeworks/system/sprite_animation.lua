@@ -69,6 +69,8 @@ function sprite_animation.update_slice_entities(owner_id, slices, slice_data)
         collision.flip_to(id, mirror, nil_filter)
         -- Set hitbox as being following
         stack.set(component.is_following(owner_id), id)
+        -- Set the owner of the hitbox
+        stack.set(component.owner, id, owner_id)
         -- Setup properties
         local assembly = sprite_animation.slice_assembly_from_properties(slice_data[name] or {})
         if assembly then stack.assemble(assembly, id) end
