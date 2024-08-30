@@ -70,5 +70,10 @@ T("dict", function(T)
                 T:assert(y == e[2])
             end
         end)
+        T("empty", function(T)
+            for _, _ in nw.dict.view_union() do
+                T:assert(false)
+            end
+        end)
     end)
 end)
