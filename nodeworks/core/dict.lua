@@ -39,4 +39,47 @@ function dict.values(d)
     return r
 end
 
+local EMPTY_TABLE = {}
+
+local function find_next_union_key(table_of_tables, init_key)
+    local init_table = table_of_tables[1] or EMPTY_TABLE
+
+    for k, _ in next, init_table, init_key do
+        local good = true
+        for _, other_table in next, table_of_tables, 1 do
+            if other_table[k] == nil then
+                good = false
+                break
+            end
+        end
+        if good then return k end
+    end
+end
+
+local function read_key_value(table_of_tables, key, table_index)
+    local table_index = table_index or 1
+    if #table_of_tables < table_index then return end
+    return table_of_tables[table_index][key], read_key_value(table_of_tables, key, table_index + 1)
+end
+
+---@generic K
+---@param t table<K, any>[]
+---@param key K
+---@return K
+---@return ...
+local function view_union_iterator(t, key)
+    local next_key = find_next_union_key(t, key)
+    return next_key, read_key_value(t, next_key)
+end
+
+
+---@generic K
+---@param ... table<K, any>
+---@return fun(t: table, i?: K): K, ...
+---@return table
+function dict.view_union(...)
+    local t = {...}
+    return view_union_iterator, t
+end
+
 return dict
