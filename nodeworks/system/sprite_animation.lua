@@ -66,7 +66,7 @@ function sprite_animation.update_slice_entities(owner_id, slices, slice_data)
         -- Register and move hitbox to proper position
         collision.register(id, slice)
         collision.warp_to(id, pos.x, pos.y)
-        collision.flip_to(id, mirror, nil_filter)
+        collision.flip_to(id, mirror or false, nil_filter)
         -- Set hitbox as being following
         stack.set(component.is_following(owner_id), id)
         -- Set the owner of the hitbox
