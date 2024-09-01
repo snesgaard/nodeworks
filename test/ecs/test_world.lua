@@ -13,8 +13,12 @@ function SomeClass:mega() end
 
 local component = {}
 
+---@param a integer
+---@return integer
 function component.foo(a) return a or 1 end
 
+---@param a any
+---@return string
 function component.bar(a) return tostring(a) end
 
 ---@return SomeClass
@@ -44,5 +48,37 @@ T("world", function(T)
         a = nil
         collectgarbage()
         T:assert(world:count(component.foo) == 0)
+    end)
+
+    T("view_union", function(T)
+        world:assemble(
+            {
+                {component.foo, 1},
+                {component.bar, "1a"}
+            },
+            "a"
+        )
+        world:assemble(
+            {
+                {component.foo, 2}
+            },
+            "b"
+        )
+        world:assemble(
+            {
+                {component.foo, 3},
+                {component.bar, "3c"}
+            },
+            "c"
+        )
+
+        local things_happened = false
+        for id, foo, bar in world:view_union(component.foo, component.bar) do
+            T:assert(id == "a" or id == "c")
+            T:assert(foo == (id == "a" and 1 or 3))
+            T:assert(bar == (id == "a" and "1a" or "3c"))
+            things_happened = true
+        end
+        T:assert(things_happened)
     end)
 end)

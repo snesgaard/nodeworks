@@ -105,4 +105,17 @@ function stack.destroy_table(component)
     return stack
 end
 
+---@generic R1, R2, R3, R4, R5, R6
+---@param c1 fun(...): R1
+---@param c2? fun(...): R2
+---@param c3? fun(...): R3
+---@param c4? fun(...): R4
+---@param c5? fun(...): R5
+---@param c6? fun(...): R6
+---@return fun(t: table, id: Id): Id, R1, R2, R3, R4, R5, R6
+---@return table
+function stack.view_union(c1, c2, c3, c4, c5, c6)
+    return state.world:view_union(c1, c2, c3, c4, c5, c6)
+end
+
 return stack

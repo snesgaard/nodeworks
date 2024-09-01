@@ -1,5 +1,9 @@
 ---@module "misc"
 local misc = require "nodeworks.core.misc"
+---@module "dict"
+local dict = require "nodeworks.core.dict"
+---@module "list"
+local list = require "nodeworks.core.list"
 
 local WeakTable = {__mode = "k"}
 WeakTable.__index = WeakTable
@@ -163,6 +167,29 @@ end
 function World:destroy_table(component)
     self.component_tables[component] = nil
     return self
+end
+
+local function view_union_get_table(c, world)
+    if c == nil then return end
+    return world:get_table(c, false)
+end
+---@generic R1, R2, R3, R4, R5, R6
+---@param c1 fun(...): R1
+---@param c2? fun(...): R2
+---@param c3? fun(...): R3
+---@param c4? fun(...): R4
+---@param c5? fun(...): R5
+---@param c6? fun(...): R6
+---@return fun(t: table, id: Id): Id, R1, R2, R3, R4, R5, R6
+---@return table
+function World:view_union(c1, c2, c3, c4, c5, c6)
+    local t1 = view_union_get_table(c1, self)
+    local t2 = view_union_get_table(c2, self)
+    local t3 = view_union_get_table(c3, self)
+    local t4 = view_union_get_table(c4, self)
+    local t5 = view_union_get_table(c5, self)
+    local t6 = view_union_get_table(c6, self)
+    return dict.view_union(t1, t2, t3, t4, t5, t6)
 end
 
 return World.new
