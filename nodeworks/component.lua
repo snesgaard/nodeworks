@@ -162,4 +162,6 @@ function component.is_mouse_hovering() return true end
 ---@param id Id
 function component.owner(id) return id end
 
+function component.draw_particles() return true end
+
 return component

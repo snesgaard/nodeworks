@@ -53,7 +53,9 @@ local nw = {
         ---@module "nodeworks.system.behavior"
         behavior = require (... .. ".system.behavior"),
         ---@module "nodeworks.system.mouse"
-        mouse = require (... .. ".system.mouse")
+        mouse = require (... .. ".system.mouse"),
+        ---@module "nodeworks.system.particles"
+        particles = require(... .. ".system.particles")
     },
     ease = third.ease
 }
@@ -74,6 +76,7 @@ function nw.spin()
     while nw.system.event.swap() do
         nw.system.time.spin()
         nw.system.sprite_animation.spin()
+        nw.system.particles.spin()
         nw.system.follow.spin()
         nw.system.map.spin()
         nw.system.behavior.spin()

@@ -108,6 +108,11 @@ function painter.draw_entity(id)
             draw_rect.round
         )
     end
+    
+    if stack.get(component.draw_particles, id) then
+        local p = stack.get(component.particles, id)
+        if p then love.graphics.draw(p, x, y) end
+    end
 end
 
 function painter.get_scroll_squad()
