@@ -162,6 +162,10 @@ function component.is_mouse_hovering() return true end
 ---@param id Id
 function component.owner(id) return id end
 
+component.is_owned_by = declare_relation_component()
+
 function component.draw_particles() return true end
+
+function component.interruptable() return true end
 
 return component

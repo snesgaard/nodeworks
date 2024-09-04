@@ -50,12 +50,21 @@ function assembly.sequence(root, ...)
     if status ~= "pending" then
         run_sequence_defer_from(root.nodes, index)
         stack.remove(component.node_status, root)
+    else
+        local node_status = stack.ensure(component.node_status, root)
+        node_status.last_index = index
     end
+
 
     return status
 end
 
 function reset.sequence(node)
+    local node_status = stack.get(component.node_status, node)
+    if node_status and node_status.last_index then
+        run_sequence_defer_from(node.nodes, node_status.last_index)
+    end
+
     stack.remove(component.node_status, node)
 
     for _, child in ipairs(node.nodes) do
@@ -265,6 +274,8 @@ function ai.node(func, ...)
     }
 end
 
+---@param children table
+---@param success_count integer|nil
 function ai.parallel(children, success_count)
     return {
         type = "parallel",
@@ -360,6 +371,9 @@ function ai.defer(func, ...)
         args = {...}
     }
 end
+
+---@param node table
+function ai.reset(node) return reset_node(node) end
 
 function assembly.defer() return "success" end
 

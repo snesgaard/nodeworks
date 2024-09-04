@@ -330,5 +330,21 @@ T("ai", function(T)
             T:assert(ai.run(bt) == "failure")
             T:assert(a.value == 0)
         end)
+        T("partial-sequence", function(T)
+            local a = {}
+            local bt = ai.sequence {
+                ai.defer(function() a.foo = true end),
+                ai.wait_until(ai.condition(function() end)),
+                ai.defer(function() a.bar = true end)
+            }
+            T:assert(ai.run(bt) == "pending")
+            T:assert(not a.foo)
+            T:assert(not a.bar)
+
+            ai.reset(bt)
+
+            T:assert(a.foo)
+            T:assert(not a.bar)
+        end)
     end)
 end)

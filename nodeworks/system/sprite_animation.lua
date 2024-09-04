@@ -71,6 +71,7 @@ function sprite_animation.update_slice_entities(owner_id, slices, slice_data)
         stack.set(component.is_following(owner_id), id)
         -- Set the owner of the hitbox
         stack.set(component.owner, id, owner_id)
+        stack.set(component.is_owned_by(owner_id), id)
         -- Setup properties
         local assembly = sprite_animation.slice_assembly_from_properties(slice_data[name] or {})
         if assembly then stack.assemble(assembly, id) end
