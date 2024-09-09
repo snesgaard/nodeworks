@@ -191,6 +191,17 @@ function collision.get_world_hitbox(id)
 end
 
 ---@param id Id
+---@return number|nil x
+---@return number|nil y
+---@return number|nil w
+---@return number|nil h
+function collision.get_local_hitbox(id)
+    local bump_membership = stack.get(private_component.bump_membership, id)
+    if not bump_membership then return end
+    return bump_membership.hitbox:unpack()
+end
+
+---@param id Id
 ---@param mirror boolean
 ---@param filter (fun(item: Id, other: Id): string)|nil
 ---@return CollisionInfo[]
