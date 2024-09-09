@@ -105,9 +105,9 @@ function misc.deepcopy(orig, copies)
             copy = {}
             copies[orig] = copy
             for orig_key, orig_value in next, orig, nil do
-                copy[deepcopy(orig_key, copies)] = deepcopy(orig_value, copies)
+                copy[misc.deepcopy(orig_key, copies)] = misc.deepcopy(orig_value, copies)
             end
-            setmetatable(copy, deepcopy(getmetatable(orig), copies))
+            setmetatable(copy, misc.deepcopy(getmetatable(orig), copies))
         end
     else -- number, string, boolean, etc
         copy = orig
@@ -119,5 +119,6 @@ function misc.create_weak_key_table()
     local weak_keys = {__mode = "k"}
     return setmetatable({}, weak_keys)
 end
+
 
 return misc
