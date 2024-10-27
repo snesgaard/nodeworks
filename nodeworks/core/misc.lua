@@ -69,7 +69,8 @@ end
 function misc.dict_to_string(d)
     local l = {}
     for key, val in pairs(d) do
-      l[#l + 1] = tostring(key) .. ": " .. tostring(val)
+        local val_str = type(val) == "table" and misc.dict_to_string(val) or tostring(val)
+        l[#l + 1] = tostring(key) .. ": " .. val_str
     end
     if #l == 0 then return "{}" end
     local s = "{"
