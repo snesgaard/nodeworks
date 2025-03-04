@@ -1,23 +1,45 @@
+local path = (...):gsub("video", "")
+
+---@module "frame"
+local frame = require(path .. "frame")
+---@module "misc"
+local misc = require(path .. "misc")
+---@module "list"
+local list = require(path .. "list")
+
+---@param s number
+---@param f frame
+---@return number
 local function sum_op(s, f) return s + f.dt end
 
+---@param frames frame[]
 local function sum_frame_time(frames)
-    return List.reduce(frames, sum_op, 0)
+    return list.reduce(frames, sum_op, 0)
 end
 
 local function arithmetic_fmod(num, denom)
     return num - math.floor(num / denom) * denom
 end
 
-local Video = class()
+---@class Video
+---@field frames frame[]
+---@field time number
+---@field total_time number
+---@field do_loop boolean
+local Video = misc.class()
 
-function Video.constructor(frames, init_time)
+---@param frames frame[]
+---@param init_time number|nil
+---@return Video
+function Video.new(frames, init_time)
     local frames = frames or list()
-    return {
+    local this =  {
         frames=frames,
         time=init_time or 0,
         total_time=sum_frame_time(frames),
         do_loop = true
     }
+    return setmetatable(this, Video)
 end
 
 function Video:speed(speed)
@@ -67,7 +89,7 @@ function Video:argframe(time, do_loop)
         if time < 0 then return index end
     end
 
-    return List.size(self.frames)
+    return list.size(self.frames)
 end
 
 function Video:frame(time, do_loop)
@@ -79,9 +101,4 @@ function Video:frame_from_index(index)
     return self.frames[index]
 end
 
-function Video.from_atlas(atlas_path, frame_path)
-    local frames = get_atlas(atlas_path):get_animation(frame_path)
-    return Video.create(frames)
-end
-
-return Video
+return Video.new

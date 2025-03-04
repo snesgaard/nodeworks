@@ -1,15 +1,28 @@
-require "math"
+local math = require "math"
 
-local vec2 = {}
-vec2.__index = vec2
+---@module "misc"
+local misc = require "nodeworks.core.misc"
 
+---@class vec2
+---@field x number
+---@field y number
+---@operator add(vec2): vec2
+---@operator sub(vec2): vec2
+---@operator mul(vec2): vec2
+---@operator mul(number): vec2
+local vec2 = misc.class()
 
+---@param x number
+---@param y number
+---@return vec2
 local function create(x, y)
     local this = {x = x or 0, y = y or 0}
     return setmetatable(this, vec2)
 end
 
 
+---@param v vec2
+---@return string
 function vec2.__tostring(v)
     return string.format("[%f, %f]", v.x, v.y)
 end
@@ -23,38 +36,44 @@ function vec2:__unm()
 end
 
 
+---@param v2 vec2
+---@return vec2
 function vec2:__add(v2)
     return create(self.x + v2.x, self.y + v2.y)
 end
 
 
+---@param v2 vec2
+---@return vec2
 function vec2:__sub(v2)
-    if type(v2) == "number" then
-        return create(self.x - v2, self.y - v2)
-    else
-        return create(self.x - v2.x, self.y - v2.y)
-    end
+    return create(self.x - v2.x, self.y - v2.y)
 end
 
 
+---@param v1 vec2
+---@param v2 (vec2 | number)
+---@return vec2
 function vec2.__mul(v1, v2)
-    if type(v1) == "table" and type(v2) == "table" then
-        return create(v1.x * v2.x, v1.y * v2.y)
-    elseif type(v1) == "table" then
+    if type(v2) == "number" then
         return create(v1.x * v2, v1.y * v2)
+    elseif type(v1) == "table" then
+        return create(v1.x * v2.x, v1.y * v2.y)
     else
-        return create(v1 * v2.x, v1 * v2.y)
+        error("Unsupported type")
     end
 end
 
 
+---@param v1 vec2
+---@param v2 (vec2 | number)
+---@return vec2
 function vec2.__div(v1, v2)
-    if type(v1) == "table" and type(v2) == "table" then
-        return create(v1.x / v2.x, v1.y / v2.y)
-    elseif type(v1) == "table" then
+    if type(v2) == "number" then
         return create(v1.x / v2, v1.y / v2)
+    elseif type(v1) == "table" then
+        return create(v1.x / v2.x, v1.y / v2.y)
     else
-        return create(v1 / v2.x, v1 / v2.y)
+        error("Unsupported type")
     end
 end
 
@@ -98,12 +117,6 @@ end
 
 function vec2.unpack(v)
     return v.x, v.y
-end
-
-function vec2.clamp(v, low, up)
-    return create(
-        math.clamp(v.x, low.x, up.x), math.clamp(v.y, low.y, up.y)
-    )
 end
 
 function vec2.max(v1, v2)

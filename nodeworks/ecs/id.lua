@@ -1,11 +1,18 @@
-local WeakID = class()
+---@module "misc"
+local misc = require "nodeworks.core.misc"
 
-function WeakID.constructor(tag)
-    return {tag=tag or "generic"}
+---@class WeakID
+---@field tag string
+local WeakID = misc.class()
+
+---@param tag string|nil
+---@return WeakID
+function WeakID.new(tag)
+    return setmetatable({tag=tag or "generic"}, WeakID)
 end
 
 function WeakID:__tostring()
-    return string.format("__WeakID[%s]", tostring(self.tag))
+    return string.format("__WeakID[%s]", self.tag)
 end
 
 local StrongID = {
@@ -21,11 +28,13 @@ end
 
 local id = {}
 
+---@param tag string
 function id.strong(tag)
     local c = StrongID.get(tag)
     return string.format("%s[%i]", tostring(tag), c)
 end
 
-function id.weak(tag) return WeakID.create(tag) end
+---@param tag string|nil
+function id.weak(tag) return WeakID.new(tag) end
 
 return id

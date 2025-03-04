@@ -1,5 +1,20 @@
-local frame = {}
-frame.__index = frame
+local path = (...):gsub("frame", "")
+
+---@module "misc"
+local misc = require(path .. "misc")
+---@module "vec2"
+local vec2 = require(path .. "vec2")
+---@module "spatial"
+local spatial = require(path .. "spatial")
+
+---@class frame
+---@field image love.Image
+---@field quad love.Quad
+---@field slices table<string, Spatial>
+---@field slice_data table<string, any>
+---@field offset vec2
+---@field dt number
+local frame = misc.class()
 
 function frame:__tostring()
     local x, y, w, h = self:get_view_port()
@@ -9,22 +24,28 @@ function frame:__tostring()
     )
 end
 
-function frame.create(image, slices, quad, offset)
+---@param image love.Image Love2D image
+---@param slices table Table of spatials
+---@param quad love.Quad Love2D quad
+---@param dt number
+---@param slice_data table
+---@param offset vec2 Offset
+---@return frame
+local function new(image, slices, quad, dt, slice_data, offset)
     local this = {}
     this.image = image
     this.quad = quad
     this.slices = slices
-    this.events = dict()
+    this.dt = dt
+    this.slice_data = slice_data or {}
     this.offset = offset or vec2(0, 0)
-    this.deltas = dict{}
-    this.deltas_init = dict{}
-    this.slices_origin = dict{}
-    this.slice_data = dict()
     return setmetatable(this, frame)
 end
 
+frame.new = new
+
 function frame:copy()
-    return frame.create(self.image, self.slices, self.quad, self.offset)
+    return new(self.image, self.slices, self.quad, self.dt, self.slice_data, self.offset)
 end
 
 function frame:set_dt(dt)
@@ -59,19 +80,23 @@ end
 
 function frame:draw(...)
     local origin, x, y, r, sx, sy = self:args(...)
-    local slice_to_pos = frame.slice_to_pos or Spatial.center
-    local c = slice_to_pos(origin)
+    local c = frame.slice_to_pos(origin)
     if self.quad then
-        gfx.draw(
+        love.graphics.draw(
             self.image, self.quad, x, y, r, sx, sy,
             -self.offset.x + c.x, -self.offset.y + c.y
         )
     else
-        gfx.draw(
+        love.graphics.draw(
             self.image, x, y, r, sx, sy,
             -self.offset.x + c.x, -self.offset.y + c.y
         )
     end
+end
+
+---@param slice Spatial
+function frame.slice_to_pos(slice)
+    return slice:centerbottom()
 end
 
 function frame:get_slice(slice_key, origin_key)
@@ -79,8 +104,7 @@ function frame:get_slice(slice_key, origin_key)
     local origin_slice = self.slices[origin_key] or spatial()
     local slice = self.slices[slice_key]
     if not slice then return end
-    local slice_to_pos = frame.slice_to_pos or Spatial.center
-    local p = slice_to_pos(origin_slice)
+    local p = frame.slice_to_pos(origin_slice)
     return slice:move(-p.x, -p.y)
 end
 

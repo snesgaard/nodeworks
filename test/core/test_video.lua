@@ -1,9 +1,16 @@
-local idle = list(
+---@module "3rd"
+local third = require "3rd"
+local T = third.test
+
+---@module "nodeworks"
+local nw = require "nodeworks"
+
+local idle = {
     {dt = 1},  {dt = 2}, {dt = 3}
-)
+}
 
 T("test_video", function(T)
-    local video = Video.create(idle)
+    local video = nw.video(idle)
 
     T("play", function(T)
         video:once()

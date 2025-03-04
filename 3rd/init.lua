@@ -1,0 +1,17 @@
+local third =  {
+    ---@module "knife.knife.test"
+    test = require(... .. ".knife.knife.test"),
+    ---@module "json.json"
+    json = require(... .. ".json.json"),
+    ---@module "bump"
+    bump = require(... .. ".bump.bump"),
+    ---@module "bump_debug"
+    bump_debug = require(... .. ".bump_debug"),
+    ---@module "sti"
+    sti = require (... .. ".sti.sti"),
+    ---@module "easing"
+    ease = require ( ... .. ".easing.lib.easing")
+}
+
+
+return third

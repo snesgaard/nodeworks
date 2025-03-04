@@ -1,59 +1,49 @@
-local clock = {id = "__clock__"}
+local path = (...):gsub("time", "")
 
-function clock.spin()
-    for _, dt in event.view("update") do clock.update(dt) end
+---@module "component"
+local component = require "nodeworks.component"
+---@module "event_type"
+local event_type = require "nodeworks.event_type"
+---@module "nodeworks.system.event"
+local event = require "nodeworks.system.event"
+---@module "stack"
+local stack = require "nodeworks.ecs.stack"
+
+local system_id = "__system_time__"
+
+local time = {}
+
+function time.clock()
+    return stack.ensure(component.time, system_id)
 end
 
-function clock.update(dt)
-    stack.set(nw.component.time, clock.id, clock.get() + dt)
-end
-
-function clock.get()
-    return stack.ensure(nw.component.time, clock.id)
-end
-
-function clock.set(time)
-    stack.set(nw.component.time, clock.id, time)
-end
-
-local timer = {}
-
-function timer.has(id)
-    return stack.get(nw.component.timer, id) ~= nil
-end
-
-function timer.is_done(id)
-    local time, duration = timer.get(id)
-    if not time then return true end
-    return duration <= time
-end
-
-function timer.get(id)
-    local t = stack.get(nw.component.timer, id)
-    if not t then return end
-    return clock.get() - t.time, t.duration
-end
-
-function timer.spin()
-    local kill_these = list()
-
-    for id, _ in stack.view_table(nw.component.die_on_timer_done) do
-        if timer.is_done(id) == true then table.insert(kill_these, id) end
+---@param dt number
+function time.update(dt)
+    local t = time.clock()
+    local next_t = t + dt
+    -- Update the clock
+    stack.set(component.time, system_id, next_t)
+    -- Populate timer init times, if not set
+    for _, timer in stack.view_table(component.timer) do
+        timer.time = timer.time or t
     end
-
-    for _, id in ipairs(kill_these) do
-        stack.destroy(id)
+    -- Check if anyone needs to die
+    for id, _ in stack.view_table(component.die_on_timer_done) do
+        if time.is_timer_done(id) then stack.destroy(id) end
     end
 end
 
-local system = {
-    clock = clock,
-    timer = timer
-}
-
-function system.spin()
-    clock.spin()
-    timer.spin()
+function time.is_timer_done(id)
+    local timer = stack.get(component.timer, id)
+    if timer == nil then return true end
+    timer.time = timer.time or time.clock()
+    return time.clock() - timer.time >= timer.duration
 end
 
-return system
+function time.spin()
+    for _, dt in event.view(event_type.update) do
+        time.update(dt)
+    end
+end
+
+return time

@@ -1,65 +1,121 @@
-local nw = require "nodeworks"
+---@module "list"
+local list = require "nodeworks.core.list"
+---@module "misc"
+local misc = require "nodeworks.core.misc"
+---@module "world"
+local world = require "nodeworks.ecs.world"
 
-local stack = {stack = list(nw.ecs.world())}
-stack.__index = stack
+---@alias Id string|integer|table
 
-function stack.current() return stack.stack:tail() end
-
-function stack.size() return stack.stack:size() end
-
-function stack.pop()
-    if 1 < stack.stack:size() then stack.stack[#stack.stack] = nil end
-    return stack
-end
-
-function stack.push()
-    table.insert(stack.stack, stack.current():copy())
-    return stack
-end
-
-function stack.clear()
-    stack.stack = list(stack.current())
-    return stack
-end
-
-function stack:__call() return stack:current() end
-
-function stack.reset()
-    stack.stack = list(nw.ecs.world())
-    return stack
-end
-
-local function declare_method(key, return_refence_to_stack)
-    stack[key] = function(...)
-        local world = stack.current()
-        local f = world[key]
-        if not f then return stack end
-
-        if return_refence_to_stack then
-            f(world, ...)
-            return stack
-        else
-            return f(world, ...)
-        end
-    end
-end
-
-local methods = {
-    {"set", true},
-    {"init", true},
-    {"assemble", true},
-    {"visit", true},
-    {"remove", true},
-    {"destroy", true},
-    {"get", false},
-    {"ensure", false},
-    {"get_table", false},
-    {"has", false},
-    {"view_table", false},
-    {"map", true},
-    {"destroy_table", true}
+local state = {
+    world = world()
 }
 
-for _, m in ipairs(methods) do declare_method(unpack(m)) end
-    
-return setmetatable({}, stack)
+local stack = {}
+
+function stack.clear()
+    state.world = world()
+end
+
+---@generic R
+---@param component fun(...): R
+---@return table<any, R>
+function stack.get_table(component)
+    return state.world:get_table(component, false)
+end
+
+---@generic R
+---@param component fun(...): R
+---@param id Id
+---@return R|nil
+function stack.get(component, id)
+    return state.world:get(component, id)
+end
+
+---@generic R
+---@param component fun(...): R
+---@param id Id
+---@param ... any
+---@return R
+function stack.get_or_default(component, id, ...)
+    local v = stack.get(component, id)
+    return v ~= nil and v or component(...)
+end
+
+---@generic R
+---@param component fun(...): R
+---@param id Id
+---@param ... any
+function stack.set(component, id, ...)
+    state.world:set(component, id, ...)
+    return stack
+end
+
+---@generic R
+---@param component fun(...): R
+---@param id Id
+---@return boolean
+function stack.has(component, id)
+    return state.world:has(component, id)
+end
+
+---@generic R
+---@param component fun(...): R
+---@param id Id
+---@param ... any
+---@return R
+function stack.ensure(component, id, ...)
+    return state.world:ensure(component, id, ...)
+end
+
+---@generic R
+---@param component fun(...): R
+---@param id Id
+function stack.remove(component, id)
+    state.world:remove(component, id)
+    return stack
+end
+
+---@generic R
+---@param id Id
+function stack.destroy(id)
+    state.world:destroy(id)
+    return stack
+end
+
+---@param values table
+---@param id Id
+function stack.assemble(values, id)
+    state.world:assemble(values, id)
+    return stack
+end
+
+---@generic R
+---@param component fun(...): R
+---@return fun(table: table<Id, R>, key: any): Id, R
+---@return table<Id, R>
+function stack.view_table(component)
+    return state.world:view_table(component)
+end
+
+---@generic R
+---@param component fun(...): R
+function stack.destroy_table(component)
+    state.world:destroy_table(component)
+    return stack
+end
+
+---@generic R1, R2, R3, R4, R5, R6
+---@param c1 fun(...): R1
+---@param c2? fun(...): R2
+---@param c3? fun(...): R3
+---@param c4? fun(...): R4
+---@param c5? fun(...): R5
+---@param c6? fun(...): R6
+---@return fun(t: table, id: Id): Id, R1, R2, R3, R4, R5, R6
+---@return table
+function stack.view_union(c1, c2, c3, c4, c5, c6)
+    return state.world:view_union(c1, c2, c3, c4, c5, c6)
+end
+
+return stack

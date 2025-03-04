@@ -1,57 +1,64 @@
-local nw = require "nodeworks"
-local stack = nw.ecs.stack
+---@module "stack"
+local stack = require "nodeworks.ecs.stack"
+---@module "misc"
+local misc = require "nodeworks.core.misc"
+---@module "dict"
+local dict = require "nodeworks.core.dict"
 
-local function event_back()
-    return dict{
-        all = list(),
-        keyed = dict()
-    }
-end
+local function event_back() return {} end
 
-local function event_front(back) return back or event_back() end
+---@param t table
+local function event_front(t) return t or {} end
 
-local constant = {
-    empty = list(),
-    id = "system::event"
-}
+local system_id = "__event_system__"
 
 local event = {}
 
-function event.emit(key, ...)
-    local args = {...}
-    local es = stack.ensure(event_back, constant.id)
-    table.insert(es.all, {key=key, args=args})
-    local sub = es.keyed[key] or list()
-    table.insert(sub, args)
-    es.keyed[key] = sub
+---@generic R
+---@param event_type fun(...): R
+---@param ... any
+function event.emit(event_type, ...)
+    local e = event_type(...)
+    local b = stack.ensure(event_back, system_id)
+    b[event_type] = b[event_type] or {}
+    table.insert(b[event_type], e)
 end
 
-function event.get(key)
-    local front = stack.ensure(event_front, constant.id)
-    return front.keyed[key] or constant.empty
+---@generic R
+---@param event_type fun(...): R
+---@return R[]
+function event.get(event_type)
+    local f = stack.ensure(event_front, system_id)
+    f[event_type] = f[event_type] or {}
+    return f[event_type]
 end
 
-local function view_iterator(view_list, index)
-    local index = index or 1
-    local value = view_list[index]
-    if not value then return end
-    return index + 1, unpack(value)
+
+---@generic R
+---@param event_type fun(...): R
+---@return fun(table: R[], i?: integer): integer, R
+---@return R[]
+---@return integer
+function event.view(event_type)
+    return ipairs(event.get(event_type))
 end
 
-function event.view(key)
-    return view_iterator, event.get(key)
+---@return boolean Whether there's still events to be processed
+function event.swap()
+    local eb = stack.ensure(event_back, system_id)
+    stack.remove(event_back, system_id)
+    stack.set(event_front, system_id, eb)
+    -- If any messages are present, r   eturn true!
+    return not dict.is_empty(eb)
 end
 
-function event.get_all(key)
-    local front = stack.ensure(event_front, constant.id)
-    return front.all
-end
 
-function event.spin()
-    local eb = stack.ensure(event_back, constant.id)
-    stack.remove(event_back, constant.id)
-    stack.set(event_front, constant.id, eb)
-    return eb.all:size()
+---@param f (fun(...: any): nil)|nil
+---@param ... any
+function event.spin(f, ...)
+    while event.swap() do
+        if f then f(...) end
+    end
 end
 
 return event

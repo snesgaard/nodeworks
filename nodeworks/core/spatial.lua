@@ -1,7 +1,16 @@
-Vec2 = vec2
+local path = (...):gsub("spatial", "")
+---@module "vec2"
+local vec2 = require(path .. "vec2")
+---@module "misc"
+local misc = require(path .. "misc")
+local errorf = misc.errorf
 
-local Spatial = {}
-Spatial.__index = Spatial
+---@class Spatial
+---@field x number
+---@field y number
+---@field w number
+---@field h number
+local Spatial = misc.class()
 
 function Spatial.__tostring(s)
     return string.format(
@@ -9,6 +18,11 @@ function Spatial.__tostring(s)
     )
 end
 
+---@param x number
+---@param y number
+---@param w number
+---@param h number
+---@return Spatial
 function Spatial.create(x, y, w, h)
     return setmetatable(
         {x = x or 0, y = y or 0, w = w or 0, h = h or 0}, Spatial
@@ -236,7 +250,7 @@ function Spatial:expand(w, h, align, valign)
     h = h or w
     local scale_x = {left = 0, center = 0.5, right = 1}
     local sx = scale_x[align or "center"]
-    sx = sx or scale.center
+    sx = sx or scale_x.center
 
     local scale_y = {top = 0, center = 0.5, bottom = 1}
     local sy = scale_y[valign] or scale_y.center
@@ -332,7 +346,7 @@ function Spatial:xalign(src, dst_side, src_side, margin)
         ["right/left"] = -1,
         ["left/right"] = 1,
     }
-    ms = margin_scales[string.format("%s/%s", dst_side, src_side)] or 0
+    local ms = margin_scales[string.format("%s/%s", dst_side, src_side)] or 0
     local dx = src_map(src) - dst_map(dst) + margin * ms
     return dst:move(dx, 0)
 end
@@ -360,7 +374,7 @@ function Spatial:yalign(src, dst_side, src_side, margin)
         ["top/bottom"] = 1,
         ["bottom/top"] = -1,
     }
-    ms = margin_scales[string.format("%s/%s", dst_side, src_side)] or 0
+    local ms = margin_scales[string.format("%s/%s", dst_side, src_side)] or 0
     local dy = src_map(src) - dst_map(dst) + margin * ms
     return dst:move(0, dy)
 end
@@ -380,39 +394,4 @@ function Spatial.is_equal(a, b)
     return a.x == b.x and a.y == b.y and a.w == b.w and a.h == b.h
 end
 
-function Spatial.join(...)
-    local this = {}
-
-    local function to_border(spatial)
-        local x, y, w, h = spatial:unpack()
-        return {x, y, x + w, y + h}
-    end
-    local function merge_border(a, b)
-        local ax_l, ay_l, ax_u, ay_u = unpack(a)
-        local bx_l, by_l, bx_u, by_u = unpack(b)
-        return {
-            ax_l < bx_l and ax_l or bx_l,
-            ay_l < by_l and ay_l or by_l,
-            ax_u < bx_u and bx_u or ax_u,
-            ay_u < by_u and by_u or ay_u,
-        }
-    end
-    local items = List.create(...)
-
-    local function get_border()
-        local border = items:map(to_border):reduce(merge_border)
-        if border then
-            return Spatial.create(
-                border[1], border[2], border[3] - border[1],
-                border[4] - border[2]
-            )
-        else
-            return Spatial.create()
-        end
-    end
-
-    return get_border()
-end
-
-
-return Spatial
+return Spatial.create

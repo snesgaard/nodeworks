@@ -1,341 +1,122 @@
-require "math"
-
-local rng = love.math.random
-
 local list = {}
-list.__index = list
 
-function list.__tostring(l)
-  if #l == 0 then return "[]" end
-  local s = "["
-  for i = 1, #l - 1 do
-    s = s .. tostring(l[i]) .. ", "
-  end
-  s = s .. tostring(l[#l]) .. "]"
-  return s
-end
+---@generic T
+---@generic R
+---@param l T[]
+---@param f fun(T, ...): R
+---@param ... any
+---@return R[]
+function list.map(l, f, ...)
+    local r = {}
 
-function list.create(...)
-  return setmetatable({...}, list)
-end
-
-function list.range(start, stop)
-    local _start = stop and start or 1
-    local _stop = stop or start
-
-    local ret = list.create()
-    for i = _start, _stop do
-    ret[#ret + 1] = i
+    for i, v in ipairs(l) do
+        r[i] = f(v, ...)
     end
 
-    return ret
+    return r
 end
 
-function list:__add(l2)
-    return self:concat(l2)
-end
+---@generic T
+---@param l T[]
+---@param f fun(T, ...): boolean
+---@param ... any
+---@return T[]
+function list.filter(l, f, ...)
+    local r = {}
 
-function list:copy() return list.create(unpack(self)) end
-
-function list:head() return self[1] end
-
-function list:tail() return self[#self] end
-
-function list:body() return List.sub(self, 2) end
-
-function list:random() return self[rng(#self)] end
-
-function list:read(i) return self[i or 1] end
-
-function list:set(index, value)
-    local ret = list.create(unpack(self))
-    ret[index] = value
-    return ret
-end
-
-function list:insert(val, index)
-  local ret = list.create(unpack(self))
-  if not index then
-    ret[#ret + 1] = val
-  else
-    local s = #ret
-    for i = s, index, - 1 do
-      ret[i + 1] = ret[i]
-    end
-    ret[index] = val
-  end
-  return ret
-end
-
-function list:erase(index)
-  local ret = list.create(unpack(self))
-  table.remove(ret, index)
-  return ret
-end
-
-function list:sub(start, stop)
-
-    if start < -1 then
-        start = #self + start
-    elseif start == 0 then
-        start = 1
+    for i, v in ipairs(l) do
+        if f(v, ...) then table.insert(r, v) end
     end
 
-    stop = stop or #self
-    if stop < 0 then
-        stop = #self + stop
-    elseif stop == 0 then
-        stop = #self
+    return r
+end
+
+---@generic T
+---@param l T[]
+---@param from integer
+---@param to integer
+---@return T[]
+function list.sublist(l, from, to)
+    local r = {}
+
+    for i = from, to do
+        table.insert(r, l[i])
     end
 
-    local ret = list.create()
-    for i = start, stop do
-        ret[#ret + 1] = self[i]
+    return r
+end
+
+---@generic T
+---@param l T[]
+---@return integer
+function list.size(l) return #l end
+
+---@generic T
+---@generic R
+---@param l T[]
+---@param f fun(R, T, ...): R
+---@param init R
+---@param ... any
+---@return R
+function list.reduce(l, f, init, ...)
+    local r = init
+    for _, v in ipairs(l) do
+        r = f(r, v, ...)
     end
 
-    return ret
+    return r
 end
 
-function list:size()
-  return #self
+---@generic T
+---@param l T[]
+---@return T|nil
+function list.head(l) return l[1] end
+
+---@generic T
+---@param l T[]
+---@return T|nil
+function list.tail(l) return l[#l] end
+
+---@generic T
+---@param l T[]
+---@return T[]
+function list.body(l)
+    local r = {}
+    for i = 2, #l do table.insert(r, l[i]) end
+    return r
 end
 
-function list:map(f, ...)
-  local ret = list.create()
-  for i = 1, #self do
-    ret[i] = f(self[i], ...)
-  end
-  return ret
-end
+---@generic T
+---@param a T
+---@param b T
+---@return boolean
+local function is_equal(a, b) return a == b end
 
-function list:argmap(f, ...)
-    local ret = list.create()
+---@generic T
+---@param self T[]
+---@param other T[]
+---@param maybe_cmp (fun(a: T, b: T, ...: any): boolean)|nil
+---@param ... any
+---@return boolean
+function list.compare(self, other, maybe_cmp, ...)
+    if #self ~= #other then return false end
+
+    local cmp = maybe_cmp or is_equal
     for i = 1, #self do
-        ret[i] = f(i, self[i], ...)
-    end
-    return ret
-end
-
-function list:scan(f, seed)
-    local ret = list.create()
-
-    ret[1] = seed
-    for i = 1, #self do
-      ret[i + 1] = f(ret[i], self[i])
-    end
-    --ret[1] = nil
-
-    return ret
-end
-
-function list:tap(f)
-    f(self)
-    return self
-end
-
-function list:reduce(f, seed, ...)
-    local f = f or function(a, b) return a + b end
-    local seed_is_nil = seed == nil
-    local init = seed_is_nil and 2 or 1
-    local value = seed_is_nil and self[1] or seed
-    for i = init, #self do value = f(value, self[i], ...) end
-    return value
-end
-
-function list:find(val)
-  eval_f = type(val) == "function" and val or function(v) return v == val end
-  for i = 1, #self do
-    if eval_f(self[i]) then return self[i] end
-  end
-end
-
-function list:argfind(val)
-  eval_f = type(val) == "function" and val or function(v) return v == val end
-  for i = 1, #self do
-    if eval_f(self[i]) then return i end
-  end
-end
-
-function list:reverse()
-  local ret = list.create()
-  for i = #self, 1, -1 do
-    ret[#ret + 1] = self[i]
-  end
-  return ret
-end
-
-function list:filter(f, ...)
-  local ret = list.create()
-  for i = 1, #self do
-    local val = self[i]
-    if f(val, ...) then table.insert(ret, val) end
-  end
-  return ret
-end
-
-function list:argfilter(f, ...)
-  local ret = list.create()
-  for i = 1, #self do
-    local val = self[i]
-    ret[#ret + 1] = f(val, ...) and i or nil
-  end
-  return ret
-end
-
-function list:concat(...)
-  local lists = {self, ...}
-  local ret = list.create()
-  for _, l in ipairs(lists) do
-    for i = 1, #l do
-      ret[#ret + 1] = l[i]
-    end
-  end
-  return ret
-end
-
-
-function list:slice(start, stop)
-  start = math.max(1, start or 1)
-  stop = math.min(#self, stop or #self)
-  local ret = list.create()
-  for i = start, stop do
-    ret[#ret + 1] = self[i]
-  end
-  return ret
-end
-
-function list:fill(val, start, stop)
-  start = math.max(1, start or 1)
-  stop = math.min(#self, stop or #self)
-  local ret = list.create()
-  for i = 1, start - 1 do
-    ret[i] = self[i]
-  end
-  for i = start, stop do
-    ret[i] = val
-  end
-  for i = stop + 1, #self do
-    ret[i] = self[i]
-  end
-  return ret
-end
-
-function list.duplicate(val, num)
-  local ret = list.create()
-  for i = 1, num do
-    ret[i] = val
-  end
-  return ret
-end
-
-function list:zip(...)
-  local lists = list.create(self, ...)
-  local ret = list.create()
-  if #lists == 0 then return ret end
-  local min_size = lists:map(list.size):reduce(math.min)
-  for i = 1, min_size do
-    local sub_ret = list.create()
-    for j = 1, #lists do
-      sub_ret[j] = lists[j][i]
-    end
-    ret[i] = sub_ret
-  end
-  return ret
-end
-
-function list:shuffle()
-  local rng = love.math.random
-  local ret = list.create()
-  local indices = list.range(#self)
-  local weight = indices:map(function() return rng() end)
-  table.sort(indices, function(a, b) return weight[a] < weight[b] end)
-  for _, i in pairs(indices) do
-    ret[#ret + 1] = self[i]
-  end
-  return ret
-end
-
-function list:random()
-    if #self < 1 then
-        return
-    end
-    local rng = love.math.random
-    return self[rng(1, #self)]
-end
-
-function list:sort(f)
-  local ret = list.create(unpack(self))
-  table.sort(ret, f)
-  return ret
-end
-
-function list:argsort(f)
-    f = f or function(a, b) return a < b end
-    local ret = list.range(1, #self)
-    table.sort(ret, function(i, j)
-        return f(self[i], self[j])
-    end)
-    return ret
-end
-function list:unpack()
-    return unpack(self)
-end
-
-function list:cycle(offset)
-    local ret = list.create()
-    local size = self:size()
-    for i = 1, size do
-        local index = (i + offset - 1) % size
-        ret[i] = self[index + 1]
-    end
-    return ret
-end
-
-function list:__add(...)
-    return self:concat(...)
-end
-
-function list:foreach(f, ...)
-    for _, val in ipairs(self) do
-        f(val, ...)
-    end
-    return self
-end
-
-function list:print()
-    print(self)
-    return self
-end
-
-function list:empty() return List.size(self) == 0 end
-
-local function default_max_comp(a, b) return a < b end
-
-function list:max(comp, ...)
-    local comp = comp or default_max_comp
-    local init_value = self[1]
-    for i = 2, #self do
-        local next_value = self[i]
-        if comp(init_value, next_value, ...) then
-            init_value = next_value
-        end
-    end
-    return next_value
-end
-
-function list:__eq(other)
-    if self:size() ~= other:size() then return false end
-
-    for i = 1, self:size() do
-        if self[i] ~= other[i] then return false end
+        if not cmp(self[i], other[i], ...) then return false end
     end
 
     return true
 end
 
-function list:visit(f, ...)
-  if f then f(self, ...) end
-  return self
+---@generic T
+---@param self T[]
+---@param other T[]
+---@return T[]
+function list.concat(self, other)
+    local r = {unpack(self)}
+    for _, o in ipairs(other) do r[#r+1] = o end
+    return r
 end
 
 return list
